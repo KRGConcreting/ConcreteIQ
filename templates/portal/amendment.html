@@ -1,0 +1,385 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Variation #{{ amendment.amendment_number }} - {{ quote.quote_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6" x-data="amendmentPortal()">
+
+    <!-- Amendment Header -->
+    <div class="portal-card animate-fade-in-up">
+        <div class="px-6 py-5 sm:px-8 border-b border-slate-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900 font-display">Variation #{{ amendment.amendment_number }}</h1>
+                    <p class="text-sm text-slate-500 mt-1">For Quote {{ quote.quote_number }}</p>
+                </div>
+                {% set status_colors = {
+                    'draft': 'bg-slate-100 text-slate-600',
+                    'sent': 'bg-blue-100 text-blue-700',
+                    'accepted': 'bg-green-100 text-green-700',
+                    'declined': 'bg-red-100 text-red-700',
+                } %}
+                {% set status_labels = {
+                    'sent': 'Awaiting Response',
+                    'accepted': 'Accepted',
+                    'declined': 'Declined',
+                } %}
+                <span class="px-3 py-1.5 rounded-full text-sm font-semibold {{ status_colors.get(amendment.status, 'bg-slate-100 text-slate-600') }}">
+                    {{ status_labels.get(amendment.status, amendment.status|title) }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quote Context -->
+    {% if quote.job_name or quote.site_address %}
+    <div class="portal-card animate-fade-in-up delay-1">
+        <div class="px-6 py-5 sm:px-8">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-primary-500 mb-3">Project</h3>
+            {% if quote.job_name %}
+            <p class="text-base font-semibold text-slate-900">{{ quote.job_name }}</p>
+            {% endif %}
+            {% if quote.site_address %}
+            <p class="text-sm text-slate-500 mt-1">{{ quote.site_address }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Change Description -->
+    <div class="portal-card animate-fade-in-up delay-2">
+        <div class="px-6 py-5 sm:px-8">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-500 mb-3">What's Changing</h3>
+            <p class="text-base text-slate-700 leading-relaxed whitespace-pre-line">{{ amendment.description }}</p>
+        </div>
+    </div>
+
+    <!-- Price Impact -->
+    <div class="portal-card animate-fade-in-up delay-3">
+        <div class="px-6 py-5 sm:px-8">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-primary-500 mb-4">Price Impact</h3>
+
+            <div class="space-y-3">
+                <!-- Original Total -->
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-500">Original Total (inc GST)</span>
+                    <span class="text-sm font-semibold text-slate-700">${{ '{:,.2f}'.format(original_total / 100) }}</span>
+                </div>
+
+                <!-- Variation Amount -->
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-500">This Variation</span>
+                    <span class="text-sm font-bold {{ 'text-green-600' if variation_amount < 0 else 'text-red-600' }}">
+                        {{ '+' if variation_amount >= 0 else '-' }}${{ '{:,.2f}'.format((variation_amount if variation_amount >= 0 else -variation_amount) / 100) }}
+                    </span>
+                </div>
+
+                <!-- Separator -->
+                <div class="border-t-2 border-slate-200"></div>
+
+                <!-- Adjusted Total -->
+                <div class="flex items-center justify-between">
+                    <span class="text-base font-bold text-slate-900">Adjusted Total (inc GST)</span>
+                    <span class="text-2xl font-extrabold text-primary-500 font-display">${{ '{:,.2f}'.format(adjusted_total / 100) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if amendment.status == 'sent' %}
+    <!-- Accept / Decline Section -->
+    <div class="portal-card animate-fade-in-up delay-4">
+        <div class="px-6 py-6 sm:px-8">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">Your Response</h3>
+
+            <!-- Signature Section -->
+            <div x-show="!showDecline">
+                <p class="text-sm text-slate-600 mb-4">To accept this variation, please sign below.</p>
+
+                <!-- Signer Name -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Your Name</label>
+                    <input type="text"
+                           x-model="signerName"
+                           placeholder="{{ customer.name if customer else 'Full name' }}"
+                           class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 focus:border-primary-500 focus:ring-0 text-sm transition-colors">
+                </div>
+
+                <!-- Signature Pad -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Signature</label>
+                    <div class="relative">
+                        <canvas id="signature-canvas"
+                                class="signature-pad w-full"
+                                style="height: 160px;"
+                                :class="{ 'active': isSigning }"></canvas>
+                        <button @click="clearSignature()"
+                                type="button"
+                                class="absolute top-2 right-2 px-2 py-1 text-xs text-slate-400 hover:text-slate-600 bg-white/80 rounded">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                    <button @click="submitAcceptance()"
+                            :disabled="submitting"
+                            class="flex-1 px-6 py-3.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <template x-if="!submitting">
+                            <span class="flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Accept Variation
+                            </span>
+                        </template>
+                        <template x-if="submitting">
+                            <span class="flex items-center gap-2">
+                                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                </svg>
+                                Processing...
+                            </span>
+                        </template>
+                    </button>
+                    <button @click="showDecline = true"
+                            class="flex-1 px-6 py-3.5 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-semibold text-base hover:bg-slate-50 transition-all duration-200 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Decline
+                    </button>
+                </div>
+            </div>
+
+            <!-- Decline Form -->
+            <div x-show="showDecline" x-cloak class="animate-slide-down">
+                <p class="text-sm text-slate-600 mb-4">Please let us know why you'd like to decline this variation.</p>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Reason (optional)</label>
+                    <textarea x-model="declineReason"
+                              rows="3"
+                              placeholder="e.g. Budget concerns, not needed, etc."
+                              class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 focus:border-red-400 focus:ring-0 text-sm transition-colors resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button @click="submitDecline()"
+                            :disabled="submitting"
+                            class="flex-1 px-6 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <template x-if="!submitting">
+                            <span>Confirm Decline</span>
+                        </template>
+                        <template x-if="submitting">
+                            <span class="flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                </svg>
+                                Processing...
+                            </span>
+                        </template>
+                    </button>
+                    <button @click="showDecline = false"
+                            class="flex-1 px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors">
+                        Back
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div x-show="errorMessage" x-cloak class="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <p class="text-sm text-red-700" x-text="errorMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    {% elif amendment.status == 'accepted' %}
+    <!-- Accepted Banner -->
+    <div class="portal-card animate-fade-in-up delay-4 border-2 border-green-200">
+        <div class="px-6 py-6 sm:px-8 bg-gradient-to-r from-green-50 to-emerald-50">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-green-800">Variation Accepted</h3>
+                    <p class="text-sm text-green-700 mt-1">
+                        Accepted by {{ amendment.signature_name or 'Customer' }}
+                        {% if amendment.accepted_at %}
+                            on {{ amendment.accepted_at.strftime('%d %B %Y at %H:%M') }}
+                        {% endif %}
+                    </p>
+                    {% if amendment.amount_cents > 0 %}
+                    <p class="text-sm text-green-600 mt-2">A variation invoice has been sent to your email.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% elif amendment.status == 'declined' %}
+    <!-- Declined Banner -->
+    <div class="portal-card animate-fade-in-up delay-4 border-2 border-slate-200">
+        <div class="px-6 py-6 sm:px-8 bg-slate-50">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full bg-slate-400 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-700">Variation Declined</h3>
+                    {% if amendment.declined_at %}
+                    <p class="text-sm text-slate-500 mt-1">
+                        Declined on {{ amendment.declined_at.strftime('%d %B %Y at %H:%M') }}
+                    </p>
+                    {% endif %}
+                    {% if amendment.decline_reason %}
+                    <p class="text-sm text-slate-600 mt-2">
+                        <strong>Reason:</strong> {{ amendment.decline_reason }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contact Info -->
+    <div class="text-center py-4 animate-fade-in-up delay-5">
+        <p class="text-sm text-slate-500">Questions about this variation?</p>
+        <p class="text-sm mt-1">
+            <strong class="text-slate-900">Call:</strong>
+            <a href="tel:{{ business.phone }}" class="text-primary-600 hover:text-primary-700">{{ business.phone }}</a>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <strong class="text-slate-900">Email:</strong>
+            <a href="mailto:{{ business.email }}" class="text-primary-600 hover:text-primary-700">{{ business.email }}</a>
+        </p>
+    </div>
+
+</div>
+
+<script>
+function amendmentPortal() {
+    return {
+        signerName: {{ (customer.name if customer else '') | tojson }},
+        signaturePad: null,
+        isSigning: false,
+        showDecline: false,
+        declineReason: '',
+        submitting: false,
+        errorMessage: '',
+
+        init() {
+            {% if amendment.status == 'sent' %}
+            this.$nextTick(() => {
+                const canvas = document.getElementById('signature-canvas');
+                if (canvas) {
+                    this.signaturePad = new SignaturePad(canvas, {
+                        backgroundColor: 'rgba(255,255,255,0)',
+                        penColor: '#1f2937',
+                        minWidth: 1,
+                        maxWidth: 2.5,
+                    });
+
+                    // Resize canvas
+                    const resizeCanvas = () => {
+                        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                        canvas.width = canvas.offsetWidth * ratio;
+                        canvas.height = canvas.offsetHeight * ratio;
+                        canvas.getContext('2d').scale(ratio, ratio);
+                        this.signaturePad.clear();
+                    };
+                    resizeCanvas();
+                    window.addEventListener('resize', resizeCanvas);
+
+                    this.signaturePad.addEventListener('beginStroke', () => { this.isSigning = true; });
+                }
+            });
+            {% endif %}
+        },
+
+        clearSignature() {
+            if (this.signaturePad) {
+                this.signaturePad.clear();
+                this.isSigning = false;
+            }
+        },
+
+        async submitAcceptance() {
+            this.errorMessage = '';
+
+            if (!this.signerName.trim()) {
+                this.errorMessage = 'Please enter your name';
+                return;
+            }
+
+            if (!this.signaturePad || this.signaturePad.isEmpty()) {
+                this.errorMessage = 'Please provide your signature';
+                return;
+            }
+
+            this.submitting = true;
+
+            try {
+                const response = await fetch('/p/amendment/{{ token }}/accept', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        signature_data: this.signaturePad.toDataURL(),
+                        signature_name: this.signerName.trim(),
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Reload to show accepted state
+                    window.location.reload();
+                } else {
+                    this.errorMessage = formatErrorDetail(data.detail, 'Failed to accept variation');
+                }
+            } catch (err) {
+                this.errorMessage = 'Network error. Please try again.';
+            } finally {
+                this.submitting = false;
+            }
+        },
+
+        async submitDecline() {
+            this.errorMessage = '';
+            this.submitting = true;
+
+            try {
+                const response = await fetch('/p/amendment/{{ token }}/decline', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reason: this.declineReason.trim() || null,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Reload to show declined state
+                    window.location.reload();
+                } else {
+                    this.errorMessage = formatErrorDetail(data.detail, 'Failed to decline variation');
+                }
+            } catch (err) {
+                this.errorMessage = 'Network error. Please try again.';
+            } finally {
+                this.submitting = false;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

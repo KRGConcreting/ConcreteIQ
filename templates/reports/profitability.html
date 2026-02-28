@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Profitability by Job Type — ConcreteIQ{% endblock %}
+{% block page_title %}Profitability Report{% endblock %}
+{% block mobile_title %}Profitability{% endblock %}
+
+{% block content %}
+
+<!-- Hero Header -->
+<div class="page-hero animate-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+        <div class="flex items-center gap-4">
+            <a href="/reports" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <p class="page-hero-subtitle">Reports</p>
+                <h1 class="page-hero-title">Profitability by Job Type</h1>
+            </div>
+        </div>
+        <!-- Period selector -->
+        <div class="flex flex-wrap gap-2">
+            <a href="?period=month" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'month' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Month</a>
+            <a href="?period=quarter" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'quarter' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Quarter</a>
+            <a href="?period=year" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'year' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Year</a>
+            <a href="?period=last_month" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'last_month' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">Last Month</a>
+            <a href="?period=last_quarter" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'last_quarter' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">Last Quarter</a>
+        </div>
+    </div>
+    <p class="text-blue-200 text-sm mt-3 ml-14">{{ start_date.strftime('%d %b %Y') }} - {{ end_date.strftime('%d %b %Y') }}</p>
+</div>
+
+<div class="max-w-6xl mx-auto" x-data="profitReport()">
+
+    <!-- Summary KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="metric-card card-enter card-enter-1" style="--metric-accent: #64748b;">
+            <p class="metric-card-label">Total Revenue</p>
+            <p class="metric-card-value">{{ total_revenue_cents | money }}</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-2" style="--metric-accent: {{ '#22c55e' if total_profit_cents >= 0 else '#ef4444' }};">
+            <p class="metric-card-label">Total Profit</p>
+            <p class="metric-card-value {{ 'text-green-600' if total_profit_cents >= 0 else 'text-red-600' }}">{{ total_profit_cents | money }}</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-3" style="--metric-accent: {{ '#22c55e' if avg_margin > 30 else '#f59e0b' if avg_margin >= 15 else '#ef4444' }};">
+            <p class="metric-card-label">Avg Margin</p>
+            <p class="metric-card-value
+                {% if avg_margin > 30 %}text-green-600
+                {% elif avg_margin >= 15 %}text-amber-600
+                {% else %}text-red-600{% endif %}">{{ avg_margin }}%</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-4" style="--metric-accent: #3b82f6;">
+            <p class="metric-card-label">Jobs Completed</p>
+            <p class="metric-card-value text-blue-600">{{ total_jobs }}</p>
+        </div>
+    </div>
+
+    {% if job_types %}
+
+    <!-- Visual Revenue & Profit Bars -->
+    <div class="premium-card card-gradient-top p-6 mb-8 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <div><h3 class="font-display font-semibold text-slate-900">Revenue & Profit by Job Type</h3></div>
+        </div>
+        <div class="space-y-4 mt-5">
+            {% for jt in job_types %}
+            <div>
+                <div class="flex justify-between text-sm mb-1.5">
+                    <span class="font-medium text-slate-700">{{ jt.job_type }}</span>
+                    <span class="text-slate-500">{{ jt.total_revenue_cents | money }} revenue / {{ jt.total_profit_cents | money }} profit</span>
+                </div>
+                <!-- Revenue bar -->
+                <div class="w-full bg-slate-100 rounded-full h-5 relative overflow-hidden">
+                    <div class="absolute inset-y-0 left-0 bg-blue-200 rounded-full transition-all duration-500"
+                         style="width: {{ (jt.total_revenue_cents / max_revenue * 100) | int }}%">
+                    </div>
+                    {% if jt.total_revenue_cents > 0 %}
+                    <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500
+                        {% if jt.avg_margin_percent > 30 %}bg-green-500
+                        {% elif jt.avg_margin_percent >= 15 %}bg-amber-500
+                        {% else %}bg-red-500{% endif %}"
+                         style="width: {{ (jt.total_profit_cents / max_revenue * 100) | int if jt.total_profit_cents > 0 else 0 }}%">
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="flex gap-4 mt-1">
+                    <span class="text-xs text-slate-400">{{ jt.job_count }} job{{ 's' if jt.job_count != 1 else '' }}</span>
+                    <span class="text-xs
+                        {% if jt.avg_margin_percent > 30 %}text-green-600
+                        {% elif jt.avg_margin_percent >= 15 %}text-amber-600
+                        {% else %}text-red-600{% endif %}">{{ jt.avg_margin_percent }}% margin</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <!-- Legend -->
+        <div class="flex gap-6 mt-5 pt-4 border-t border-slate-100">
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="w-3 h-3 rounded-sm bg-blue-200 inline-block"></span> Revenue
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="w-3 h-3 rounded-sm bg-green-500 inline-block"></span> Profit (&gt;30%)
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="w-3 h-3 rounded-sm bg-amber-500 inline-block"></span> Profit (15-30%)
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="w-3 h-3 rounded-sm bg-red-500 inline-block"></span> Profit (&lt;15%)
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Table -->
+    <div class="premium-card overflow-hidden card-enter card-enter-6">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-green">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Profitability Breakdown</h3></div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table-premium w-full">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Job Type</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Jobs</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Revenue</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Est. Costs</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Profit</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Margin</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Avg Quote</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for jt in job_types %}
+                    <!-- Job Type Summary Row -->
+                    <tr class="hover:bg-slate-50 cursor-pointer transition-colors"
+                        @click="toggle('{{ jt.job_type }}')">
+                        <td class="px-6 py-4 text-sm font-medium text-slate-900">
+                            {{ jt.job_type }}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-slate-900 text-right font-display">{{ jt.job_count }}</td>
+                        <td class="px-4 py-4 text-sm text-slate-900 text-right font-display font-medium">{{ jt.total_revenue_cents | money }}</td>
+                        <td class="px-4 py-4 text-sm text-slate-600 text-right font-display">{{ jt.total_cost_cents | money }}</td>
+                        <td class="px-4 py-4 text-sm text-right font-display font-medium {{ 'text-green-600' if jt.total_profit_cents >= 0 else 'text-red-600' }}">
+                            {{ jt.total_profit_cents | money }}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-right">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                {% if jt.avg_margin_percent > 30 %}bg-green-100 text-green-800
+                                {% elif jt.avg_margin_percent >= 15 %}bg-amber-100 text-amber-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ jt.avg_margin_percent }}%
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-slate-900 text-right font-display">{{ jt.avg_quote_value_cents | money }}</td>
+                        <td class="px-4 py-4 text-sm text-slate-400 text-right">
+                            <svg class="w-4 h-4 transition-transform duration-200 inline-block"
+                                 :class="expanded['{{ jt.job_type }}'] ? 'rotate-180' : ''"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </td>
+                    </tr>
+
+                    <!-- Expanded Detail Rows -->
+                    <template x-if="expanded['{{ jt.job_type }}']">
+                        <tr>
+                            <td colspan="8" class="p-0">
+                                <div class="bg-slate-50 border-y border-slate-100">
+                                    <table class="w-full">
+                                        <thead>
+                                            <tr class="bg-slate-100/60">
+                                                <th class="px-8 py-2 text-left text-xs font-medium text-slate-500 uppercase">Quote</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Job</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Customer</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Value</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Cost</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Profit</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Margin</th>
+                                                <th class="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Completed</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100/80">
+                                            {% for job in breakdowns.get(jt.job_type, []) %}
+                                            <tr class="hover:bg-white/60 transition-colors">
+                                                <td class="px-8 py-2.5 text-sm">
+                                                    <a href="/quotes/{{ job.quote_id }}" class="text-blue-600 hover:text-blue-800 font-medium">{{ job.quote_number }}</a>
+                                                </td>
+                                                <td class="px-4 py-2.5 text-sm text-slate-700 max-w-[200px] truncate">{{ job.job_name }}</td>
+                                                <td class="px-4 py-2.5 text-sm text-slate-700">{{ job.customer_name }}</td>
+                                                <td class="px-4 py-2.5 text-sm text-slate-900 text-right font-display">{{ job.total_cents | money }}</td>
+                                                <td class="px-4 py-2.5 text-sm text-slate-600 text-right font-display">{{ job.cost_cents | money }}</td>
+                                                <td class="px-4 py-2.5 text-sm text-right font-display font-medium {{ 'text-green-600' if job.profit_cents >= 0 else 'text-red-600' }}">
+                                                    {{ job.profit_cents | money }}
+                                                </td>
+                                                <td class="px-4 py-2.5 text-sm text-right">
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                                        {% if job.margin_percent > 30 %}bg-green-100 text-green-800
+                                                        {% elif job.margin_percent >= 15 %}bg-amber-100 text-amber-800
+                                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                                        {{ job.margin_percent }}%
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-2.5 text-sm text-slate-500 text-right">
+                                                    {{ job.completed_date.strftime('%d %b %Y') if job.completed_date else '-' }}
+                                                </td>
+                                            </tr>
+                                            {% else %}
+                                            <tr>
+                                                <td colspan="8" class="px-8 py-4 text-sm text-slate-500 text-center">No individual job data available</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    {% endfor %}
+                </tbody>
+
+                <!-- Table footer with totals -->
+                <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+                    <tr class="font-semibold">
+                        <td class="px-6 py-4 text-sm text-slate-900">Totals</td>
+                        <td class="px-4 py-4 text-sm text-slate-900 text-right font-display">{{ total_jobs }}</td>
+                        <td class="px-4 py-4 text-sm text-slate-900 text-right font-display">{{ total_revenue_cents | money }}</td>
+                        <td class="px-4 py-4 text-sm text-slate-600 text-right font-display">{{ (total_revenue_cents - total_profit_cents) | money }}</td>
+                        <td class="px-4 py-4 text-sm text-right font-display {{ 'text-green-600' if total_profit_cents >= 0 else 'text-red-600' }}">
+                            {{ total_profit_cents | money }}
+                        </td>
+                        <td class="px-4 py-4 text-sm text-right">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                {% if avg_margin > 30 %}bg-green-100 text-green-800
+                                {% elif avg_margin >= 15 %}bg-amber-100 text-amber-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ avg_margin }}%
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-slate-600 text-right font-display">
+                            {% if total_jobs > 0 %}{{ (total_revenue_cents // total_jobs) | money }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-4 py-4"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    {% else %}
+
+    <!-- Empty state -->
+    <div class="premium-card p-12 text-center card-enter card-enter-5">
+        <div class="empty-state-v4">
+            <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <h3 class="text-lg font-display font-semibold text-slate-600 mb-2">No Completed Jobs</h3>
+            <p class="text-slate-500">No completed jobs found for this period. Profit data will appear here once jobs are marked as completed with costing information.</p>
+        </div>
+    </div>
+
+    {% endif %}
+
+    <!-- Note about estimates -->
+    {% if job_types %}
+    <div class="mt-6 premium-card p-4 card-enter card-enter-7">
+        <div class="flex items-start gap-3">
+            <div class="w-8 h-8 icon-bg-amber rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <p class="text-sm text-slate-600">Cost figures use actual job costing data where available. For jobs without post-job costing, costs are estimated from the original quote calculator breakdown. Enter actual costs via Job Costing to improve accuracy.</p>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function profitReport() {
+    return {
+        expanded: {},
+
+        toggle(jobType) {
+            this.expanded[jobType] = !this.expanded[jobType];
+        }
+    }
+}
+</script>
+{% endblock %}

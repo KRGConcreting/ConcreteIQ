@@ -1,0 +1,2061 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Quote' if quote else 'New Quote' }}{% endblock %}
+
+{% block head %}
+<style>
+    /* ══════════════════════════════════════════════
+       WIZARD-STYLE QUOTE CALCULATOR
+       ══════════════════════════════════════════════ */
+
+    /* ── Wizard step bar (Bold progress rail) ── */
+    .wizard-bar {
+        display: flex; align-items: center; gap: 0;
+        padding: 0.75rem 1rem; background: var(--surface-card);
+        border-radius: var(--radius-lg); border: 1px solid var(--border-default);
+        box-shadow: var(--shadow-card);
+        overflow-x: auto;
+    }
+    .wizard-step {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0.5rem 0.75rem; border-radius: var(--radius-md);
+        font-size: 0.8125rem; font-weight: 500;
+        color: var(--text-muted); cursor: pointer;
+        transition: all 0.25s var(--ease-premium);
+        white-space: nowrap; flex-shrink: 0;
+    }
+    .wizard-step:hover { color: var(--text-secondary); background: var(--surface-sunken); }
+    .wizard-step.active {
+        color: var(--brand-secondary); font-weight: 700;
+        background: rgba(232,122,46,0.06);
+    }
+    .wizard-step.completed { color: var(--status-success); }
+    .wizard-step .step-num {
+        width: 28px; height: 28px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50%; font-size: 0.75rem; font-weight: 700;
+        flex-shrink: 0; transition: all 0.25s var(--ease-premium);
+    }
+    .wizard-step:not(.active):not(.completed) .step-num {
+        border: 2px dashed var(--border-default); color: var(--text-muted);
+    }
+    .wizard-step.active .step-num {
+        background: var(--brand-secondary); color: white; border: none;
+        box-shadow: 0 0 0 3px rgba(232,122,46,0.2);
+    }
+    .wizard-step.completed .step-num {
+        background: var(--status-success); color: white; border: none;
+    }
+    .wizard-sep {
+        width: 24px; height: 2px; flex-shrink: 0; border-radius: 1px;
+        background: var(--border-default); transition: background 0.3s ease;
+    }
+    .wizard-step.completed + .wizard-sep,
+    .wizard-sep.completed { background: var(--status-success); }
+    .wizard-sep.active { background: linear-gradient(to right, var(--status-success), var(--brand-secondary)); }
+
+    /* ── Wizard card ── */
+    .wizard-card {
+        background: var(--surface-card); border-radius: var(--radius-xl);
+        border: 1px solid var(--border-default); box-shadow: var(--shadow-card); overflow: hidden;
+        transition: box-shadow 0.2s ease;
+    }
+    .wizard-card:hover { box-shadow: var(--shadow-md); }
+    .wizard-card-header {
+        padding: 1.5rem 2rem 1rem; border-bottom: 1px solid var(--surface-sunken);
+    }
+    .wizard-card-header h2 {
+        font-family: var(--font-heading); font-size: 1.125rem; font-weight: 700;
+        color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;
+    }
+    .wizard-card-header p { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.25rem; }
+    .wizard-card-body { padding: 1.75rem 2rem 2rem; }
+
+    /* ── Field labels & groups ── */
+    .field-group-label {
+        font-size: 0.6875rem; font-weight: 700; color: #9ca3af;
+        text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .field-group-label::after { content: ''; flex: 1; height: 1px; background: #f3f4f6; }
+    .sub-divider { height: 1px; background: #f3f4f6; margin: 1.25rem 0; }
+
+    /* ── Hero input ── */
+    .hero-input {
+        font-size: 2.25rem !important; font-weight: 800 !important;
+        font-family: var(--font-heading) !important;
+        padding: 1rem 1.25rem !important;
+        border: 2px solid rgba(232,122,46,0.25) !important;
+        background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%) !important;
+        border-radius: var(--radius-lg) !important; text-align: center;
+        letter-spacing: -0.03em; transition: all 0.25s var(--ease-premium); width: 100%;
+    }
+    .hero-input:focus { border-color: var(--brand-secondary) !important; box-shadow: 0 0 0 4px rgba(232,122,46,0.15) !important; outline: none; }
+    .hero-input::placeholder { font-size: 1rem; font-weight: 500; color: var(--text-muted); }
+
+    /* ── Volume card ── */
+    .volume-card {
+        background: linear-gradient(135deg, var(--brand-primary), #243b53);
+        border-radius: var(--radius-lg); padding: 1.25rem; color: white; text-align: center;
+        box-shadow: 0 4px 12px rgba(27,43,75,0.2);
+    }
+    .volume-card .vol-number {
+        font-size: 2rem; font-weight: 800; letter-spacing: -0.03em;
+        font-family: var(--font-heading);
+    }
+
+    /* ── Field label (premium v3) ── */
+    .field-label {
+        display: block; font-size: 0.875rem; font-weight: 600;
+        color: #334155; margin-bottom: 0.375rem;
+    }
+
+    /* ── Inclusion chip ── */
+    .inclusion-chip {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.625rem 1rem; border-radius: var(--radius-md);
+        border: 1.5px solid var(--border-default); background: var(--surface-card);
+        font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary);
+        cursor: pointer; transition: all 0.2s var(--ease-premium); user-select: none;
+    }
+    .inclusion-chip:hover { border-color: var(--border-hover); background: var(--surface-sunken); }
+    .inclusion-chip.active { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.3); color: #166534; }
+    .inclusion-chip .chip-check {
+        width: 18px; height: 18px; border-radius: 50%;
+        border: 2px solid var(--border-default); display: flex;
+        align-items: center; justify-content: center;
+        transition: all 0.2s var(--ease-premium); flex-shrink: 0;
+    }
+    .inclusion-chip.active .chip-check { background: var(--status-success); border-color: var(--status-success); }
+
+    /* ── Profit badge ── */
+    .profit-badge {
+        display: inline-flex; align-items: center;
+        padding: 1px 6px; border-radius: 9999px;
+        font-size: 10px; font-weight: 600;
+        background: #f0fdf4; color: #15803d; white-space: nowrap;
+    }
+
+    /* ── Section dot ── */
+    .section-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+    /* ── Tier toggle (Bronze/Silver/Gold cards) ── */
+    .tier-cards-container {
+        display: flex; gap: 0.75rem; align-items: stretch;
+    }
+    .tier-card-select {
+        flex: 1; position: relative; padding: 0.875rem 1rem;
+        border-radius: var(--radius-md); cursor: pointer;
+        transition: all 0.3s var(--ease-premium);
+        border: 2px solid transparent; overflow: hidden;
+        min-width: 0;
+    }
+    .tier-card-select::before {
+        content: ''; position: absolute; inset: 0;
+        opacity: 0.06; transition: opacity 0.3s;
+    }
+    .tier-card-select:hover::before { opacity: 0.1; }
+    .tier-card-select.tier-bronze { background: rgba(205,127,50,0.06); }
+    .tier-card-select.tier-bronze::before { background: linear-gradient(135deg, #CD7F32, #A0522D); }
+    .tier-card-select.tier-silver { background: rgba(192,192,192,0.06); }
+    .tier-card-select.tier-silver::before { background: linear-gradient(135deg, #C0C0C0, #A8A9AD); }
+    .tier-card-select.tier-gold { background: rgba(255,215,0,0.06); }
+    .tier-card-select.tier-gold::before { background: linear-gradient(135deg, #FFD700, #DAA520); }
+    .tier-card-select.active { transform: scale(1.02); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .tier-card-select.tier-bronze.active { border-color: #CD7F32; box-shadow: 0 0 0 3px rgba(205,127,50,0.2), 0 4px 16px rgba(0,0,0,0.1); }
+    .tier-card-select.tier-silver.active { border-color: #A8A9AD; box-shadow: 0 0 0 3px rgba(168,169,173,0.2), 0 4px 16px rgba(0,0,0,0.1); }
+    .tier-card-select.tier-gold.active { border-color: #DAA520; box-shadow: 0 0 0 3px rgba(218,165,32,0.2), 0 4px 16px rgba(0,0,0,0.1); }
+    .tier-card-select:not(.active) { opacity: 0.65; filter: grayscale(0.3); }
+    .tier-card-select:not(.active):hover { opacity: 0.85; filter: grayscale(0); }
+    .tier-card-name {
+        font-family: var(--font-heading); font-weight: 700; font-size: 0.875rem;
+        color: white; position: relative;
+    }
+    .tier-card-desc {
+        font-size: 0.6875rem; color: rgba(255,255,255,0.7); position: relative; margin-top: 2px;
+    }
+    .tier-card-icon {
+        width: 28px; height: 28px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 0.375rem; position: relative;
+    }
+    .tier-bronze .tier-card-icon { background: rgba(205,127,50,0.2); color: #CD7F32; }
+    .tier-silver .tier-card-icon { background: rgba(192,192,192,0.2); color: #A8A9AD; }
+    .tier-gold .tier-card-icon { background: rgba(255,215,0,0.2); color: #DAA520; }
+    .tier-popular-tag {
+        position: absolute; top: 6px; right: 8px;
+        background: var(--brand-secondary); color: white;
+        font-size: 0.5625rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; padding: 1px 6px; border-radius: var(--radius-full);
+    }
+    /* Legacy compat */
+    .tier-btn {
+        padding: 0.5rem 1.25rem; font-size: 0.8125rem; font-weight: 600;
+        border-radius: 0.625rem; transition: all 0.2s ease;
+        cursor: pointer; border: 2px solid transparent;
+    }
+    .tier-btn.active { background: white; color: #d4691f; border-color: #fdba74; box-shadow: 0 2px 8px rgba(232,122,46,0.15); }
+    .tier-btn:not(.active) { color: #9ca3af; }
+    .tier-btn:not(.active):hover { color: #6b7280; background: rgba(255,255,255,0.5); }
+
+    /* ── Sticky action bar ── */
+    .sticky-action-bar {
+        position: sticky; bottom: 0; z-index: 30;
+        background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid var(--border-default);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+    }
+
+    /* ── Metric pill ── */
+    .metric-pill {
+        display: flex; flex-direction: column; align-items: center;
+        padding: 0.5rem 0.5rem; background: white;
+        border-radius: 0.75rem; border: 1px solid #f3f4f6; min-width: 60px;
+    }
+    .metric-pill .metric-value { font-size: 0.9375rem; font-weight: 700; color: #111827; line-height: 1.2; }
+    .metric-pill .metric-label { font-size: 0.5625rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+    /* ── Sticky sidebar ── */
+    .sticky-sidebar { position: sticky; top: 5rem; }
+
+    /* ── Sidebar tabs ── */
+    .sidebar-tab {
+        flex: 1; text-align: center; padding: 0.375rem 0.5rem;
+        font-size: 0.75rem; font-weight: 600; border-radius: 0.375rem;
+        transition: all 0.15s ease; cursor: pointer; color: #6b7280;
+    }
+    .sidebar-tab.active { background: white; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .sidebar-scroll { scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
+    .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+    /* ── Wizard nav buttons ── */
+    .wizard-nav-btn {
+        padding: 0.625rem 1.75rem; border-radius: var(--radius-full);
+        font-size: 0.875rem; font-weight: 600; transition: all 0.25s var(--ease-premium);
+        cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;
+        border: none;
+    }
+    .wizard-nav-btn:active { transform: scale(0.97); }
+    .wizard-nav-btn.primary {
+        background: linear-gradient(135deg, var(--brand-secondary), #d4691f);
+        color: white; box-shadow: 0 2px 8px rgba(232,122,46,0.3);
+    }
+    .wizard-nav-btn.primary:hover {
+        background: linear-gradient(135deg, #d4691f, #b85a1a);
+        box-shadow: 0 4px 16px rgba(232,122,46,0.35); transform: translateY(-1px);
+    }
+    .wizard-nav-btn.secondary {
+        background: var(--surface-sunken); color: var(--text-secondary);
+        border: 1px solid var(--border-default);
+    }
+    .wizard-nav-btn.secondary:hover {
+        background: var(--border-default); color: var(--text-primary);
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 1023px) {
+        .sticky-sidebar { position: static; }
+        .wizard-card-body { padding: 1rem 1.25rem 1.5rem; }
+        .wizard-card-header { padding: 1.25rem 1.25rem 0.75rem; }
+    }
+    @media (max-width: 639px) {
+        .wizard-bar { gap: 0; padding: 0.375rem; }
+        .wizard-step { padding: 0.375rem 0.625rem; font-size: 0.75rem; }
+        .wizard-step .step-label { display: none; }
+        .wizard-sep { width: 8px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="quoteCalculator()" x-init="init()" class="min-h-screen" style="background: linear-gradient(135deg, var(--surface-bg) 0%, #E8EDF2 50%, #fef7f0 100%);margin: -1.5rem -1.5rem 0;padding: 1.5rem;">
+
+    <!-- ═══ HEADER ═══ -->
+    <div class="page-hero mb-5">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="/quotes" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10" title="Back to Quotes">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </a>
+                <div>
+                    <h1 class="page-hero-title">{{ 'Edit Quote' if quote else 'New Quote' }}</h1>
+                    <p class="page-hero-subtitle" x-show="quoteNumber" x-text="quoteNumber"></p>
+                </div>
+            </div>
+            <div class="tier-cards-container">
+                <button type="button" @click="form.tier = 'Economy'; recalculate()"
+                        :class="form.tier === 'Economy' ? 'active' : ''"
+                        class="tier-card-select tier-bronze">
+                    <div class="tier-card-icon"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></div>
+                    <div class="tier-card-name">Budget</div>
+                </button>
+                <button type="button" @click="form.tier = 'Standard'; recalculate()"
+                        :class="form.tier === 'Standard' ? 'active' : ''"
+                        class="tier-card-select tier-silver">
+                    <div class="tier-card-icon"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></div>
+                    <div class="tier-card-name">Standard</div>
+                </button>
+                <button type="button" @click="form.tier = 'Premium'; recalculate()"
+                        :class="form.tier === 'Premium' ? 'active' : ''"
+                        class="tier-card-select tier-gold">
+                    <div class="tier-card-icon"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg></div>
+                    <div class="tier-card-name">Premium</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ WIZARD STEP BAR ═══ -->
+    <div class="wizard-bar mb-6">
+        <template x-for="(name, idx) in stepNames" :key="idx">
+            <div class="contents">
+                <div class="wizard-step" :class="{ 'active': currentStep === idx+1, 'completed': currentStep > idx+1 }" @click="goToStep(idx+1)">
+                    <span class="step-num">
+                        <template x-if="currentStep > idx+1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></template>
+                        <template x-if="currentStep <= idx+1"><span x-text="idx+1"></span></template>
+                    </span>
+                    <span class="step-label" x-text="name"></span>
+                </div>
+                <div class="wizard-sep" x-show="idx < stepNames.length - 1"></div>
+            </div>
+        </template>
+    </div>
+
+    <!-- ═══ MAIN GRID ═══ -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- ═══ STEP 1: JOB INFO ═══ -->
+            <div x-show="currentStep === 1" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="wizard-card">
+                    <div class="wizard-card-header">
+                        <h2><svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>Client & Job Details</h2>
+                    </div>
+                    <div class="wizard-card-body space-y-5">
+                        <div class="relative">
+                            <label class="field-label">Customer *</label>
+                            <input type="text" x-model="customerSearch" @input.debounce.300ms="searchCustomers()" @focus="if(customerResults.length) showCustomerResults = true" @click.away="showCustomerResults = false" placeholder="Search customers..." class="input-field text-base">
+                            <div x-show="showCustomerResults && customerResults.length > 0" x-cloak class="absolute z-20 w-full mt-1 bg-white rounded-xl shadow-xl border border-slate-200 max-h-48 overflow-y-auto">
+                                <template x-for="c in customerResults" :key="c.id">
+                                    <div @click="selectCustomer(c)" class="px-4 py-3 hover:bg-orange-50 cursor-pointer transition-colors border-b border-slate-50 last:border-0">
+                                        <p class="font-medium text-slate-900 text-sm" x-text="c.name"></p>
+                                        <p class="text-xs text-slate-400" x-text="c.email || c.phone || ''"></p>
+                                    </div>
+                                </template>
+                            </div>
+                            <p x-show="form.customer_id" class="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                Customer selected
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="field-label">Job Name</label><input type="text" x-model="form.job_name" placeholder="e.g. Backyard Slab" class="input-field"></div>
+                            <div>
+                                <label class="field-label">Job Type</label>
+                                <select x-model="form.job_type" class="select-field">
+                                    <option value="">Select type...</option><option>Driveway</option><option>Pathway</option><option>Patio / Entertaining</option><option>Garage / Shed Slab</option><option>Pool Surrounds</option><option>House Slab</option><option>Commercial</option><option>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Address Autocomplete -->
+                        <div x-data="addressAutocomplete()" class="relative">
+                            <label class="field-label">Job Address</label>
+                            <div class="relative">
+                                <input type="text"
+                                       x-model="query"
+                                       @input.debounce.300ms="search()"
+                                       @focus="showDropdown = suggestions.length > 0"
+                                       @click.outside="showDropdown = false"
+                                       placeholder="Start typing an address..."
+                                       class="input-field pr-10">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <template x-if="loading">
+                                        <svg class="animate-spin w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                        </svg>
+                                    </template>
+                                    <template x-if="!loading">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    </template>
+                                </div>
+                            </div>
+                            <!-- Suggestions dropdown -->
+                            <div x-show="showDropdown && suggestions.length > 0"
+                                 x-transition
+                                 class="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-elevated max-h-48 overflow-y-auto">
+                                <template x-for="s in suggestions" :key="s.place_id">
+                                    <button type="button"
+                                            @click="selectPlace(s)"
+                                            class="w-full px-4 py-3 text-left hover:bg-orange-50 border-b border-slate-50 last:border-0 transition text-sm text-slate-700">
+                                        <span x-text="s.description"></span>
+                                    </button>
+                                </template>
+                            </div>
+                            <!-- Resolved address badge -->
+                            <div x-show="resolved" class="mt-1.5 flex items-center gap-2 text-xs text-green-600">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>Distances auto-filled</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="field-label">Distance from Base (km)</label><input type="number" x-model.number="form.distance_km" @input="recalculate()" min="0" step="1" placeholder="0" class="input-field"></div>
+                            <div><label class="field-label">Distance from Concrete Plant (km)</label><input type="number" x-model.number="form.concrete_distance_km" @input="recalculate()" min="0" step="1" placeholder="0" class="input-field"></div>
+                        </div>
+                        <div><label class="field-label">Notes (visible to customer)</label><textarea x-model="form.notes" rows="2" placeholder="Any notes for the customer..." class="input-field resize-none"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ STEP 2: SLAB & FORMWORK ═══ -->
+            <div x-show="currentStep === 2" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="wizard-card">
+                    <div class="wizard-card-header">
+                        <h2><svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z"/></svg>Slab Dimensions</h2>
+                    </div>
+                    <div class="wizard-card-body space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
+                            <div class="text-center">
+                                <label class="field-label text-orange-600 text-center block mb-2">Slab Area (m²) *</label>
+                                <input type="number" x-model.number="form.slab_area" @input="recalculate()" min="0" step="0.1" placeholder="0" class="hero-input">
+                            </div>
+                            <div class="text-center">
+                                <label class="field-label text-center block mb-2">Thickness (mm)</label>
+                                <input type="number" x-model.number="form.slab_thickness" @input="recalculate()" min="50" step="5" placeholder="100" class="input-field text-center text-xl font-bold py-3">
+                            </div>
+                            <div x-show="form.slab_area > 0">
+                                <div class="volume-card">
+                                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Order Volume</p>
+                                    <p class="vol-number" x-text="(form.concrete_volume_override > 0 ? form.concrete_volume_override : calculatedVolume).toFixed(1) + ' m³'"></p>
+                                    <p class="text-xs text-slate-400 mt-0.5">inc. 8% waste</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sub-divider"></div>
+                        <p class="field-group-label">Formwork</p>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div><label class="field-label">Edge Formwork (lm)</label><input type="number" x-model.number="form.edge_formwork" @input="recalculate()" min="0" step="0.1" class="input-field" placeholder="0"></div>
+                            <div><label class="field-label">Internal Formwork (lm)</label><input type="number" x-model.number="form.internal_formwork" @input="recalculate()" min="0" step="0.1" class="input-field" placeholder="0"></div>
+                            <div><label class="field-label">Fence Sheeting (lm)</label><input type="number" x-model.number="form.fence_sheeting" @input="recalculate()" min="0" step="0.1" class="input-field" placeholder="0"></div>
+                        </div>
+                        <div class="sub-divider"></div>
+                        <p class="field-group-label">Joints & Dowels</p>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="field-label">Control Joints (lm) <span x-show="suggestedJointsLm > 0" class="text-blue-500 font-normal cursor-pointer ml-1" @click="form.control_joints = suggestedJointsLm; recalculate()" x-text="'(suggest: ' + suggestedJointsLm + ')'"></span></label>
+                                <input type="number" x-model.number="form.control_joints" @input="recalculate()" min="0" step="0.1" class="input-field" placeholder="0">
+                            </div>
+                            <div><label class="field-label">Isolation Joints (lm)</label><input type="number" x-model.number="form.isolation_joints" @input="recalculate()" min="0" step="0.1" class="input-field" placeholder="0"></div>
+                            <div><label class="field-label">Dowel Bars (lm)</label><input type="number" x-model.number="form.dowel_bars" @input="recalculate()" min="0" step="0.1" class="input-field" placeholder="0"></div>
+                        </div>
+                        <div class="sub-divider"></div>
+                        <p class="field-group-label">Extras</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="field-label">Steps (count)</label><input type="number" x-model.number="form.steps" @input="recalculate()" min="0" step="1" class="input-field" placeholder="0"></div>
+                            <div><label class="field-label">Rebates (lm)</label><input type="number" x-model.number="form.rebates" @input="recalculate()" min="0" step="0.1" class="input-field" placeholder="0"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ STEP 3: CONCRETE MIX ═══ -->
+            <div x-show="currentStep === 3" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="wizard-card">
+                    <div class="wizard-card-header">
+                        <h2><svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>Concrete Specification</h2>
+                    </div>
+                    <div class="wizard-card-body space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="field-label">Concrete Grade</label>
+                                <select x-model="form.concrete_grade" @change="form.coloured_concrete = !!form.concrete_colour; recalculate()" class="select-field">
+                                    <option value="N20">N20 - Standard</option><option value="N25">N25 - Standard</option><option value="N32">N32 - Structural</option><option value="Exposed N25">Exposed Aggregate N25</option><option value="Exposed N32">Exposed Aggregate N32</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Concrete Colour</label>
+                                <select x-model="form.concrete_colour" @change="form.coloured_concrete = !!form.concrete_colour; recalculate()" class="select-field">
+                                    <option value="">None (standard grey)</option>
+                                    <option value="CINNAMON">Cinnamon +$42.66/m³</option><option value="CORNSTALK">Cornstalk +$45.94/m³</option><option value="DAINTREE">Daintree +$47.58/m³</option><option value="COPPER">Copper +$49.22/m³</option><option value="CHARCOAL">Charcoal +$50.00/m³</option><option value="BLUESTONE">Bluestone +$56.25/m³</option><option value="EARTH BROWN">Earth Brown +$57.42/m³</option><option value="CHARDONNAY">Chardonnay +$59.06/m³</option><option value="CLASSIC SUEDE">Classic Suede +$60.70/m³</option><option value="BILLABONG">Billabong +$62.34/m³</option><option value="KOSCIUSKO">Kosciusko +$62.34/m³</option><option value="BUTTERSCOTCH">Butterscotch +$65.63/m³</option><option value="ESPRESSO">Espresso +$65.63/m³</option><option value="BRANDY SNAP">Brandy Snap +$68.91/m³</option><option value="GUM LEAF">Gum Leaf +$68.91/m³</option><option value="DYNASTY">Dynasty +$71.09/m³</option><option value="GOANNA">Goanna +$72.66/m³</option><option value="HIDDEN VALLEY">Hidden Valley +$75.47/m³</option><option value="DUSTY ROSE">Dusty Rose +$77.11/m³</option><option value="BEACH">Beach +$77.11/m³</option><option value="BRAZIL NUT">Brazil Nut +$80.39/m³</option><option value="CHOC MALT">Choc Malt +$86.95/m³</option><option value="FLOWER GUM">Flower Gum +$91.88/m³</option><option value="COLONIAL SUNSET">Colonial Sunset +$98.44/m³</option><option value="BLACK">Black +$100.00/m³</option><option value="DESERT BEIGE">Desert Beige +$103.36/m³</option><option value="BRONZED AUSSIE">Bronzed Aussie +$114.84/m³</option><option value="HAWKESBURY">Hawkesbury +$118.13/m³</option><option value="BRICK">Brick +$127.97/m³</option><option value="BROLGA">Brolga +$131.25/m³</option><option value="ANTIQUE ROSE">Antique Rose +$154.22/m³</option><option value="JADE GREEN">Jade Green +$154.22/m³</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="field-label">Mix Additive</label>
+                                <select x-model="form.mix_additive" @change="recalculate()" class="select-field">
+                                    <option value="None">None</option><option value="Accelerator 1%">Accelerator 1%</option><option value="Accelerator 2%">Accelerator 2%</option><option value="Accelerator 3%">Accelerator 3%</option><option value="Retarder 1%">Retarder 1%</option><option value="Retarder 2%">Retarder 2%</option><option value="Retarder 3%">Retarder 3%</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Fibres</label>
+                                <select x-model="form.concrete_fibre" @change="recalculate()" class="select-field">
+                                    <option value="None">None</option>
+                                    <option value="Polypropylene">Polypropylene +$20/m³</option>
+                                    <option value="Steel">Steel +$100/m³</option>
+                                    <option value="Glass">Glass (AR) +$30/m³</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                            <div>
+                                <label class="field-label">Order Volume (m³)</label>
+                                <input type="number" :value="form.concrete_volume_override > 0 ? form.concrete_volume_override : calculatedVolume" @input="form.concrete_volume_override = parseFloat($event.target.value) || 0; recalculate()" min="0" step="0.1" class="input-field">
+                            </div>
+                        </div>
+                        <div class="sub-divider"></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="field-label">Reinforcement</label>
+                                <select x-model="form.reinforcement" @change="recalculate()" class="select-field">
+                                    <option value="None">None</option><option value="SL72 Mesh">SL72 Mesh</option><option value="SL82 Mesh">SL82 Mesh</option><option value="SL92 Mesh">SL92 Mesh</option><option value="SL102 Mesh">SL102 Mesh</option><option value="GFRP 350mm">GFRP 350mm</option><option value="GFRP 400mm">GFRP 400mm</option><option value="GFRP 450mm">GFRP 450mm</option><option value="GFRP 500mm">GFRP 500mm</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Control Joint Method</label>
+                                <select x-model="form.control_joint_method" @change="form.control_joint_rate_dollars = 0; recalculate()" class="select-field"><option value="Sawcut">Sawcut ($8/lm)</option><option value="Tooled">Tooled ($3/lm)</option></select>
+                            </div>
+                            <div>
+                                <label class="field-label">CJ Rate $/lm <span class="text-slate-400 font-normal text-xs">(0=default)</span></label>
+                                <input type="number" x-model.number="form.control_joint_rate_dollars" @input="recalculate()" min="0" max="50" step="0.5" placeholder="auto" class="input-field">
+                            </div>
+                        </div>
+                        <div class="sub-divider"></div>
+                        <p class="field-group-label">Site Conditions</p>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div><label class="field-label">Season</label><select x-model="form.season" @change="recalculate()" class="select-field"><option value="Summer">Summer</option><option value="Winter">Winter</option></select></div>
+                            <div><label class="field-label">Site Complexity</label><select x-model="form.complexity" @change="recalculate()" class="select-field"><option value="Easy">Easy (-10%)</option><option value="Standard">Standard</option><option value="Complex">Complex (+15%)</option><option value="Very Complex">Very Complex (+30%)</option></select></div>
+                            <div><label class="field-label">Pump Required</label><select @change="form.pump_required = ($event.target.value === 'yes'); recalculate()" class="select-field"><option value="no" :selected="!form.pump_required">No</option><option value="yes" :selected="form.pump_required">Yes</option></select></div>
+                        </div>
+                        <div class="mt-3 p-4 rounded-xl border" :class="form.fall_type !== 'none' ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50 border-slate-200'">
+                            <p class="field-group-label">Drainage Falls</p>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div><label class="field-label">Fall Type</label><select x-model="form.fall_type" @change="if ((form.fall_type === 'pits' || form.fall_type === 'complex_pits') && form.fall_pit_count < 1) form.fall_pit_count = 1; recalculate()" class="select-field"><option value="none">Flat (no falls)</option><option value="minimal">Minimal (1-2 directions)</option><option value="pits">Pits (~4 falls each)</option><option value="complex_pits">Complex Pits (~6 falls each)</option></select></div>
+                                <div x-show="form.fall_type === 'pits' || form.fall_type === 'complex_pits'" x-cloak><label class="field-label">Number of Pits</label><input type="number" x-model.number="form.fall_pit_count" @input="recalculate()" min="1" max="20" step="1" class="input-field" placeholder="1"></div>
+                                <div><label class="field-label">Effective Complexity</label><div class="input-field bg-slate-100 flex items-center" :class="{'text-green-700': calculatedFallsPct <= 10, 'text-amber-700': calculatedFallsPct > 10 && calculatedFallsPct <= 30, 'text-red-700 font-semibold': calculatedFallsPct > 30}"><span x-text="calculatedFallsPct + '%'"></span><span class="text-xs text-slate-400 ml-2" x-text="calculatedFallsPct === 0 ? '' : calculatedFallsPct <= 10 ? 'easy' : calculatedFallsPct <= 25 ? 'moderate' : 'hard'"></span></div></div>
+                            </div>
+                        </div>
+                        <div x-show="form.concrete_grade && form.concrete_grade.includes('Exposed')">
+                            <div class="sub-divider"></div>
+                            <p class="field-group-label">Exposed Aggregate Options</p>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div><label class="field-label">Wash Off</label><select x-model="form.wash_off" @change="recalculate()" class="select-field"><option value="N/A">N/A</option><option value="Same Day">Same Day</option><option value="Next Day">Next Day</option></select></div>
+                                <div><label class="field-label flex items-center gap-2">Acid Wash<div class="toggle-switch-sm" :class="form.acid_wash ? 'active' : ''" @click="form.acid_wash = !form.acid_wash; recalculate()"></div></label></div>
+                            </div>
+                        </div>
+                        <div class="sub-divider"></div>
+                        <p class="field-group-label">Inclusions</p>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="inc in [
+                                {key: 'inc_release_agent', label: 'Release Agent'},
+                                {key: 'inc_evap_retarder', label: 'Evap Retarder'},
+                                {key: 'inc_moisture_barrier', label: 'Moisture Barrier'},
+                                {key: 'inc_formwork_wear', label: 'Formwork Wear'},
+                                {key: 'inc_durability_enhancer', label: 'Durability Enhancer'},
+                                {key: 'inc_surface_retarder', label: 'Surface Retarder'},
+                                {key: 'inc_curing_compound', label: 'Curing Compound'},
+                                {key: 'inc_sealer', label: 'Sealer'}
+                            ]" :key="inc.key">
+                                <div class="inclusion-chip" :class="form[inc.key] ? 'active' : ''" @click="form[inc.key] = !form[inc.key]; recalculate()">
+                                    <span class="chip-check"><svg x-show="form[inc.key]" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></span>
+                                    <span x-text="inc.label"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ STEP 4: SITE WORK ═══ -->
+            <div x-show="currentStep === 4" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="wizard-card">
+                    <div class="wizard-card-header">
+                        <h2><svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>Site Work</h2>
+                    </div>
+                    <div class="wizard-card-body space-y-4">
+                        <!-- Subbase -->
+                        <div class="p-5 rounded-xl border transition-all" :class="form.subbase_thickness > 0 ? 'bg-amber-50/50 border-amber-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center justify-between mb-3">
+                                <div><p class="font-semibold text-slate-900">Subbase Preparation</p></div>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full" :class="form.subbase_thickness > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'" x-text="form.subbase_thickness > 0 ? 'Active' : 'Off'"></span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div><label class="field-label">Subbase Thickness (mm)</label><input type="number" x-model.number="form.subbase_thickness" @input="recalculate()" min="0" step="5" placeholder="0 = none" class="input-field"></div>
+                                <div><label class="field-label">Compaction</label><select @change="form.compaction = ($event.target.value === 'yes'); recalculate()" class="select-field"><option value="no" :selected="!form.compaction">No</option><option value="yes" :selected="form.compaction">Yes</option></select></div>
+                                <div x-show="form.subbase_thickness > 0" x-cloak>
+                                    <label class="field-label">Delivery Distance (km)</label>
+                                    <input type="number" x-model.number="form.delivery_distance_km" @input="recalculate()" min="0" step="1" placeholder="km from Peards" class="input-field">
+                                    <p class="text-[10px] text-slate-400 mt-1" x-show="form.delivery_distance_km > 20">+$<span x-text="((form.delivery_distance_km - 20) * 1.5).toFixed(2)"></span> extra delivery</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Excavation -->
+                        <div class="p-5 rounded-xl border transition-all" :class="form.excavation ? 'bg-yellow-50/50 border-yellow-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center justify-between mb-3">
+                                <div><p class="font-semibold text-slate-900">Excavation</p></div>
+                                <div class="toggle-switch-sm" :class="form.excavation ? 'active' : ''" @click="form.excavation = !form.excavation; recalculate()"></div>
+                            </div>
+                            <div x-show="form.excavation" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3" x-cloak>
+                                <div><label class="field-label">Dig Method</label><select x-model="form.dig_method" @change="recalculate()" class="select-field"><option value="hand">Hand Dig</option><option value="machine">Machine</option></select></div>
+                                <div><label class="field-label">Depth (mm)</label><input type="number" x-model.number="form.excavation_depth" @input="recalculate()" min="0" step="10" class="input-field" placeholder="0"></div>
+                                <div><label class="field-label">Disposal</label><select x-model="form.excavation_disposal" @change="recalculate()" class="select-field"><option value="none">No Disposal</option><option value="trailer">Trailer</option><option value="skipbin">Skip Bin</option></select></div>
+                                <div x-show="form.dig_method === 'machine'"><label class="field-label">Soil Type</label><select x-model="form.soil_type" @change="recalculate()" class="select-field"><option value="topsoil">Topsoil</option><option value="soil">Soil</option><option value="clay">Clay</option><option value="rock">Rock</option></select></div>
+                            </div>
+                        </div>
+                        <!-- Pressure Washer -->
+                        <div class="p-5 rounded-xl border transition-all" :class="form.pressure_washer ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center justify-between mb-3">
+                                <div><p class="font-semibold text-slate-900">Pressure Washer Hire</p></div>
+                                <div class="toggle-switch-sm" :class="form.pressure_washer ? 'active' : ''" @click="form.pressure_washer = !form.pressure_washer; recalculate()"></div>
+                            </div>
+                            <div x-show="form.pressure_washer" class="mt-3" x-cloak>
+                                <div><label class="field-label">Duration</label><select x-model="form.pressure_washer_duration" @change="recalculate()" class="select-field"><option value="half">Half Day — $153 inc GST</option><option value="full">Full Day — $218 inc GST</option></select></div>
+                            </div>
+                        </div>
+                        <!-- Piers & Edge Beams -->
+                        <div class="p-5 rounded-xl border transition-all" :class="form.pier_holes > 0 || form.edge_beams ? 'bg-orange-50/50 border-orange-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center justify-between mb-3">
+                                <div><p class="font-semibold text-slate-900">Piers & Edge Beams</p></div>
+                            </div>
+                            <div class="flex items-center justify-between mb-3"><p class="field-group-label mb-0">Pier Holes</p><div class="toggle-switch-sm" :class="form.pier_holes > 0 ? 'active' : ''" @click="if(form.pier_holes > 0) { form.pier_holes = 0; } else { form.pier_holes = 1; } recalculate()"></div></div>
+                            <div x-show="form.pier_holes > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4" x-cloak>
+                                <div><label class="field-label">Count</label><input type="number" x-model.number="form.pier_holes" @input="recalculate()" min="1" class="input-field" placeholder="1"></div>
+                                <div><label class="field-label">Diameter (mm)</label><input type="number" x-model.number="form.pier_diameter" @input="recalculate()" min="100" step="50" class="input-field" placeholder="300"></div>
+                                <div><label class="field-label">Depth (mm)</label><input type="number" x-model.number="form.pier_depth" @input="recalculate()" min="100" step="50" class="input-field" placeholder="600"></div>
+                                <div><label class="field-label">Starters/Pier</label><input type="number" x-model.number="form.pier_starters" @input="recalculate()" min="0" class="input-field" placeholder="4"></div>
+                            </div>
+                            <div class="sub-divider"></div>
+                            <div class="flex items-center justify-between mb-3"><p class="field-group-label mb-0">Edge Beams</p><div class="toggle-switch-sm" :class="form.edge_beams ? 'active' : ''" @click="form.edge_beams = !form.edge_beams; recalculate()"></div></div>
+                            <div x-show="form.edge_beams" class="grid grid-cols-3 gap-4" x-cloak>
+                                <div><label class="field-label">Length (lm)</label><input type="number" x-model.number="form.edge_beam_length" @input="recalculate()" min="0" class="input-field" placeholder="0"></div>
+                                <div><label class="field-label">Depth (mm)</label><input type="number" x-model.number="form.edge_beam_depth" @input="recalculate()" min="100" class="input-field" placeholder="200"></div>
+                                <div><label class="field-label">Width (mm)</label><input type="number" x-model.number="form.edge_beam_width" @input="recalculate()" min="100" class="input-field" placeholder="300"></div>
+                            </div>
+                        </div>
+                        <!-- Concrete Removal -->
+                        <div class="p-5 rounded-xl border transition-all" :class="form.concrete_removal ? 'bg-red-50/50 border-red-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center justify-between mb-3">
+                                <div><p class="font-semibold text-slate-900">Concrete Removal</p></div>
+                                <div class="toggle-switch-sm" :class="form.concrete_removal ? 'active' : ''" @click="form.concrete_removal = !form.concrete_removal; recalculate()"></div>
+                            </div>
+                            <div x-show="form.concrete_removal" class="space-y-4 mt-3" x-cloak>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div><label class="field-label">Removal Area (m²)</label><input type="number" x-model.number="form.removal_area" @input="recalculate()" min="0" class="input-field" placeholder="0"></div>
+                                    <div><label class="field-label">Thickness (mm)</label><input type="number" x-model.number="form.removal_thickness" @input="recalculate()" min="50" class="input-field" placeholder="100"></div>
+                                    <div><label class="field-label flex items-center gap-2">Reinforced<div class="toggle-switch-sm" :class="form.removal_reinforced ? 'active' : ''" @click="form.removal_reinforced = !form.removal_reinforced; recalculate()"></div></label></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="field-label">Removal Method</label><select x-model="form.removal_method" @change="recalculate()" class="select-field"><option value="manual">Manual</option><option value="machine">Machine</option></select></div>
+                                    <div><label class="field-label">Disposal</label><select x-model="form.removal_disposal" @change="recalculate()" class="select-field"><option value="skip_bin">Skip Bin — $363/m³ inc</option><option value="trailer">Trailer — $167/load inc</option></select></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Plumbing -->
+                        <div class="p-5 rounded-xl border transition-all" :class="form.drainage ? 'bg-green-50/50 border-green-200' : 'bg-slate-50 border-slate-200'">
+                            <div class="flex items-center justify-between mb-3">
+                                <div><p class="font-semibold text-slate-900">Plumbing & Drainage</p></div>
+                                <div class="toggle-switch-sm" :class="form.drainage ? 'active' : ''" @click="form.drainage = !form.drainage; recalculate()"></div>
+                            </div>
+                            <div x-show="form.drainage" class="space-y-4 mt-3" x-cloak>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div><label class="field-label">Plumber Hours</label><input type="number" x-model.number="form.plumber_hours" @input="recalculate()" min="0" step="0.5" class="input-field" placeholder="0"></div>
+                                    <div><label class="field-label">Rate ($/hr)</label><input type="number" x-model.number="form.plumber_rate_display" @input="form.plumber_rate = Math.round(form.plumber_rate_display * 100); recalculate()" min="0" class="input-field" placeholder="95"></div>
+                                    <div><label class="field-label">Materials ($)</label><input type="number" x-model.number="form.plumber_materials_display" @input="form.plumber_materials_cents = Math.round(form.plumber_materials_display * 100); recalculate()" min="0" class="input-field" placeholder="0"></div>
+                                </div>
+                                <div><label class="field-label">Description</label><input type="text" x-model="form.plumber_description" class="input-field" placeholder="Drainage work description..."></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ STEP 5: LABOUR ═══ -->
+            <div x-show="currentStep === 5" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="wizard-card">
+                    <div class="wizard-card-header">
+                        <h2><svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Labour & Crew</h2>
+                    </div>
+                    <div class="wizard-card-body space-y-5">
+                        <div>
+                            <label class="field-label">Team Tier</label>
+                            <select x-model="form.team_tier" @change="recalculate()" class="select-field"><option value="Lean">Lean ($205/hr)</option><option value="Standard">Standard ($220/hr)</option><option value="Premium">Premium ($275/hr)</option></select>
+                            <p class="text-xs text-slate-400 mt-1">Fallback rate when no individual workers selected</p>
+                        </div>
+                        <div class="sub-divider"></div>
+                        <p class="field-group-label">Setup Day Crew</p>
+                        <div x-show="availableWorkers.length > 0">
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <template x-for="worker in availableWorkers" :key="'setup-'+worker.id">
+                                    <label class="inclusion-chip" :class="form.setup_day_workers.includes(String(worker.id)) ? 'active' : ''">
+                                        <input type="checkbox" :value="String(worker.id)" x-model="form.setup_day_workers" @change="recalculate()" class="sr-only">
+                                        <span class="chip-check"><svg x-show="form.setup_day_workers.includes(String(worker.id))" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></span>
+                                        <span x-text="worker.name"></span><span class="text-xs text-slate-400" x-text="'$' + (worker.hourly_rate_cents / 100).toFixed(0) + '/hr'"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <label class="field-label flex items-center gap-2 mb-0">Custom Rate<div class="toggle-switch-sm" :class="form.setup_day_custom ? 'active' : ''" @click="form.setup_day_custom = !form.setup_day_custom; recalculate()"></div></label>
+                            <div x-show="form.setup_day_custom" x-cloak class="flex items-center gap-2">
+                                <span class="text-sm text-slate-500 font-medium">$</span><input type="number" x-model.number="form.setup_day_custom_rate" @input="recalculate()" min="0" class="input-field w-24" placeholder="$/hr">
+                                <span class="text-sm text-slate-400">×</span>
+                                <input type="number" x-model.number="form.setup_day_custom_workers" @input="recalculate()" min="1" max="10" class="input-field w-16 text-center" placeholder="1">
+                                <span class="text-sm text-slate-500">workers</span>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-orange-600" x-show="effectiveSetupRate > 0" x-text="'Setup rate: $' + effectiveSetupRate.toFixed(0) + '/hr'"></p>
+                        <div class="sub-divider"></div>
+                        <p class="field-group-label">Pour Day Crew</p>
+                        <div x-show="availableWorkers.length > 0">
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <template x-for="worker in availableWorkers" :key="'pour-'+worker.id">
+                                    <label class="inclusion-chip" :class="form.pour_day_workers.includes(String(worker.id)) ? 'active' : ''">
+                                        <input type="checkbox" :value="String(worker.id)" x-model="form.pour_day_workers" @change="recalculate()" class="sr-only">
+                                        <span class="chip-check"><svg x-show="form.pour_day_workers.includes(String(worker.id))" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></span>
+                                        <span x-text="worker.name"></span><span class="text-xs text-slate-400" x-text="'$' + (worker.hourly_rate_cents / 100).toFixed(0) + '/hr'"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <label class="field-label flex items-center gap-2 mb-0">Custom Rate<div class="toggle-switch-sm" :class="form.pour_day_custom ? 'active' : ''" @click="form.pour_day_custom = !form.pour_day_custom; recalculate()"></div></label>
+                            <div x-show="form.pour_day_custom" x-cloak class="flex items-center gap-2">
+                                <span class="text-sm text-slate-500 font-medium">$</span><input type="number" x-model.number="form.pour_day_custom_rate" @input="recalculate()" min="0" class="input-field w-24" placeholder="$/hr">
+                                <span class="text-sm text-slate-400">×</span>
+                                <input type="number" x-model.number="form.pour_day_custom_workers" @input="recalculate()" min="1" max="10" class="input-field w-16 text-center" placeholder="1">
+                                <span class="text-sm text-slate-500">workers</span>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-orange-600" x-show="effectivePourRate > 0" x-text="'Pour rate: $' + effectivePourRate.toFixed(0) + '/hr'"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ STEP 6: REVIEW ═══ -->
+            <div x-show="currentStep === 6" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+                <div class="wizard-card">
+                    <div class="wizard-card-header">
+                        <h2><svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Review & Save</h2>
+                    </div>
+                    <div class="wizard-card-body space-y-4">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 text-center"><p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Customer</p><p class="text-sm font-semibold text-slate-900 mt-1 truncate" x-text="customerSearch || 'Not set'"></p></div>
+                            <div class="p-3 rounded-xl bg-orange-50 border border-orange-100 text-center"><p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Slab</p><p class="text-sm font-semibold text-slate-900 mt-1" x-text="(form.slab_area || 0) + 'm² × ' + (form.slab_thickness || 100) + 'mm'"></p></div>
+                            <div class="p-3 rounded-xl bg-blue-50 border border-blue-100 text-center"><p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Volume</p><p class="text-sm font-semibold text-slate-900 mt-1" x-text="(summary.concrete.volume || 0).toFixed(1) + ' m³'"></p></div>
+                            <div class="p-3 rounded-xl bg-green-50 border border-green-100 text-center"><p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Hours</p><p class="text-sm font-semibold text-slate-900 mt-1" x-text="summary.totals.hours.toFixed(1) + ' hrs'"></p></div>
+                        </div>
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                            <p class="field-group-label">Discount & Price Override</p>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1"><label class="field-label">Discount</label><div class="flex gap-1.5"><input type="number" x-model.number="form.discount_value" @input="recalculate()" min="0" placeholder="0" class="flex-1 input-field text-sm"><select x-model="form.discount_type" @change="recalculate()" class="select-field w-auto text-sm"><option value="percent">%</option><option value="fixed">$</option></select></div></div>
+                                <div class="flex-1"><label class="field-label flex items-center justify-between">Override<div class="toggle-switch-sm" :class="form.price_override_enabled ? 'active' : ''" @click="form.price_override_enabled = !form.price_override_enabled" style="transform: scale(0.8);"></div></label><div class="flex items-center gap-1"><span class="text-slate-400 text-sm">$</span><input type="number" x-model.number="form.price_override_value" @input="recalculate()" placeholder="Final price" min="0" :disabled="!form.price_override_enabled" class="flex-1 input-field text-sm" :class="!form.price_override_enabled ? 'opacity-40' : ''"></div></div>
+                            </div>
+                        </div>
+                        <div x-show="result" class="p-6 rounded-xl bg-gradient-to-br from-orange-50 via-amber-50/60 to-white border-2 border-orange-200 text-center">
+                            <p class="text-xs text-slate-400 uppercase tracking-wider font-medium">Quote Total (Inc GST)</p>
+                            <p class="text-4xl font-extrabold text-slate-900 mt-2 tracking-tight" x-text="formatCurrency(finalTotal)"></p>
+                            <div class="flex items-center justify-center gap-6 mt-3">
+                                <span class="text-sm text-slate-500"><span class="font-bold text-slate-800" x-text="'$' + (summary.metrics.rate_per_m2 / 100).toFixed(0)"></span>/m²</span>
+                                <span class="text-sm text-slate-500"><span class="font-bold text-green-600" x-text="'$' + (summary.metrics.profit / 100).toFixed(0)"></span> profit</span>
+                            </div>
+                        </div>
+                        <div x-show="result">
+                            <p class="field-group-label">Payment Schedule</p>
+                            <div class="space-y-2">
+                                <template x-for="payment in (result?.payments || [])" :key="payment.name">
+                                    <div class="flex justify-between items-center px-4 py-2.5 bg-slate-50 rounded-lg"><span class="text-sm text-slate-600" x-text="payment.name"></span><span class="text-sm font-semibold" x-text="formatCurrency(payment.amount_cents)"></span></div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ WIZARD NAV ═══ -->
+            <div class="flex items-center justify-between pt-2">
+                <button type="button" @click="prevStep()" x-show="currentStep > 1" class="wizard-nav-btn secondary"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Back</button>
+                <div x-show="currentStep === 1"></div>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-slate-400" x-text="'Step ' + currentStep + ' of ' + totalSteps"></span>
+                    <button type="button" @click="nextStep()" x-show="currentStep < totalSteps" class="wizard-nav-btn primary">Next<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+                </div>
+            </div>
+
+            <!-- ═══ ACTION BAR ═══ -->
+            <div class="sticky-action-bar rounded-2xl p-3 sm:p-4 mt-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div x-show="result" class="lg:hidden flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-200" x-cloak><span class="text-xs text-orange-600 font-medium">Total:</span><span class="text-sm font-bold text-slate-900" x-text="formatCurrency(finalTotal)"></span></div>
+                        <div class="hidden sm:flex items-center gap-1.5">
+                            <button @click="generatePDF()" :disabled="!result" type="button" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl font-medium hover:bg-slate-200 disabled:opacity-40 transition-all flex items-center gap-1.5 text-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>PDF</button>
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open" type="button" class="p-2 bg-slate-100 text-slate-500 rounded-xl hover:bg-slate-200 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg></button>
+                                <div x-show="open" @click.away="open = false" x-cloak class="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 min-w-[180px]">
+                                    {% if quote %}<button @click="duplicateQuote()" type="button" class="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors">Duplicate Quote</button>{% endif %}
+                                    <button @click="resetForm()" type="button" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors">Reset Form</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="saveQuote('draft')" :disabled="isSaving" type="button" class="px-4 sm:px-5 py-2.5 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700 disabled:opacity-50 transition-all flex items-center gap-2 text-sm"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span x-show="!isSaving">Save Draft</span><span x-show="isSaving">Saving...</span></button>
+                        <button @click="saveQuote('send')" :disabled="isSaving || !form.customer_id" type="button" class="btn-v4 btn-v4-primary px-4 sm:px-5 py-2.5 text-sm disabled:opacity-50"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>Submit & Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ SIDEBAR ══ -->
+        <div class="lg:col-span-1">
+            <div class="sticky-sidebar space-y-4">
+                <!-- Total -->
+                <div class="rounded-2xl overflow-hidden border-2 shadow-sm" :class="result ? 'border-orange-200' : 'border-slate-200'">
+                    <div class="px-5 py-4" :class="result ? 'bg-gradient-to-br from-orange-50 via-amber-50/60 to-white' : 'bg-slate-50'">
+                        <div x-show="calculating" class="flex items-center justify-center py-2"><svg class="animate-spin h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></div>
+                        <div x-show="!calculating && result"><p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Total (Inc GST)</p><p class="text-3xl font-extrabold text-slate-900 mt-1 tracking-tight" x-text="formatCurrency(finalTotal)"></p></div>
+                        <div x-show="!calculating && !result" class="text-center py-4"><svg class="w-10 h-10 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg><p class="text-slate-400 text-sm font-medium">Enter slab area to calculate</p></div>
+                    </div>
+                    <div x-show="!calculating && result" class="flex items-center justify-around px-3 py-3 bg-white border-t border-orange-100">
+                        <div class="metric-pill"><span class="metric-value" x-text="'$' + (summary.metrics.rate_per_m2 / 100).toFixed(0)"></span><span class="metric-label">/m²</span></div>
+                        <div class="metric-pill" style="border-color: #dcfce7;"><span class="metric-value text-green-600" x-text="'$' + (summary.metrics.profit / 100).toFixed(0)"></span><span class="metric-label">Profit</span></div>
+                        <div class="metric-pill"><span class="metric-value" x-text="summary.totals.hours.toFixed(1)"></span><span class="metric-label">Hours</span></div>
+                        <div class="metric-pill"><span class="metric-value" x-text="(summary.concrete.volume || 0).toFixed(1)"></span><span class="metric-label">m³</span></div>
+                    </div>
+                </div>
+                <!-- Summary breakdown -->
+                <div x-show="!calculating && result" class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 pt-4 pb-3"><h3 class="text-sm font-semibold text-slate-900">Quote Summary</h3><span class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Internal</span></div>
+                    <div class="flex gap-1 mx-4 mb-3 bg-slate-100 rounded-lg p-0.5">
+                        <button type="button" @click="sidebarTab = 'summary'" class="sidebar-tab" :class="sidebarTab === 'summary' ? 'active' : ''">Summary</button>
+                        <button type="button" @click="sidebarTab = 'detailed'" class="sidebar-tab" :class="sidebarTab === 'detailed' ? 'active' : ''">Detailed</button>
+                        <button type="button" @click="sidebarTab = 'financials'" class="sidebar-tab" :class="sidebarTab === 'financials' ? 'active' : ''">Financials</button>
+                    </div>
+                    <div class="px-4 pb-4 max-h-[calc(100vh-420px)] overflow-y-auto sidebar-scroll">
+                    <!-- Summary tab -->
+                    <div x-show="sidebarTab === 'summary'" class="space-y-2 text-xs">
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center py-1"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-blue-400"></span>Concrete</span><span class="font-medium" x-text="'$' + (summary.concrete.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1" x-show="summary.subbase.show"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-amber-500"></span>Subbase</span><span class="font-medium" x-text="'$' + (summary.subbase.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1" x-show="summary.excavation.show"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-amber-400"></span>Excavation</span><span class="font-medium" x-text="'$' + (summary.excavation.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1" x-show="summary.removal.show"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-red-400"></span>Removal</span><span class="font-medium" x-text="'$' + (summary.removal.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1" x-show="summary.drainage.show"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-green-400"></span>Drainage</span><span class="font-medium" x-text="'$' + (summary.drainage.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-sky-400"></span>Setup</span><span class="font-medium" x-text="'$' + (summary.setup.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-orange-400"></span>Pour</span><span class="font-medium" x-text="'$' + (summary.pour.total / 100).toFixed(2)"></span></div>
+                        </div>
+                        <div class="border-t border-slate-200 pt-2 mt-2 space-y-1">
+                            <div class="flex justify-between"><span class="text-slate-500">Raw Cost</span><span class="font-medium" x-text="'$' + (summary.pricing.raw_cost / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">Markup (<span x-text="form.tier"></span>)</span><span x-text="'$' + (summary.pricing.markup / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between font-medium"><span>Subtotal</span><span x-text="'$' + (summary.pricing.subtotal / 100).toFixed(2)"></span></div>
+                            <template x-if="summary.pricing.discount > 0"><div class="flex justify-between text-red-500"><span>Discount</span><span x-text="'-$' + (summary.pricing.discount / 100).toFixed(2)"></span></div></template>
+                            <div class="flex justify-between text-slate-500"><span>GST (10%)</span><span x-text="'$' + (summary.pricing.gst / 100).toFixed(2)"></span></div>
+                        </div>
+                        <div class="border-t border-slate-200 pt-2 mt-2">
+                            <div class="bg-green-50 rounded-lg p-3 space-y-1 border border-green-100">
+                                <div class="flex justify-between"><span class="text-green-700">Materials Margin</span><span class="text-green-800 font-medium" x-text="'$' + (summary.pricing.markup / 100).toFixed(2)"></span></div>
+                                <div class="flex justify-between"><span class="text-green-700">Labour Margin</span><span class="text-green-800 font-medium" x-text="'$' + ((result?.labour_margin_cents || 0) / 100).toFixed(2)"></span></div>
+                                <div class="flex justify-between border-t border-green-200 pt-1 mt-1"><span class="text-green-700 font-medium">Total Profit</span><span class="text-green-800 font-bold" x-text="'$' + (summary.metrics.profit / 100).toFixed(2)"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Detailed tab -->
+                    <div x-show="sidebarTab === 'detailed'" class="space-y-3 text-sm">
+                        <div x-data="{ open: true }">
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-blue-400"></span>Concrete</button>
+                            <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
+                                <div class="flex justify-between"><span class="text-slate-500">Volume</span><span x-text="(summary.concrete.volume || 0).toFixed(2) + 'm³'"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Base Rate</span><span x-text="'$' + (summary.concrete.raw_rate / 100).toFixed(2) + '/m³'"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Base Cost</span><span x-text="'$' + ((summary.concrete.raw_rate * summary.concrete.volume) / 100).toFixed(2)"></span></div>
+                                <template x-if="summary.concrete.travel > 0"><div class="flex justify-between"><span class="text-slate-500">Delivery Surcharge</span><span x-text="'$' + (summary.concrete.travel / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.concrete.short_load_fee > 0"><div class="flex justify-between"><span class="text-slate-500">Short Load Fee</span><span x-text="'$' + (summary.concrete.short_load_fee / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.concrete.mix_additive > 0"><div class="flex justify-between"><span class="text-slate-500">Mix Additive</span><span x-text="'$' + (summary.concrete.mix_additive / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.concrete.colour_surcharge > 0"><div class="flex justify-between"><span class="text-slate-500">Colour Surcharge</span><span x-text="'$' + (summary.concrete.colour_surcharge / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.concrete.fibre_cost > 0"><div class="flex justify-between"><span class="text-slate-500">Fibre</span><span x-text="'$' + (summary.concrete.fibre_cost / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.concrete.time_effect > 0"><div class="flex justify-between"><span class="text-slate-500">Time of Day</span><span x-text="'$' + (summary.concrete.time_effect / 100).toFixed(2)"></span></div></template>
+                                <div class="flex justify-between text-orange-600 border-t border-slate-100 pt-1 mt-1"><span>Sell Rate</span><span x-text="'$' + (summary.concrete.sell_rate / 100).toFixed(2) + '/m³'"></span></div>
+                                <div class="flex justify-between items-baseline font-medium border-t border-slate-100 pt-1 mt-1"><span>Concrete Total</span><span x-text="'$' + (summary.concrete.total / 100).toFixed(2)"></span></div>
+                            </div>
+                        </div>
+                        <div x-data="{ open: true }" class="border-t border-slate-100 pt-3">
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-sky-400"></span>Setup</button>
+                            <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
+                                <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Materials</p>
+                                <template x-for="item in summary.setup.items" :key="item.name"><div class="flex justify-between" x-show="item.cost > 0"><span class="text-slate-500" x-text="item.name"></span><span x-text="'$' + (item.cost / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.setup.hour_details.length > 0">
+                                    <div class="border-t border-slate-100 pt-1 mt-2">
+                                        <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Labour Breakdown</p>
+                                        <template x-for="d in summary.setup.hour_details" :key="d.task"><div class="flex justify-between"><span class="text-slate-500" x-text="d.task"></span><span x-text="d.hours.toFixed(2) + ' hrs'"></span></div></template>
+                                        <div class="flex justify-between font-medium border-t border-slate-100 pt-1 mt-1"><span class="text-slate-700">Total Task Hours</span><span x-text="summary.setup.manhours.toFixed(2) + ' hrs'"></span></div>
+                                    </div>
+                                </template>
+                                <div class="flex justify-between text-orange-600 border-t border-slate-100 pt-1 mt-1"><span>Labour (<span x-text="summary.setup.labour_hours.toFixed(1)"></span>hrs)</span><span x-text="'$' + (summary.setup.labour_cost / 100).toFixed(2)"></span></div>
+                            </div>
+                        </div>
+                        <div x-data="{ open: true }" class="border-t border-slate-100 pt-3">
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-orange-400"></span>Pour</button>
+                            <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
+                                <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Materials</p>
+                                <template x-for="item in summary.pour.items" :key="item.name"><div class="flex justify-between" x-show="item.cost > 0"><span class="text-slate-500" x-text="item.name"></span><span x-text="'$' + (item.cost / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.pour.pour_hour_details.length > 0">
+                                    <div class="border-t border-slate-100 pt-1 mt-2">
+                                        <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Pour Time Breakdown</p>
+                                        <template x-for="d in summary.pour.pour_hour_details" :key="d.task"><div class="flex justify-between"><span class="text-slate-500" x-text="d.task"></span><span x-text="d.hours.toFixed(2) + ' hrs'"></span></div></template>
+                                    </div>
+                                </template>
+                                <template x-if="summary.pour.finish_hour_details.length > 0">
+                                    <div class="border-t border-slate-100 pt-1 mt-2">
+                                        <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Finish Time Breakdown</p>
+                                        <template x-for="d in summary.pour.finish_hour_details" :key="d.task"><div class="flex justify-between"><span class="text-slate-500" x-text="d.task"></span><span x-text="d.hours.toFixed(2) + ' hrs'"></span></div></template>
+                                    </div>
+                                </template>
+                                <div class="flex justify-between text-orange-600 border-t border-slate-100 pt-1 mt-1"><span>Labour (<span x-text="summary.pour.labour_hours.toFixed(1)"></span>hrs)</span><span x-text="'$' + (summary.pour.labour_cost / 100).toFixed(2)"></span></div>
+                            </div>
+                        </div>
+                        <template x-if="summary.vehicle_travel && summary.vehicle_travel.distance_km > 0">
+                        <div x-data="{ open: false }" class="border-t border-slate-100 pt-3">
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-purple-400"></span>Vehicle Travel</button>
+                            <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
+                                <div class="flex justify-between"><span class="text-slate-500">Distance from Base</span><span x-text="summary.vehicle_travel.distance_km + ' km'"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Return Trip</span><span x-text="summary.vehicle_travel.return_km + ' km'"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Rate</span><span x-text="'$' + (summary.vehicle_travel.per_km_cents / 100).toFixed(2) + '/km'"></span></div>
+                                <div class="border-t border-slate-100 pt-1 mt-1">
+                                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Per-km Breakdown</p>
+                                    <template x-for="(val, key) in summary.vehicle_travel.rates" :key="key">
+                                        <div class="flex justify-between"><span class="text-slate-400" x-text="key.replace(/_/g, ' ')"></span><span class="text-slate-500" x-text="val.toFixed(1) + '¢/km'"></span></div>
+                                    </template>
+                                </div>
+                                <div class="flex justify-between font-medium border-t border-slate-100 pt-1 mt-1"><span class="text-purple-700">Pro4x Total</span><span x-text="'$' + (summary.vehicle_travel.total / 100).toFixed(2)"></span></div>
+                            </div>
+                        </div>
+                        </template>
+                        <template x-if="summary.other && (summary.other.travel > 0 || summary.other.pump > 0 || summary.other.overhead > 0)">
+                        <div x-data="{ open: false }" class="border-t border-slate-100 pt-3">
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-slate-400"></span>Other Costs</button>
+                            <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
+                                <template x-if="summary.other.travel > 0"><div class="flex justify-between"><span class="text-slate-500">Travel (calculator)</span><span x-text="'$' + (summary.other.travel / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.other.pump > 0"><div class="flex justify-between"><span class="text-slate-500">Pump</span><span x-text="'$' + (summary.other.pump / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.other.overhead > 0"><div class="flex justify-between"><span class="text-slate-500">Overhead</span><span x-text="'$' + (summary.other.overhead / 100).toFixed(2)"></span></div></template>
+                            </div>
+                        </div>
+                        </template>
+                    </div>
+                    <!-- Financials tab -->
+                    <div x-show="sidebarTab === 'financials'" class="space-y-3 text-xs">
+                        <div class="space-y-1">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Crew Rates</p>
+                            <div class="flex justify-between text-slate-500"><span>Raw</span><span x-text="'$' + (summary.payment.crew_rate_raw / 100).toFixed(2) + '/hr'"></span></div>
+                            <div class="flex justify-between text-orange-600"><span>Sell</span><span x-text="'$' + (summary.payment.crew_rate_sell / 100).toFixed(2) + '/hr'"></span></div>
+                        </div>
+                        <div class="border-t border-slate-200 pt-3 space-y-1">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Account Buckets (Total)</p>
+                            <div class="flex justify-between text-amber-700"><span>Operations</span><span class="font-medium" x-text="'$' + ((summary.allocation.operations || 0) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-red-700"><span>GST/PAYG</span><span class="font-medium" x-text="'$' + (((summary.allocation.gst || 0) + (summary.allocation.payg || 0)) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-sky-700"><span>Super</span><span class="font-medium" x-text="'$' + ((summary.allocation.super || 0) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-blue-700"><span>Wages</span><span class="font-medium" x-text="'$' + ((summary.allocation.wages || 0) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-indigo-700"><span>Workcover</span><span class="font-medium" x-text="'$' + ((summary.allocation.workcover || 0) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-purple-700"><span>Pro4x Account</span><span class="font-medium" x-text="'$' + ((summary.allocation.pro4x || 0) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-emerald-700 font-medium border-t border-slate-100 pt-1 mt-1"><span>Profit Draw</span><span class="font-bold" x-text="'$' + ((summary.allocation.profit_draw || 0) / 100).toFixed(2)"></span></div>
+                        </div>
+                        <div x-data="{ allocOpen: false }" class="border-t border-slate-200 pt-3">
+                            <button @click="allocOpen = !allocOpen" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="allocOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-emerald-400"></span>Payment Allocation</button>
+                            <div x-show="allocOpen" class="mt-3 space-y-3 text-xs">
+                                <template x-for="(stage, idx) in (summary.allocation.per_payment || [])" :key="stage.name">
+                                    <div class="rounded-xl border border-slate-200 overflow-hidden">
+                                        <div class="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200"><span class="font-semibold text-slate-800 text-xs" x-text="stage.name"></span><span class="font-bold text-sm" x-text="formatCurrency(stage.amount_cents)"></span></div>
+                                        <div class="px-3 py-2 space-y-0">
+                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-amber-700">Operations</span><span class="font-medium text-amber-800" x-text="'$' + (stage.operations / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-red-700">GST/PAYG</span><span class="font-medium text-red-800" x-text="'$' + (stage.gst_payg / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-sky-700">Super</span><span class="font-medium text-sky-800" x-text="'$' + (stage.super / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-blue-700">Wages</span><span class="font-medium text-blue-800" x-text="'$' + (stage.wages / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-indigo-700">Workcover</span><span class="font-medium text-indigo-800" x-text="'$' + (stage.workcover / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-purple-700">Pro4x Account</span><span class="font-medium text-purple-800" x-text="'$' + (stage.pro4x / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1"><span class="text-emerald-700 font-medium">Profit</span><span class="font-bold text-emerald-800" x-text="'$' + (stage.profit_draw / 100).toFixed(2)"></span></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function quoteCalculator() {
+    return {
+        // Form state
+        form: {
+            customer_id: {% if quote and quote.customer_id %}{{ quote.customer_id }}{% elif customer %}{{ customer.id }}{% else %}null{% endif %},
+            job_name: {{ (quote.job_name or '') | tojson }},
+            job_type: {{ (quote.job_type or '') | tojson }},
+            job_address: {{ (quote.job_address or '') | tojson }},
+            distance_km: {{ quote.calculator_input.get('distance_km', 0) if quote and quote.calculator_input else 0 }},
+            concrete_distance_km: {{ quote.calculator_input.get('concrete_distance_km', 0) if quote and quote.calculator_input else 0 }},
+            notes: {{ (quote.notes if quote and quote.notes else '') | tojson }},
+
+            // Slab
+            slab_area: {{ quote.calculator_input.get('slab_area', 0) if quote and quote.calculator_input else 0 }},
+            slab_thickness: {{ quote.calculator_input.get('slab_thickness', 100) if quote and quote.calculator_input else 100 }},
+            edge_formwork: {{ quote.calculator_input.get('edge_formwork', 0) if quote and quote.calculator_input else 0 }},
+            internal_formwork: {{ quote.calculator_input.get('internal_formwork', 0) if quote and quote.calculator_input else 0 }},
+            control_joints: {{ quote.calculator_input.get('control_joints', 0) if quote and quote.calculator_input else 0 }},
+            isolation_joints: {{ quote.calculator_input.get('isolation_joints', 0) if quote and quote.calculator_input else 0 }},
+            dowel_bars: {{ quote.calculator_input.get('dowel_bars', 0) if quote and quote.calculator_input else 0 }},
+            fence_sheeting: {{ quote.calculator_input.get('fence_sheeting', 0) if quote and quote.calculator_input else 0 }},
+            steps: {{ quote.calculator_input.get('steps', 0) if quote and quote.calculator_input else 0 }},
+            rebates: {{ quote.calculator_input.get('rebates', 0) if quote and quote.calculator_input else 0 }},
+
+            // Pier holes
+            pier_holes: {{ quote.calculator_input.get('pier_holes', 0) if quote and quote.calculator_input else 0 }},
+            pier_diameter: {{ quote.calculator_input.get('pier_diameter', 300) if quote and quote.calculator_input else 300 }},
+            pier_depth: {{ quote.calculator_input.get('pier_depth', 600) if quote and quote.calculator_input else 600 }},
+            pier_starters: {{ quote.calculator_input.get('pier_starters', 4) if quote and quote.calculator_input else 4 }},
+
+            // Edge beams
+            edge_beams: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('edge_beams') else 'false' }},
+            edge_beam_length: {{ quote.calculator_input.get('edge_beam_length', 0) if quote and quote.calculator_input else 0 }},
+            edge_beam_depth: {{ quote.calculator_input.get('edge_beam_depth', 200) if quote and quote.calculator_input else 200 }},
+            edge_beam_width: {{ quote.calculator_input.get('edge_beam_width', 300) if quote and quote.calculator_input else 300 }},
+
+            // Subbase
+            subbase_thickness: {{ quote.calculator_input.get('subbase_thickness', 0) if quote and quote.calculator_input else 0 }},
+            compaction: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('compaction') else 'false' }},
+            delivery_distance_km: {{ quote.calculator_input.get('delivery_distance_km', 0) if quote and quote.calculator_input else 0 }},
+
+            // Excavation
+            excavation: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('excavation') else 'false' }},
+            excavation_depth: {{ quote.calculator_input.get('excavation_depth', 0) if quote and quote.calculator_input else 0 }},
+            dig_method: {{ (quote.calculator_input.get('dig_method', 'hand') if quote and quote.calculator_input else 'hand') | tojson }},
+            excavation_disposal: {{ (quote.calculator_input.get('excavation_disposal', 'none') if quote and quote.calculator_input else 'none') | tojson }},
+            soil_type: {{ (quote.calculator_input.get('soil_type', 'soil') if quote and quote.calculator_input else 'soil') | tojson }},
+
+            // Equipment hire
+            pressure_washer: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('pressure_washer') else 'false' }},
+            pressure_washer_duration: {{ (quote.calculator_input.get('pressure_washer_duration', 'half') if quote and quote.calculator_input else 'half') | tojson }},
+
+            // Concrete removal
+            concrete_removal: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('concrete_removal') else 'false' }},
+            removal_area: {{ quote.calculator_input.get('removal_area', 0) if quote and quote.calculator_input else 0 }},
+            removal_thickness: {{ quote.calculator_input.get('removal_thickness', 100) if quote and quote.calculator_input else 100 }},
+            removal_reinforced: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('removal_reinforced') else 'false' }},
+            removal_method: {{ (quote.calculator_input.get('removal_method', 'manual') if quote and quote.calculator_input else 'manual') | tojson }},
+            removal_disposal: {{ (quote.calculator_input.get('removal_disposal', 'skip_bin') if quote and quote.calculator_input else 'skip_bin') | tojson }},
+
+            // Plumbing & Drainage
+            drainage: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('drainage') else 'false' }},
+            plumber_hours: {{ quote.calculator_input.get('plumber_hours', 0) if quote and quote.calculator_input else 0 }},
+            plumber_rate: {{ quote.calculator_input.get('plumber_rate', 9500) if quote and quote.calculator_input else 9500 }},
+            plumber_rate_display: {{ (quote.calculator_input.get('plumber_rate', 9500) / 100) if quote and quote.calculator_input else 95 }},
+            plumber_materials_cents: {{ quote.calculator_input.get('plumber_materials_cents', 0) if quote and quote.calculator_input else 0 }},
+            plumber_materials_display: {{ (quote.calculator_input.get('plumber_materials_cents', 0) / 100) if quote and quote.calculator_input else 0 }},
+            plumber_description: {{ (quote.calculator_input.get("plumber_description", "") if quote and quote.calculator_input else "") | tojson }},
+            // Legacy drain fields (for backward compat with old saved quotes)
+            drain_pits_300: {{ quote.calculator_input.get('drain_pits_300', 0) if quote and quote.calculator_input else 0 }},
+            drain_pits_450: {{ quote.calculator_input.get('drain_pits_450', 0) if quote and quote.calculator_input else 0 }},
+            drain_centralising_pits: {{ quote.calculator_input.get('drain_centralising_pits', 0) if quote and quote.calculator_input else 0 }},
+            drain_grates_standard: {{ quote.calculator_input.get('drain_grates_standard', 0) if quote and quote.calculator_input else 0 }},
+            drain_grates_heavy: {{ quote.calculator_input.get('drain_grates_heavy', 0) if quote and quote.calculator_input else 0 }},
+            drain_surface_drain_lm: {{ quote.calculator_input.get('drain_surface_drain_lm', 0) if quote and quote.calculator_input else 0 }},
+            drain_ag_pipe_lm: {{ quote.calculator_input.get('drain_ag_pipe_lm', 0) if quote and quote.calculator_input else 0 }},
+            drain_stormwater_100_lm: {{ quote.calculator_input.get('drain_stormwater_100_lm', 0) if quote and quote.calculator_input else 0 }},
+            drain_stormwater_150_lm: {{ quote.calculator_input.get('drain_stormwater_150_lm', 0) if quote and quote.calculator_input else 0 }},
+            drain_tpiece_connections: {{ quote.calculator_input.get('drain_tpiece_connections', 0) if quote and quote.calculator_input else 0 }},
+            drain_trench_lm: {{ quote.calculator_input.get('drain_trench_lm', 0) if quote and quote.calculator_input else 0 }},
+            drain_relocations: {{ quote.calculator_input.get('drain_relocations', 0) if quote and quote.calculator_input else 0 }},
+            drain_labour_hrs: {{ quote.calculator_input.get('drain_labour_hrs', 0) if quote and quote.calculator_input else 0 }},
+
+            // Concrete spec
+            coloured_concrete: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('coloured_concrete') else 'false' }},
+            concrete_colour: {{ (quote.calculator_input.get('concrete_colour', '') if quote and quote.calculator_input else '') | tojson }},
+            concrete_grade: {{ (quote.calculator_input.get('concrete_grade', 'N32') if quote and quote.calculator_input else 'N32') | tojson }},
+            mix_additive: {{ (quote.calculator_input.get('mix_additive', 'None') if quote and quote.calculator_input else 'None') | tojson }},
+            concrete_fibre: {{ (quote.calculator_input.get('concrete_fibre', 'None') if quote and quote.calculator_input else 'None') | tojson }},
+            reinforcement: {{ (quote.calculator_input.get('reinforcement', 'GFRP 450mm') if quote and quote.calculator_input else 'GFRP 450mm') | tojson }},
+            control_joint_method: {{ (quote.calculator_input.get('control_joint_method', 'Sawcut') if quote and quote.calculator_input else 'Sawcut') | tojson }},
+            control_joint_rate_dollars: {{ (quote.calculator_input.get('control_joint_rate', 0) / 100) if quote and quote.calculator_input and quote.calculator_input.get('control_joint_rate', 0) else 0 }},
+            season: {{ (quote.calculator_input.get('season', default_season) if quote and quote.calculator_input else default_season) | tojson }},
+            placement_method: {{ (quote.calculator_input.get('placement_method', 'Chute') if quote and quote.calculator_input else 'Chute') | tojson }},
+            falls_complexity_pct: {{ quote.calculator_input.get('falls_complexity_pct', 0) if quote and quote.calculator_input else 0 }},
+            fall_type: {{ (quote.calculator_input.get('fall_type', 'none') if quote and quote.calculator_input else 'none') | tojson }},
+            fall_pit_count: {{ quote.calculator_input.get('fall_pit_count', 0) if quote and quote.calculator_input else 0 }},
+            complexity: {{ (quote.calculator_input.get('complexity', 'Standard') if quote and quote.calculator_input else 'Standard') | tojson }},
+            pump_required: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('pump_required') else 'false' }},
+
+            // Labour
+            team_tier: {{ (quote.calculator_input.get('team_tier', 'Standard') if quote and quote.calculator_input else 'Standard') | tojson }},
+            setup_day_workers: [],
+            pour_day_workers: [],
+            setup_day_custom: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('setup_day_custom') else 'false' }},
+            setup_day_custom_rate: {{ quote.calculator_input.get('setup_day_custom_rate', 0) if quote and quote.calculator_input else 0 }},
+            setup_day_custom_workers: {{ quote.calculator_input.get('setup_day_custom_workers', 1) if quote and quote.calculator_input else 1 }},
+            pour_day_custom: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('pour_day_custom') else 'false' }},
+            pour_day_custom_rate: {{ quote.calculator_input.get('pour_day_custom_rate', 0) if quote and quote.calculator_input else 0 }},
+            pour_day_custom_workers: {{ quote.calculator_input.get('pour_day_custom_workers', 1) if quote and quote.calculator_input else 1 }},
+
+            // Inclusions
+            inc_release_agent: {{ 'true' if not quote or (quote.calculator_input and quote.calculator_input.get('inc_release_agent', True)) else 'false' }},
+            inc_evap_retarder: {{ 'true' if not quote or (quote.calculator_input and quote.calculator_input.get('inc_evap_retarder', True)) else 'false' }},
+            inc_moisture_barrier: {{ 'true' if not quote or (quote.calculator_input and quote.calculator_input.get('inc_moisture_barrier', True)) else 'false' }},
+            inc_formwork_wear: {{ 'true' if not quote or (quote.calculator_input and quote.calculator_input.get('inc_formwork_wear', True)) else 'false' }},
+            inc_durability_enhancer: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('inc_durability_enhancer') else 'false' }},
+            inc_surface_retarder: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('inc_surface_retarder') else 'false' }},
+            inc_curing_compound: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('inc_curing_compound') else 'false' }},
+            inc_sealer: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('inc_sealer') else 'false' }},
+
+            // Concrete volume override
+            concrete_volume_override: {{ quote.calculator_input.get('concrete_volume_override', 0) if quote and quote.calculator_input else 0 }},
+
+            // Exposed aggregate
+            wash_off: {{ (quote.calculator_input.get('wash_off', 'N/A') if quote and quote.calculator_input else 'N/A') | tojson }},
+            acid_wash: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('acid_wash') else 'false' }},
+
+            // Pricing
+            tier: {{ (quote.calculator_input.get('tier', 'Standard') if quote and quote.calculator_input else 'Standard') | tojson }},
+            discount_type: 'percent',
+            discount_value: 0,
+            price_override_enabled: false,
+            price_override_value: 0,
+        },
+
+        // UI state
+        customerSearch: {% if quote and quote.customer_id %}{{ (customer.name if customer else "") | tojson }}{% elif customer %}{{ customer.name | tojson }}{% else %}""{% endif %},
+        customerResults: [],
+        showCustomerResults: false,
+        showProfitBreakdown: false,
+        sidebarTab: 'summary',
+        quoteNumber: {% if quote %}{{ quote.quote_number | tojson }}{% else %}""{% endif %},
+        availableWorkers: [],
+        isSaving: false,
+        calculating: false,
+        result: null,
+        debounceTimer: null,
+
+        // Wizard step navigation
+        currentStep: 1,
+        totalSteps: 6,
+        stepNames: ['Job Info', 'Slab & Formwork', 'Concrete Mix', 'Site Work', 'Labour & Extras', 'Review'],
+        nextStep() { if (this.currentStep < this.totalSteps) this.currentStep++; window.scrollTo({top: 0, behavior: 'smooth'}); },
+        prevStep() { if (this.currentStep > 1) this.currentStep--; window.scrollTo({top: 0, behavior: 'smooth'}); },
+        goToStep(n) { this.currentStep = n; window.scrollTo({top: 0, behavior: 'smooth'}); },
+
+        // Collapsible section state — essential sections open, optional collapsed
+        sections: {
+            s1: true, s2: true, s3: false, s4: false, s5: false, s6: false,
+            s7: true, s8: {% if quote %}true{% else %}false{% endif %}, s9: false
+        },
+
+        // Calculated volume (before override) - snapped to 0.2m³
+        get calculatedVolume() {
+            const vol = (this.form.slab_area || 0) * ((this.form.slab_thickness || 100) / 1000) * 1.08;
+            return Math.round(Math.ceil(Math.round(vol * 100) / 100 / 0.2) * 0.2 * 10) / 10;
+        },
+
+        // Snap value to nearest 0.2 increment (round up), avoids floating point bumps
+        snapTo02(val) {
+            return Math.round(Math.ceil(Math.round(val * 100) / 100 / 0.2) * 0.2 * 10) / 10;
+        },
+
+        // Suggested control joint lineal metres based on job type + slab area
+        // Pathway: joints every 1.25× the width (assume width from edge_formwork / 2 as proxy, or sqrt for small)
+        // Slab types: ~3m panel spacing in both directions
+        get suggestedJointsLm() {
+            const area = this.form.slab_area || 0;
+            const jobType = this.form.job_type || '';
+            if (area <= 0 || !jobType) return 0;
+
+            if (jobType === 'Pathway') {
+                // For pathways: use edge formwork as a proxy for length
+                // Edge formwork on a path is typically 2 × length (both sides)
+                // So length ≈ edge_formwork / 2, width ≈ area / length
+                const ef = this.form.edge_formwork || 0;
+                if (ef > 0) {
+                    const length = ef / 2;
+                    const width = area / length;
+                    // Joint spacing = 1.25 × width
+                    const spacing = width * 1.25;
+                    const numJoints = Math.max(0, Math.floor(length / spacing));
+                    return Math.round(numJoints * width * 10) / 10;
+                }
+                // No edge formwork — can't estimate pathway joints
+                return 0;
+            }
+
+            // Slab-type jobs: divide into ~3m panels
+            const side = Math.sqrt(area);
+            // Joints per direction = cuts needed to divide into ~3m panels
+            const jointsPerDir = Math.max(0, Math.ceil(side / 3) - 1);
+            // Total LM = joints in each direction × the perpendicular side length
+            const totalLm = jointsPerDir * side * 2;
+            return Math.round(totalLm * 10) / 10;
+        },
+
+        // Calculated falls complexity % from fall_type + pit count (mirrors backend logic)
+        get calculatedFallsPct() {
+            const type = this.form.fall_type || 'none';
+            if (type === 'none') return 0;
+            if (type === 'minimal') return 8;
+            const pits = Math.max(1, this.form.fall_pit_count || 1);
+            if (type === 'pits') return Math.min(100, 12 + (pits - 1) * 5);
+            if (type === 'complex_pits') return Math.min(100, 20 + (pits - 1) * 8);
+            // Legacy fall_type values from old saved quotes
+            if (type === 'single') return 5;
+            if (type === 'strip_1way') return 8;
+            if (type === 'strip_2way') return 12;
+            if (type === 'small_pits') return Math.min(100, 12 + (pits - 1) * 5);
+            return 0;
+        },
+
+        // Computed properties - Summary object for detailed display
+        get summary() {
+            const r = this.result || {};
+            const lineItems = r.line_items || [];
+            const area = this.form.slab_area || 1;
+
+            // Helper to find line item by description pattern
+            const findItem = (pattern) => {
+                const item = lineItems.find(i => i.description && i.description.toLowerCase().includes(pattern.toLowerCase()));
+                return item ? (item.total_cents || 0) : 0;
+            };
+
+            // Markup helper — mirrors backend get_material_markup()
+            const tier = this.form.tier || 'Standard';
+            const markupTiers = [
+                {max: 500, Economy: 0.25, Standard: 0.30, Premium: 0.35},
+                {max: 1500, Economy: 0.20, Standard: 0.25, Premium: 0.30},
+                {max: 5000, Economy: 0.15, Standard: 0.20, Premium: 0.25},
+                {max: 15000, Economy: 0.125, Standard: 0.15, Premium: 0.185},
+                {max: 99999999, Economy: 0.08, Standard: 0.10, Premium: 0.125},
+            ];
+            const getMarkup = (unitCostCents) => {
+                for (const t of markupTiers) {
+                    if (unitCostCents <= t.max) return t[tier] || t.Standard;
+                }
+                return 0.15;
+            };
+            // Default markup % for small items (unit cost < $5)
+            const defaultPct = getMarkup(500);
+            const mp = (cost) => Math.round(cost * defaultPct);
+
+            // === CONCRETE ===
+            const concreteTotal = r.concrete_cost_cents || 0;
+            const additiveCost = r.additive_cost_cents || 0;
+            const colourSurcharge = r.colour_surcharge_cents || 0;
+            const fibreCost = r.fibre_cost_cents || 0;
+            const concreteTravelCost = r.concrete_travel_cents || 0;
+            const shortLoadFee = r.short_load_fee_cents || 0;
+            const volume = r.volume_m3 || (area * (this.form.slab_thickness / 1000) * 1.08);
+            // Derive raw rate and sell rate from concrete cost
+            const concreteRawRate = volume > 0 ? Math.round((concreteTotal - concreteTravelCost - additiveCost - shortLoadFee - colourSurcharge - fibreCost) / volume) : 0;
+            const concreteSellRate = volume > 0 ? Math.round(concreteTotal / volume) : 0;
+            // Time effect from mix additive
+            const additiveTimeMap = {
+                'Accelerator 1%': -30, 'Accelerator 2%': -45, 'Accelerator 3%': -75,
+                'Retarder 1%': 30, 'Retarder 2%': 45, 'Retarder 3%': 75, 'None': 0
+            };
+            const timeEffect = additiveTimeMap[this.form.mix_additive] || 0;
+
+            // === EXCAVATION (hours in setup, machine adds hire cost) ===
+            const excavationCost = r.excavation_cost_cents || 0;  // Machine hire cost (0 for hand dig)
+            const excVolume = this.form.excavation && this.form.excavation_depth > 0
+                ? (area * (this.form.excavation_depth / 1000)).toFixed(1) : 0;
+            const excDays = 0;
+
+            // === CONCRETE REMOVAL ===
+            const removalCost = r.removal_cost_cents || 0;
+            const removalArea = this.form.removal_area || 0;
+
+            // === SUBBASE ===
+            const subbaseCost = r.subbase_cost_cents || 0;
+            // Approximate subbase breakdown
+            const subbaseThicknessFactor = this.form.subbase_thickness / 37.5;
+            const subbaseMaterialCost = Math.round(354 * area * subbaseThicknessFactor);
+            // Delivery: $50 flat for ≤20km from Peards, +$1.50/km beyond
+            let subbaseDeliveryCost = this.form.subbase_thickness > 0 ? 5000 : 0;
+            if (this.form.subbase_thickness > 0 && this.form.delivery_distance_km > 20) {
+                subbaseDeliveryCost += Math.round((this.form.delivery_distance_km - 20) * 150);
+            }
+            // Compactor breakdown
+            const compactorFuelCost = this.form.compaction ? Math.round(0.015 * area * 200) : 0;
+            const compactorDepreciation = this.form.compaction ? Math.round(180000 / 20 / 100) : 0;
+            const compactorService = this.form.compaction ? Math.round(30000 / 100) : 0;
+
+            // === SETUP MATERIALS (excl subbase — now its own section) ===
+            const setupMaterials = r.setup_materials_cents || 0;
+            const setupMaterialsExSubbase = setupMaterials - subbaseCost;
+
+            // Build setup phase items (without Subbase — it has its own section now)
+            const reoCost = r.reo_cost_cents || 0;
+            const reoUnitCost = area > 0 ? Math.round(reoCost / area) : 0;
+            const reoPct = getMarkup(reoUnitCost);
+            const setupItems = [
+                { name: this.form.reinforcement || 'Reinforcement', cost: reoCost, profit: Math.round(reoCost * reoPct) },
+                { name: 'Dowels', cost: r.dowel_count > 0 ? Math.round(this.form.dowel_bars * 120) : 0, profit: r.dowel_count > 0 ? mp(Math.round(this.form.dowel_bars * 120)) : 0 },
+                { name: 'Moisture Barrier', cost: this.form.inc_moisture_barrier ? Math.round(area * 60) : 0, profit: this.form.inc_moisture_barrier ? mp(Math.round(area * 60)) : 0 },
+                { name: 'Formwork Wear', cost: this.form.inc_formwork_wear ? Math.round((this.form.edge_formwork + this.form.internal_formwork) * 30) : 0, profit: this.form.inc_formwork_wear ? mp(Math.round((this.form.edge_formwork + this.form.internal_formwork) * 30)) : 0 },
+                { name: 'Isolation Joints', cost: this.form.isolation_joints > 0 ? Math.round(this.form.isolation_joints * 207) : 0, profit: this.form.isolation_joints > 0 ? mp(Math.round(this.form.isolation_joints * 207)) : 0 },
+                { name: 'Fence Sheeting', cost: this.form.fence_sheeting > 0 ? Math.round(this.form.fence_sheeting * 700) : 0, profit: this.form.fence_sheeting > 0 ? mp(Math.round(this.form.fence_sheeting * 700)) : 0 },
+                { name: 'Steps', cost: this.form.steps > 0 ? this.form.steps * 7727 : 0, profit: this.form.steps > 0 ? mp(this.form.steps * 7727) : 0 },
+                { name: 'Rebates', cost: this.form.rebates > 0 ? Math.round(this.form.rebates * 1700) : 0, profit: this.form.rebates > 0 ? mp(Math.round(this.form.rebates * 1700)) : 0 },
+                { name: 'Pier Holes', cost: this.form.pier_holes > 0 ? (this.form.pier_holes * 2000 + this.form.pier_holes * this.form.pier_starters * 700) : 0, profit: this.form.pier_holes > 0 ? mp(this.form.pier_holes * 2000 + this.form.pier_holes * this.form.pier_starters * 700) : 0 },
+                { name: 'Edge Beams', cost: this.form.edge_beams && this.form.edge_beam_length > 0 ? Math.round(this.form.edge_beam_length * 1000) : 0, profit: this.form.edge_beams && this.form.edge_beam_length > 0 ? mp(Math.round(this.form.edge_beam_length * 1000)) : 0 },
+            ].filter(i => i.cost > 0);
+
+            // === POUR MATERIALS ===
+            const cjRate = r.control_joint_rate_used || (this.form.control_joint_method === 'Sawcut' ? 800 : 300);
+            const pourMaterials = r.pour_materials_cents || 0;
+            const concretePct = getMarkup(concreteRawRate);
+            const pourItems = [
+                { name: 'Concrete', cost: concreteTotal, profit: Math.round(concreteTotal * concretePct) },
+                { name: 'Evap Retarder', cost: this.form.inc_evap_retarder ? Math.round(area * 75) : 0, profit: this.form.inc_evap_retarder ? mp(Math.round(area * 75)) : 0 },
+                { name: 'Release Agent', cost: this.form.inc_release_agent ? Math.round(area * 30) : 0, profit: this.form.inc_release_agent ? mp(Math.round(area * 30)) : 0 },
+                { name: 'Control Joints', cost: this.form.control_joints > 0 ? Math.round(this.form.control_joints * cjRate) : 0, profit: this.form.control_joints > 0 ? mp(Math.round(this.form.control_joints * cjRate)) : 0 },
+                { name: 'Curing Compound', cost: this.form.inc_curing_compound ? Math.round(area * 217) : 0, profit: this.form.inc_curing_compound ? mp(Math.round(area * 217)) : 0 },
+                { name: 'Durability Enhancer', cost: this.form.inc_durability_enhancer ? Math.round(area * 280) : 0, profit: this.form.inc_durability_enhancer ? mp(Math.round(area * 280)) : 0 },
+                { name: 'Surface Retarder', cost: this.form.inc_surface_retarder ? Math.round(area * 205) : 0, profit: this.form.inc_surface_retarder ? mp(Math.round(area * 205)) : 0 },
+                { name: 'Sealer', cost: this.form.inc_sealer ? Math.round(area * 300) : 0, profit: this.form.inc_sealer ? mp(Math.round(area * 300)) : 0 },
+                { name: 'Equipment', cost: Math.round(area * 10), profit: mp(Math.round(area * 10)) },
+            ].filter(i => i.cost > 0);
+
+            // === INCLUSIONS ===
+            const inclusions = [
+                { name: 'Form Release Agent', enabled: this.form.inc_release_agent, cost: Math.round(area * 30) },
+                { name: 'Evaporation Retarder', enabled: this.form.inc_evap_retarder, cost: Math.round(area * 75) },
+                { name: 'Vapour Barrier', enabled: this.form.inc_moisture_barrier, cost: Math.round(area * 60) },
+                { name: 'Formwork Allowance', enabled: this.form.inc_formwork_wear, cost: Math.round((this.form.edge_formwork + this.form.internal_formwork) * 30) },
+                { name: 'Durability Enhancer', enabled: this.form.inc_durability_enhancer, cost: Math.round(area * 280) },
+                { name: 'Surface Retarder', enabled: this.form.inc_surface_retarder, cost: Math.round(area * 205) },
+                { name: 'Curing Compound', enabled: this.form.inc_curing_compound, cost: Math.round(area * 217) },
+                { name: 'Penetrating Sealer', enabled: this.form.inc_sealer, cost: Math.round(area * 300) },
+            ];
+
+            // === MATERIALS LIST ===
+            const reoSpacing = this.form.reinforcement.includes('GFRP') ?
+                parseInt(this.form.reinforcement.match(/\d+/)?.[0] || '450') : 200;
+            const materials = [
+                { name: 'Concrete', qty: volume.toFixed(2), unit: 'm³' },
+                { name: this.form.reinforcement, qty: this.form.reinforcement !== 'None' ? Math.ceil(area * 2 / reoSpacing * 10) : 0, unit: this.form.reinforcement.includes('Mesh') ? 'sheets' : 'bars' },
+                { name: 'Bar Chairs', qty: Math.ceil(area / 2), unit: 'pcs' },
+                { name: 'Tie Wire', qty: Math.ceil(area / 50), unit: 'rolls' },
+                { name: 'Moisture Barrier', qty: this.form.inc_moisture_barrier ? Math.ceil(area / 20) : 0, unit: 'rolls' },
+                { name: 'Release Agent', qty: this.form.inc_release_agent ? Math.ceil(area / 25) : 0, unit: 'L' },
+                { name: 'Evap Retarder', qty: this.form.inc_evap_retarder ? Math.ceil(area / 20) : 0, unit: 'L' },
+                { name: 'Isolation Foam', qty: this.form.isolation_joints > 0 ? Math.ceil(this.form.isolation_joints / 25) : 0, unit: 'rolls' },
+                { name: 'Sawcut Blades', qty: this.form.control_joint_method === 'Sawcut' && this.form.control_joints > 0 ? Math.ceil(this.form.control_joints / 100) : 0, unit: 'pcs' },
+            ].filter(m => parseFloat(m.qty) > 0);
+
+            // === LABOUR ===
+            const teamRates = {
+                'Lean': 20500, 'Standard': 22000, 'Premium': 27500
+            };
+            const hourlyRate = (this.setupDayRate > 0 ? this.setupDayRate * 100 : 0) ||
+                              teamRates[this.form.team_tier] || 21900;
+            const setupHours = r.setup_hours || 0;
+            const pourHours = r.pour_hours || 0;
+            const finishHours = r.finish_hours || 0;
+            const sawcutHours = r.sawcut_hours || 0;
+            const totalHours = setupHours + pourHours + finishHours;
+
+            const setupLabour = r.setup_labour_cents || Math.round(setupHours * hourlyRate);
+            const pourLabour = r.pour_labour_cents || Math.round(pourHours * hourlyRate);
+            const finishLabour = r.finish_labour_cents || Math.round(finishHours * hourlyRate);
+            const totalLabour = setupLabour + pourLabour + finishLabour;
+
+            // === OTHER COSTS ===
+            const travelCost = r.travel_cents || 0;
+            const pumpCost = this.form.pump_required ? Math.round(area * 3273) : 0;
+            const overheadCost = r.overhead_cents || 0;
+
+            // === TOTAL MATERIALS ===
+            const totalMaterials = (r.setup_materials_cents || 0) +
+                                   (r.pour_materials_cents || 0) +
+                                   (r.finish_materials_cents || 0);
+
+            // === VEHICLE TRAVEL (running costs + driving time) ===
+            const PRO4X_RATES = {
+                driving_time: 85.0, // cents/km (hourly rate for time driving)
+                car_payment: 31.5,  // cents/km ($9,917/yr)
+                fuel: 22.3,         // cents/km ($7,020/yr)
+                servicing: 5.7,     // cents/km ($1,800/yr)
+                insurance: 5.0,     // cents/km ($1,558/yr)
+                tyres: 3.3,         // cents/km ($1,050/yr)
+                rego: 2.8,          // cents/km ($886/yr)
+                ctp: 1.6,           // cents/km ($500/yr)
+                additives: 1.0,     // cents/km ($310/yr)
+            };
+            const pro4xPerKm = Object.values(PRO4X_RATES).reduce((a, b) => a + b, 0); // 158.2c/km
+            const distanceKm = this.form.distance_km || 0;
+            const pro4xReturnKm = distanceKm * 2; // return trip
+            const pro4xTotalCents = Math.round(pro4xReturnKm * pro4xPerKm); // in cents
+
+            // === 7-BUCKET ACCOUNT ALLOCATION ===
+            const PAYG_RATE = 0.17;      // 17% PAYG withholding
+            const SUPER_RATE = 0.12;     // 12% super guarantee
+            const WORKCOVER_RATE = 0.03; // 3% workcover
+
+            // Korbain's gross wages = labour_cost_cents (actual cost from calculator)
+            const grossWagesCents = r.labour_cost_cents || 0;
+            const paygWithheld = Math.round(grossWagesCents * PAYG_RATE);
+            const superAmount = Math.round(grossWagesCents * SUPER_RATE);
+            const workcover = Math.round(grossWagesCents * WORKCOVER_RATE);
+            const netWages = grossWagesCents - paygWithheld;
+
+            const subtotalCents = r.subtotal_cents || 0;
+            const gstAmount = r.gst_cents || 0;
+
+            // Calculate discount amount (mirrors finalTotal logic)
+            let discountCents = 0;
+            if (this.form.discount_value > 0) {
+                const totalIncGstRaw = r.total_cents || 0;
+                if (this.form.discount_type === 'percent') {
+                    discountCents = Math.round(totalIncGstRaw * this.form.discount_value / 100);
+                } else {
+                    discountCents = Math.round(this.form.discount_value * 100);
+                }
+            }
+            // Price override replaces the total — discount on the pre-override value is irrelevant
+            if (this.form.price_override_enabled && this.form.price_override_value > 0) {
+                const overrideTotal = this.form.price_override_value * 100;
+                const rawTotal = r.total_cents || 0;
+                // Discount in override mode = difference between raw total and override
+                discountCents = Math.max(0, rawTotal - overrideTotal);
+            }
+            // Discount reduces the ex-GST subtotal (profit absorbs the discount)
+            const discountExGst = Math.round(discountCents / 1.1);
+            const adjustedSubtotalCents = Math.max(0, subtotalCents - discountExGst);
+            const adjustedGst = Math.round(adjustedSubtotalCents * 0.1);
+
+            // Bucket values
+            const bucketOperations = totalMaterials + travelCost + pumpCost + overheadCost;
+            const bucketGstPayg = adjustedGst + paygWithheld;
+            const bucketSuper = superAmount;
+            const bucketWages = netWages;
+            const bucketWorkcover = workcover;
+            const bucketPro4x = pro4xTotalCents;
+            const bucketProfitDraw = Math.max(0, adjustedSubtotalCents - bucketOperations - grossWagesCents - bucketSuper - bucketWorkcover - bucketPro4x);
+
+            return {
+                concrete: {
+                    volume: r.volume_m3 || volume,
+                    raw_rate: concreteRawRate,
+                    sell_rate: concreteSellRate,
+                    mix_additive: additiveCost,
+                    colour_surcharge: colourSurcharge,
+                    fibre_cost: fibreCost,
+                    travel: concreteTravelCost,
+                    time_effect: timeEffect,
+                    short_load_fee: shortLoadFee,
+                    total: concreteTotal,
+                    profit: Math.round(concreteTotal * concretePct),
+                },
+                excavation: {
+                    show: r.show_excavation || false,
+                    volume: excVolume,
+                    days: excDays,
+                    soil: this.form.soil_type,
+                    total: excavationCost,
+                    profit: Math.round(excavationCost * getMarkup(excavationCost)),
+                },
+                removal: {
+                    show: r.show_removal || false,
+                    area: removalArea,
+                    thickness: this.form.removal_thickness || 100,
+                    volume: r.removal_volume_m3 || 0,
+                    method: this.form.removal_method || 'manual',
+                    disposal: this.form.removal_disposal || 'skip_bin',
+                    reinforced: this.form.removal_reinforced || false,
+                    sawcut: r.removal_sawcut_cents || 0,
+                    labour: r.removal_labour_cents || 0,
+                    disposal_cost: r.removal_disposal_cents || 0,
+                    total: removalCost,
+                    profit: Math.round(removalCost * getMarkup(removalCost)),
+                },
+                drainage: {
+                    show: r.show_drainage || false,
+                    total: r.drainage_cost_cents || 0,
+                    profit: Math.round((r.drainage_cost_cents || 0) * getMarkup(r.drainage_cost_cents || 0)),
+                },
+                subbase: {
+                    show: r.show_subbase || false,
+                    material: subbaseMaterialCost,
+                    delivery: subbaseDeliveryCost,
+                    compactor_fuel: compactorFuelCost,
+                    compactor_depreciation: compactorDepreciation,
+                    compactor_service: compactorService,
+                    total: subbaseCost,
+                    profit: Math.round(subbaseCost * getMarkup(354)),
+                },
+                setup: {
+                    items: setupItems,
+                    materials_subtotal: setupMaterialsExSubbase,
+                    labour_hours: setupHours,
+                    labour_cost: setupLabour,
+                    labour_profit: r.labour_margin_cents && totalHours > 0 ? Math.round((r.labour_margin_cents) * (setupHours / totalHours)) : 0,
+                    total: setupMaterialsExSubbase + setupLabour,
+                    hour_details: r.setup_hour_details || [],
+                    manhours: r.setup_manhours || 0,
+                    crew_count: this.form.setup_crew_count || 3,
+                },
+                pour: {
+                    items: pourItems,
+                    materials_subtotal: pourMaterials,
+                    labour_hours: pourHours + finishHours,
+                    labour_cost: pourLabour + finishLabour,
+                    labour_profit: r.labour_margin_cents && totalHours > 0 ? Math.round((r.labour_margin_cents) * ((pourHours + finishHours) / totalHours)) : 0,
+                    total: pourMaterials + pourLabour + finishLabour,
+                    pour_hour_details: r.pour_hour_details || [],
+                    finish_hour_details: r.finish_hour_details || [],
+                },
+                other: {
+                    travel: travelCost,
+                    pump: pumpCost,
+                    overhead: overheadCost,
+                },
+                totals: {
+                    hours: totalHours,
+                    materials: totalMaterials,
+                    labour: totalLabour,
+                },
+                pricing: {
+                    raw_cost: r.raw_cost_cents || 0,
+                    markup: r.markup_cents || 0,
+                    subtotal: adjustedSubtotalCents,
+                    gst: adjustedGst,
+                    total: this.finalTotal,
+                    discount: discountCents,
+                },
+                metrics: {
+                    rate_per_m2: area > 0 ? Math.round(this.finalTotal / area) : 0,
+                    profit: Math.max(0, (r.profit_cents || 0) - discountExGst),
+                },
+                payment: {
+                    crew_rate_raw: r.labour_cost_cents && totalHours > 0 ? Math.round(r.labour_cost_cents / totalHours) : hourlyRate,
+                    crew_rate_sell: totalLabour && totalHours > 0 ? Math.round(totalLabour / totalHours) : Math.round(hourlyRate * 1.1),
+                },
+                inclusions: inclusions,
+                materials: materials,
+                vehicle_travel: {
+                    distance_km: distanceKm,
+                    return_km: pro4xReturnKm,
+                    per_km_cents: pro4xPerKm,
+                    rates: PRO4X_RATES,
+                    total: pro4xTotalCents,
+                },
+                allocation: {
+                    operations: bucketOperations,
+                    gst_payg: bucketGstPayg,
+                    gst: adjustedGst,
+                    payg: paygWithheld,
+                    super: bucketSuper,
+                    wages: bucketWages,
+                    gross_wages: grossWagesCents,
+                    workcover: bucketWorkcover,
+                    pro4x: bucketPro4x,
+                    profit_draw: bucketProfitDraw,
+                    payg_rate: PAYG_RATE,
+                    super_rate: SUPER_RATE,
+                    workcover_rate: WORKCOVER_RATE,
+                    discount: discountCents,
+                    // Per-payment-stage allocation breakdown
+                    per_payment: (() => {
+                        const payments = this.result?.payments || [];
+                        const totalIncGst = this.finalTotal;
+                        if (totalIncGst === 0 || payments.length === 0) return [];
+                        return payments.map(p => {
+                            const pct = p.amount_cents / totalIncGst; // fraction of total
+                            return {
+                                name: p.name,
+                                amount_cents: p.amount_cents,
+                                pct: pct,
+                                operations: Math.round(bucketOperations * pct),
+                                gst_payg: Math.round(bucketGstPayg * pct),
+                                gst: Math.round(adjustedGst * pct),
+                                payg: Math.round(paygWithheld * pct),
+                                super: Math.round(bucketSuper * pct),
+                                wages: Math.round(bucketWages * pct),
+                                workcover: Math.round(bucketWorkcover * pct),
+                                pro4x: Math.round(bucketPro4x * pct),
+                                profit_draw: Math.round(bucketProfitDraw * pct),
+                            };
+                        });
+                    })(),
+                },
+            };
+        },
+
+        get setupDayRate() {
+            let rate = this.form.setup_day_workers.reduce((sum, id) => {
+                const worker = this.availableWorkers.find(w => w.id === parseInt(id));
+                return sum + (worker ? worker.hourly_rate_cents / 100 : 0);
+            }, 0);
+            if (this.form.setup_day_custom && this.form.setup_day_custom_rate > 0) {
+                rate += this.form.setup_day_custom_rate * (this.form.setup_day_custom_workers || 1);
+            }
+            return rate;
+        },
+
+        get pourDayRate() {
+            let rate = this.form.pour_day_workers.reduce((sum, id) => {
+                const worker = this.availableWorkers.find(w => w.id === parseInt(id));
+                return sum + (worker ? worker.hourly_rate_cents / 100 : 0);
+            }, 0);
+            if (this.form.pour_day_custom && this.form.pour_day_custom_rate > 0) {
+                rate += this.form.pour_day_custom_rate * (this.form.pour_day_custom_workers || 1);
+            }
+            return rate;
+        },
+
+        // Cost rates — actual gross wages (for PAYG/super/workcover calc)
+        get setupDayCostRate() {
+            let rate = this.form.setup_day_workers.reduce((sum, id) => {
+                const worker = this.availableWorkers.find(w => w.id === parseInt(id));
+                return sum + (worker ? (worker.cost_rate_cents || 0) / 100 : 0);
+            }, 0);
+            if (this.form.setup_day_custom && this.form.setup_day_custom_rate > 0) {
+                rate += this.form.setup_day_custom_rate * (this.form.setup_day_custom_workers || 1);
+            }
+            return rate;
+        },
+
+        get pourDayCostRate() {
+            let rate = this.form.pour_day_workers.reduce((sum, id) => {
+                const worker = this.availableWorkers.find(w => w.id === parseInt(id));
+                return sum + (worker ? (worker.cost_rate_cents || 0) / 100 : 0);
+            }, 0);
+            if (this.form.pour_day_custom && this.form.pour_day_custom_rate > 0) {
+                rate += this.form.pour_day_custom_rate * (this.form.pour_day_custom_workers || 1);
+            }
+            return rate;
+        },
+
+        // Effective rates - fallback to team tier when no workers selected
+        get teamTierRate() {
+            const rates = {
+                'Lean': 205, 'Standard': 220, 'Premium': 275
+            };
+            return rates[this.form.team_tier] || 220;
+        },
+
+        get effectiveSetupRate() {
+            return this.setupDayRate > 0 ? this.setupDayRate : this.teamTierRate;
+        },
+
+        get effectivePourRate() {
+            return this.pourDayRate > 0 ? this.pourDayRate : this.teamTierRate;
+        },
+
+        get finalTotal() {
+            if (!this.result) return 0;
+
+            let total = this.result.total_cents || 0;
+
+            // Apply discount
+            if (this.form.discount_value > 0) {
+                if (this.form.discount_type === 'percent') {
+                    total = total * (1 - this.form.discount_value / 100);
+                } else {
+                    total = total - (this.form.discount_value * 100);
+                }
+            }
+
+            // Apply price override
+            if (this.form.price_override_enabled && this.form.price_override_value > 0) {
+                total = this.form.price_override_value * 100;
+            }
+
+            return Math.max(0, total);
+        },
+
+        // Methods
+        async init() {
+            await this.fetchWorkers();
+            if (!this.quoteNumber) {
+                await this.fetchNextQuoteNumber();
+            }
+            if (this.form.slab_area > 0) {
+                await this.doCalculate();
+            }
+        },
+
+        async fetchWorkers() {
+            try {
+                const response = await fetch('/workers/api/list?active_only=true&page_size=100');
+                const data = await response.json();
+                this.availableWorkers = data.items || [];
+            } catch (error) {
+                console.error('Error fetching workers:', error);
+            }
+        },
+
+        async fetchNextQuoteNumber() {
+            try {
+                const response = await fetch('/quotes/api/next-number');
+                const data = await response.json();
+                this.quoteNumber = data.quote_number;
+            } catch (error) {
+                console.error('Error fetching quote number:', error);
+                this.quoteNumber = 'Q-XXXX-XXXXX';
+            }
+        },
+
+        async searchCustomers() {
+            if (this.customerSearch.length < 2) {
+                this.customerResults = [];
+                return;
+            }
+            try {
+                const response = await fetch(`/customers/api/list?q=${encodeURIComponent(this.customerSearch)}&page_size=10`);
+                const data = await response.json();
+                this.customerResults = data.items || [];
+                this.showCustomerResults = true;
+            } catch (error) {
+                console.error('Error searching customers:', error);
+                this.customerResults = [];
+            }
+        },
+
+        selectCustomer(customer) {
+            this.form.customer_id = customer.id;
+            this.customerSearch = customer.name;
+            this.customerResults = [];
+            this.showCustomerResults = false;
+        },
+
+        recalculate() {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => {
+                this.doCalculate();
+            }, 300);
+        },
+
+        async doCalculate() {
+            if (this.form.slab_area <= 0) {
+                this.result = null;
+                return;
+            }
+
+            this.calculating = true;
+            try {
+                // Calculate worker hourly rates (sell = what we charge, cost = actual gross wage)
+                const setupRate = this.setupDayRate > 0 ? Math.round(this.setupDayRate * 100) : 0;
+                const pourRate = this.pourDayRate > 0 ? Math.round(this.pourDayRate * 100) : 0;
+                const setupCostRate = this.setupDayCostRate > 0 ? Math.round(this.setupDayCostRate * 100) : 0;
+                const pourCostRate = this.pourDayCostRate > 0 ? Math.round(this.pourDayCostRate * 100) : 0;
+
+                // Count setup workers (selected workers + custom if enabled)
+                const setupCrewCount = this.form.setup_day_workers.length + (this.form.setup_day_custom ? (this.form.setup_day_custom_workers || 1) : 0);
+
+                const calcInput = {
+                    ...this.form,
+                    control_joint_rate: this.form.control_joint_rate_dollars ? Math.round(this.form.control_joint_rate_dollars * 100) : 0,
+                    setup_hourly_rate: setupRate,
+                    pour_hourly_rate: pourRate,
+                    setup_cost_rate: setupCostRate,
+                    pour_cost_rate: pourCostRate,
+                    setup_crew_count: setupCrewCount || 3,
+                };
+
+                const response = await fetch('/quotes/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(calcInput),
+                });
+                this.result = await response.json();
+            } catch (error) {
+                console.error('Calculate error:', error);
+            } finally {
+                this.calculating = false;
+            }
+        },
+
+        formatCurrency(cents) {
+            if (!cents && cents !== 0) return '$0';
+            return '$' + (cents / 100).toLocaleString('en-AU', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        },
+
+        async saveQuote(action) {
+            if (!this.form.customer_id) {
+                alert('Please select a customer');
+                return;
+            }
+
+            if (this.form.slab_area <= 0) {
+                alert('Please enter a slab area');
+                return;
+            }
+
+            this.isSaving = true;
+            try {
+                // Prepare calculator input - the backend expects calculator_input in this structure
+                const setupRate = this.setupDayRate > 0 ? Math.round(this.setupDayRate * 100) : 0;
+                const pourRate = this.pourDayRate > 0 ? Math.round(this.pourDayRate * 100) : 0;
+                const setupCostRate = this.setupDayCostRate > 0 ? Math.round(this.setupDayCostRate * 100) : 0;
+                const pourCostRate = this.pourDayCostRate > 0 ? Math.round(this.pourDayCostRate * 100) : 0;
+
+                const payload = {
+                    customer_id: this.form.customer_id,
+                    job_name: this.form.job_name,
+                    job_type: this.form.job_type || null,
+                    job_address: this.form.job_address,
+                    notes: this.form.notes,
+                    calculator_input: {
+                        slab_area: this.form.slab_area,
+                        slab_thickness: this.form.slab_thickness,
+                        edge_formwork: this.form.edge_formwork,
+                        internal_formwork: this.form.internal_formwork,
+                        control_joints: this.form.control_joints,
+                        isolation_joints: this.form.isolation_joints,
+                        dowel_bars: this.form.dowel_bars,
+                        fence_sheeting: this.form.fence_sheeting,
+                        steps: this.form.steps,
+                        rebates: this.form.rebates,
+                        pier_holes: this.form.pier_holes,
+                        pier_diameter: this.form.pier_diameter,
+                        pier_depth: this.form.pier_depth,
+                        pier_starters: this.form.pier_starters,
+                        edge_beams: this.form.edge_beams,
+                        edge_beam_length: this.form.edge_beam_length,
+                        edge_beam_depth: this.form.edge_beam_depth,
+                        edge_beam_width: this.form.edge_beam_width,
+                        subbase_thickness: this.form.subbase_thickness,
+                        compaction: this.form.compaction,
+                        delivery_distance_km: this.form.delivery_distance_km,
+                        excavation: this.form.excavation,
+                        excavation_depth: this.form.excavation_depth,
+                        dig_method: this.form.dig_method,
+                        excavation_disposal: this.form.excavation_disposal,
+                        soil_type: this.form.soil_type,
+                        pressure_washer: this.form.pressure_washer,
+                        pressure_washer_duration: this.form.pressure_washer_duration,
+                        concrete_removal: this.form.concrete_removal,
+                        removal_area: this.form.removal_area,
+                        removal_thickness: this.form.removal_thickness,
+                        removal_reinforced: this.form.removal_reinforced,
+                        removal_method: this.form.removal_method,
+                        removal_disposal: this.form.removal_disposal,
+                        concrete_grade: this.form.concrete_grade,
+                        concrete_volume_override: this.form.concrete_volume_override || 0,
+                        coloured_concrete: this.form.coloured_concrete,
+                        concrete_colour: this.form.concrete_colour,
+                        mix_additive: this.form.mix_additive,
+                        concrete_fibre: this.form.concrete_fibre,
+                        reinforcement: this.form.reinforcement,
+                        control_joint_method: this.form.control_joint_method,
+                        control_joint_rate: this.form.control_joint_rate_dollars ? Math.round(this.form.control_joint_rate_dollars * 100) : 0,
+                        pump_required: this.form.pump_required,
+                        placement_method: this.form.placement_method,
+                        season: this.form.season,
+                        falls_complexity_pct: this.form.falls_complexity_pct,
+                        fall_type: this.form.fall_type || 'none',
+                        fall_pit_count: this.form.fall_pit_count || 0,
+                        complexity: this.form.complexity,
+                        tier: this.form.tier,
+                        team_tier: this.form.team_tier,
+                        distance_km: this.form.distance_km,
+                        concrete_distance_km: this.form.concrete_distance_km,
+                        inc_release_agent: this.form.inc_release_agent,
+                        inc_evap_retarder: this.form.inc_evap_retarder,
+                        inc_moisture_barrier: this.form.inc_moisture_barrier,
+                        inc_formwork_wear: this.form.inc_formwork_wear,
+                        inc_durability_enhancer: this.form.inc_durability_enhancer,
+                        inc_surface_retarder: this.form.inc_surface_retarder,
+                        inc_curing_compound: this.form.inc_curing_compound,
+                        inc_sealer: this.form.inc_sealer,
+                        wash_off: this.form.wash_off,
+                        acid_wash: this.form.acid_wash,
+                        setup_hourly_rate: setupRate,
+                        pour_hourly_rate: pourRate,
+                        setup_cost_rate: setupCostRate,
+                        pour_cost_rate: pourCostRate,
+                        setup_day_custom: this.form.setup_day_custom,
+                        setup_day_custom_rate: this.form.setup_day_custom_rate,
+                        setup_day_custom_workers: this.form.setup_day_custom_workers || 1,
+                        pour_day_custom: this.form.pour_day_custom,
+                        pour_day_custom_rate: this.form.pour_day_custom_rate,
+                        pour_day_custom_workers: this.form.pour_day_custom_workers || 1,
+                        // Plumbing & Drainage
+                        drainage: this.form.drainage,
+                        plumber_hours: this.form.plumber_hours || 0,
+                        plumber_rate: this.form.plumber_rate || 9500,
+                        plumber_materials_cents: this.form.plumber_materials_cents || 0,
+                        plumber_description: this.form.plumber_description || '',
+                        // Legacy drain fields (for backward compat)
+                        drain_pits_300: this.form.drain_pits_300 || 0,
+                        drain_pits_450: this.form.drain_pits_450 || 0,
+                        drain_centralising_pits: this.form.drain_centralising_pits || 0,
+                        drain_grates_standard: this.form.drain_grates_standard || 0,
+                        drain_grates_heavy: this.form.drain_grates_heavy || 0,
+                        drain_surface_drain_lm: this.form.drain_surface_drain_lm || 0,
+                        drain_ag_pipe_lm: this.form.drain_ag_pipe_lm || 0,
+                        drain_stormwater_100_lm: this.form.drain_stormwater_100_lm || 0,
+                        drain_stormwater_150_lm: this.form.drain_stormwater_150_lm || 0,
+                        drain_tpiece_connections: this.form.drain_tpiece_connections || 0,
+                        drain_trench_lm: this.form.drain_trench_lm || 0,
+                        drain_relocations: this.form.drain_relocations || 0,
+                        drain_labour_hrs: this.form.drain_labour_hrs || 0,
+                    },
+                };
+
+                {% if quote %}
+                // Update existing quote
+                const response = await fetch('/quotes/api/{{ quote.id }}', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                {% else %}
+                // Create new quote
+                const response = await fetch('/quotes/api/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                {% endif %}
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(formatErrorDetail(data.detail, 'Error saving quote'));
+                }
+
+                // Redirect to preview page (send action goes to preview with send hint)
+                if (data.id) {
+                    if (action === 'send') {
+                        window.location.href = `/quotes/${data.id}/preview?action=send`;
+                    } else {
+                        window.location.href = `/quotes/${data.id}/preview`;
+                    }
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                alert(error.message || 'Failed to save quote');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        async generatePDF() {
+            {% if quote %}
+            window.open('/quotes/api/{{ quote.id }}/pdf', '_blank');
+            {% else %}
+            alert('Please save the quote first to generate a PDF');
+            {% endif %}
+        },
+
+        async duplicateQuote() {
+            {% if quote %}
+            try {
+                const response = await fetch('/quotes/api/{{ quote.id }}/duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const data = await response.json();
+                if (data.id) {
+                    window.location.href = `/quotes/${data.id}/edit`;
+                }
+            } catch (error) {
+                console.error('Duplicate error:', error);
+                alert('Failed to duplicate quote');
+            }
+            {% endif %}
+        },
+
+        resetForm() {
+            if (confirm('Reset all form fields? This cannot be undone.')) {
+                window.location.reload();
+            }
+        }
+    };
+}
+
+function addressAutocomplete() {
+    return {
+        query: '',
+        suggestions: [],
+        showDropdown: false,
+        loading: false,
+        resolved: false,
+
+        init() {
+            // Sync initial value from parent form
+            const parent = this.$el.closest('[x-data]');
+            if (parent && parent.__x) {
+                this.query = parent.__x.$data.form.job_address || '';
+            }
+        },
+
+        async search() {
+            if (this.query.length < 3) {
+                this.suggestions = [];
+                this.showDropdown = false;
+                return;
+            }
+            // Always sync typed text back to parent form
+            this.syncAddress(this.query);
+            this.resolved = false;
+            this.loading = true;
+            try {
+                const resp = await fetch('/quotes/api/places/autocomplete?q=' + encodeURIComponent(this.query));
+                if (resp.ok) {
+                    this.suggestions = await resp.json();
+                    this.showDropdown = this.suggestions.length > 0;
+                }
+            } catch (e) {
+                console.error('Autocomplete error:', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async selectPlace(suggestion) {
+            this.query = suggestion.description;
+            this.showDropdown = false;
+            this.loading = true;
+            this.syncAddress(suggestion.description);
+
+            try {
+                const resp = await fetch('/quotes/api/places/details?place_id=' + encodeURIComponent(suggestion.place_id));
+                if (resp.ok) {
+                    const data = await resp.json();
+                    // Update parent form with resolved data
+                    const calc = this.getCalculator();
+                    if (calc) {
+                        calc.form.job_address = data.formatted_address || suggestion.description;
+                        this.query = calc.form.job_address;
+                        if (data.distance_from_base_km !== null) {
+                            calc.form.distance_km = data.distance_from_base_km;
+                        }
+                        if (data.distance_from_yard_km !== null) {
+                            calc.form.concrete_distance_km = data.distance_from_yard_km;
+                        }
+                        calc.recalculate();
+                    }
+                    this.resolved = true;
+                }
+            } catch (e) {
+                console.error('Place details error:', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        syncAddress(value) {
+            const calc = this.getCalculator();
+            if (calc) calc.form.job_address = value;
+        },
+
+        getCalculator() {
+            // Walk up to the quoteCalculator x-data scope
+            let el = this.$el.closest('[x-data*="quoteCalculator"]');
+            return el ? Alpine.$data(el) : null;
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Quote {{ quote.quote_number or quote.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+            @bottom-center {
+                content: "";
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #1a1a2e;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: #1B2B4B;
+            padding: 32px 40px 28px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .header-logo { height: 56px; width: 56px; border-radius: 8px; }
+        .header-biz h1 {
+            color: #ffffff;
+            font-size: 22pt;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+        .header-biz p {
+            color: rgba(255,255,255,0.55);
+            font-size: 9pt;
+            margin-top: 3px;
+        }
+        .header-right { text-align: right; }
+        .header-right .doc-type {
+            font-size: 10pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #E87A2E;
+        }
+        .header-right .doc-num {
+            color: #ffffff;
+            font-size: 16pt;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .header-right .doc-meta {
+            color: rgba(255,255,255,0.45);
+            font-size: 9pt;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .accent-bar {
+            height: 4px;
+            background: linear-gradient(to right, #E87A2E 0%, #E87A2E 40%, #1B2B4B 100%);
+        }
+
+        /* ── BODY CONTENT ── */
+        .content { padding: 28px 40px 20px 40px; }
+
+        /* ── INFO GRID ── */
+        .info-grid {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 24px;
+        }
+        .info-col { flex: 1; }
+        .info-label {
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #E87A2E;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #f0f0f5;
+        }
+        .info-name {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #1B2B4B;
+            margin-bottom: 4px;
+        }
+        .info-detail {
+            font-size: 10pt;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        /* ── SPECS GRID ── */
+        .specs-grid {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 24px;
+        }
+        .spec-box {
+            flex: 1;
+            background: #f8f9fc;
+            border-radius: 8px;
+            padding: 14px 18px;
+            border: 1px solid #e8ecf4;
+        }
+        .spec-label {
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #E87A2E;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e8ecf4;
+        }
+        .spec-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+        .spec-row-label { font-size: 10pt; color: #64748b; }
+        .spec-row-value { font-size: 10pt; font-weight: 700; color: #1B2B4B; }
+
+        /* ── VALIDITY NOTICE ── */
+        .validity {
+            background: linear-gradient(135deg, #fff7ed, #fffbf5);
+            border: 1px solid #fed7aa;
+            border-left: 5px solid #E87A2E;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            border-radius: 0 8px 8px 0;
+        }
+        .validity p {
+            font-size: 10pt;
+            color: #92400e;
+            font-weight: 500;
+        }
+        .validity .licence {
+            font-size: 9pt;
+            color: #b45309;
+            margin-top: 4px;
+        }
+
+        /* ── LINE ITEMS TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+        thead th {
+            background: #1B2B4B;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            text-align: left;
+            padding: 14px 18px;
+        }
+        thead th:last-child { text-align: right; }
+
+        tbody td {
+            padding: 12px 18px;
+            border-bottom: 1px solid #eef0f6;
+            font-size: 11pt;
+        }
+        tbody td:last-child { text-align: right; font-weight: 600; color: #1B2B4B; }
+        tbody tr:nth-child(even) td { background: #fafbfd; }
+
+        tr.group-row { background: #f0f2f8; }
+        tr.group-row td {
+            font-weight: 700;
+            color: #1B2B4B;
+            font-size: 11pt;
+            padding: 14px 18px;
+            border-bottom: 1px solid #e0e4ed;
+        }
+
+        tr.sub-row td {
+            padding: 5px 18px 5px 36px;
+            font-size: 9.5pt;
+            color: #64748b;
+            border-bottom: none;
+        }
+        tr.spacer td { padding: 4px; border-bottom: none; }
+
+        .item-desc { font-weight: 600; color: #1B2B4B; }
+        .item-detail { font-size: 9pt; color: #94a3b8; margin-top: 3px; }
+
+        /* ── TOTALS ── */
+        .totals-wrapper {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 28px;
+        }
+        .totals {
+            width: 280px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eef0f6;
+            font-size: 11pt;
+            color: #64748b;
+        }
+        .total-row .val { font-weight: 600; color: #1B2B4B; }
+        .total-row.discount .val { color: #16a34a; }
+
+        .grand-total {
+            background: linear-gradient(135deg, #E87A2E, #d4691f);
+            color: #ffffff;
+            margin-top: 6px;
+            padding: 16px 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14pt;
+            font-weight: 800;
+        }
+
+        /* ── PAYMENT SCHEDULE ── */
+        .schedule {
+            background: #f8f9fc;
+            border: 1px solid #e8ecf4;
+            border-radius: 10px;
+            padding: 20px 22px;
+            margin-bottom: 24px;
+        }
+        .schedule-title {
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #E87A2E;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e8ecf4;
+        }
+        .schedule-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 11pt;
+        }
+        .schedule-row .label { color: #475569; }
+        .schedule-row .amt { font-weight: 700; color: #1B2B4B; }
+
+        /* ── TERMS ── */
+        .terms-section {
+            margin-bottom: 20px;
+            padding-top: 16px;
+            border-top: 2px solid #eef0f6;
+        }
+        .terms-title {
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #E87A2E;
+            margin-bottom: 12px;
+        }
+        .terms-list {
+            padding-left: 18px;
+            font-size: 9.5pt;
+            color: #64748b;
+            line-height: 1.7;
+        }
+        .terms-list li { margin-bottom: 3px; }
+        .terms-note {
+            font-size: 8pt;
+            color: #94a3b8;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        /* ── LEGAL ── */
+        .legal-box {
+            background: #f8f9fc;
+            border: 1px solid #e8ecf4;
+            border-radius: 10px;
+            padding: 18px 22px;
+            margin-bottom: 20px;
+        }
+        .legal-title {
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #E87A2E;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e8ecf4;
+        }
+        .legal-text {
+            font-size: 8.5pt;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 6px;
+        }
+        .legal-text strong { color: #374151; }
+
+        /* ── SIGNATURE ── */
+        .sig-section {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 20px 22px;
+            margin-bottom: 20px;
+        }
+        .sig-title {
+            font-size: 8pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #16a34a;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #dcfce7;
+        }
+        .sig-typed {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 22pt;
+            font-style: italic;
+            color: #1B2B4B;
+            margin: 10px 0;
+        }
+        .sig-image img { max-height: 70px; max-width: 220px; margin: 10px 0; }
+        .sig-meta { font-size: 9pt; color: #64748b; margin-top: 4px; }
+        .sig-meta strong { color: #374151; }
+
+        /* ── FOOTER ── */
+        .footer {
+            background: #1B2B4B;
+            padding: 22px 40px;
+            text-align: center;
+            margin-top: auto;
+        }
+        .footer p { color: rgba(255,255,255,0.55); font-size: 9pt; line-height: 1.6; }
+        .footer .biz-name { color: #ffffff; font-weight: 700; font-size: 11pt; margin-bottom: 4px; }
+        .footer .powered {
+            margin-top: 10px;
+            font-size: 7pt;
+            color: rgba(255,255,255,0.3);
+        }
+        .footer .powered img { height: 16px; opacity: 0.3; vertical-align: middle; margin-left: 4px; }
+    </style>
+</head>
+<body>
+    <!-- ══════ HEADER ══════ -->
+    <div class="header">
+        <div class="header-left">
+            <img src="{{ logo_uri }}" alt="" class="header-logo">
+            <div class="header-biz">
+                <h1>{{ business.trading_as or business.name }}</h1>
+                <p>ABN: {{ business.abn }} &nbsp;|&nbsp; Licence: {{ business.license }}</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="doc-type">Quote</div>
+            <div class="doc-num">{{ quote.quote_number or 'Q-' ~ quote.id }}</div>
+            <div class="doc-meta">
+                Date: {{ generated_at }}<br>
+                Valid: 30 days
+            </div>
+        </div>
+    </div>
+    <div class="accent-bar"></div>
+
+    <!-- ══════ CONTENT ══════ -->
+    <div class="content">
+
+        <!-- Customer & Site -->
+        <div class="info-grid">
+            <div class="info-col">
+                <div class="info-label">Customer</div>
+                <div class="info-name">{{ customer.name or 'Customer Name' }}</div>
+                {% if customer.email %}<div class="info-detail">{{ customer.email }}</div>{% endif %}
+                {% if customer.phone %}<div class="info-detail">{{ customer.phone }}</div>{% endif %}
+            </div>
+            <div class="info-col">
+                <div class="info-label">Site Address</div>
+                <div class="info-name">{{ quote.site_address or 'Site address not specified' }}</div>
+            </div>
+        </div>
+
+        <!-- Specifications -->
+        <div class="specs-grid">
+            <div class="spec-box">
+                <div class="spec-label">Specifications</div>
+                <div class="spec-row">
+                    <span class="spec-row-label">Area</span>
+                    <span class="spec-row-value">{{ quote.slab_area or 0 }} m²</span>
+                </div>
+                <div class="spec-row">
+                    <span class="spec-row-label">Thickness</span>
+                    <span class="spec-row-value">{{ quote.slab_thickness or 100 }}mm</span>
+                </div>
+                <div class="spec-row">
+                    <span class="spec-row-label">Volume</span>
+                    <span class="spec-row-value">{{ '%.1f'|format(quote.volume_m3 or 0) }} m³</span>
+                </div>
+            </div>
+            <div class="spec-box">
+                <div class="spec-label">Materials</div>
+                <div class="spec-row">
+                    <span class="spec-row-label">Concrete</span>
+                    <span class="spec-row-value">{{ quote.concrete_grade or 'N25' }}</span>
+                </div>
+                <div class="spec-row">
+                    <span class="spec-row-label">Reinforcement</span>
+                    <span class="spec-row-value">{{ quote.reinforcement or 'SL82 Mesh' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validity Notice -->
+        <div class="validity">
+            <p><strong>Quote Valid Until:</strong> {{ quote.expiry_date.strftime('%d %B %Y') if quote.expiry_date else 'This quote is valid for 30 days from the date above' }}. Prices may change after this period.</p>
+            <p class="licence">Contractor Licence No: {{ business.license }}</p>
+        </div>
+
+        <!-- Line Items -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 72%;">Description</th>
+                    <th style="width: 28%;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if quote.customer_line_items %}
+                    {% for group in quote.customer_line_items %}
+                    <tr class="group-row">
+                        <td>{{ group.category }}</td>
+                        <td>{{ group.total_cents|currency }}</td>
+                    </tr>
+                    {% for sub in group.sub_items %}
+                    {% if sub.description %}
+                    <tr class="sub-row">
+                        <td {% if not group.show_sub_prices %}colspan="2"{% endif %}>
+                            &bull; {{ sub.description }}
+                        </td>
+                        {% if group.show_sub_prices and sub.price_cents %}
+                        <td style="text-align: right;">{{ sub.price_cents|currency }}</td>
+                        {% endif %}
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    <tr class="spacer"><td colspan="2"></td></tr>
+                    {% endfor %}
+                {% elif quote.line_items %}
+                    {% for item in quote.line_items %}
+                    <tr>
+                        <td><div class="item-desc">{{ item.description }}</div></td>
+                        <td>{{ item.total_cents|currency }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                <tr>
+                    <td>
+                        <div class="item-desc">Concrete Supply &amp; Delivery</div>
+                        <div class="item-detail">{{ quote.concrete_grade or 'N25' }} ready-mix concrete</div>
+                    </td>
+                    <td>{{ (quote.concrete_cost_cents or 0)|currency }}</td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="item-desc">Reinforcement</div>
+                        <div class="item-detail">{{ quote.reinforcement or 'SL82 Mesh' }} inc. chairs &amp; tie wire</div>
+                    </td>
+                    <td>Included</td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="item-desc">Labour — Concrete Placement &amp; Finishing</div>
+                        <div class="item-detail">Professional placement, screeding, floating and finishing</div>
+                    </td>
+                    <td>{{ (quote.labour_sell_cents or quote.setup_labour_cents or 0)|currency }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div class="totals-wrapper">
+            <div class="totals">
+                <div class="total-row">
+                    <span>Subtotal</span>
+                    <span class="val">{{ (quote.subtotal_cents or 0)|currency }}</span>
+                </div>
+                {% if quote.discount_cents and quote.discount_cents > 0 %}
+                <div class="total-row discount">
+                    <span>Discount</span>
+                    <span class="val">-{{ quote.discount_cents|currency }}</span>
+                </div>
+                {% endif %}
+                <div class="total-row">
+                    <span>GST (10%)</span>
+                    <span class="val">{{ (quote.gst_cents or 0)|currency }}</span>
+                </div>
+                <div class="grand-total">
+                    <span>Total (inc GST)</span>
+                    <span>{{ (quote.total_cents or 0)|currency }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Schedule -->
+        <div class="schedule">
+            <div class="schedule-title">Payment Schedule</div>
+            {% if quote.payments %}
+                {% for payment in quote.payments %}
+                <div class="schedule-row">
+                    <span class="label">{{ payment.name }}</span>
+                    <span class="amt">{{ payment.amount_cents|currency }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="schedule-row">
+                <span class="label">First Payment (30%)</span>
+                <span class="amt">{{ ((quote.total_cents or 0) * 0.3)|int|currency }}</span>
+            </div>
+            <div class="schedule-row">
+                <span class="label">Progress Payment (60%)</span>
+                <span class="amt">{{ ((quote.total_cents or 0) * 0.6)|int|currency }}</span>
+            </div>
+            <div class="schedule-row">
+                <span class="label">Final Payment (10%)</span>
+                <span class="amt">{{ ((quote.total_cents or 0) * 0.1)|int|currency }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="terms-section">
+            <div class="terms-title">Terms &amp; Conditions</div>
+            <ol class="terms-list">
+                <li>Quote valid until {{ quote.expiry_date.strftime('%d %B %Y') if quote.expiry_date else '30 days from date of issue' }}.</li>
+                <li>First payment required to secure start date.</li>
+                <li>Progress payment due before concrete delivery.</li>
+                <li>Final payment due on completion of works.</li>
+                <li>Work carried out to Australian Standards AS 3600 and manufacturer specifications.</li>
+                <li>Standard workmanship warranty applies.</li>
+                <li>Additional work or variations will be quoted separately and require written approval.</li>
+                <li>All prices include GST where applicable (ABN: {{ business.abn }}).</li>
+            </ol>
+            <p class="terms-note">Full terms and conditions available at: KRG_Terms_and_Conditions_v3.0.pdf</p>
+        </div>
+
+        <!-- Legal Notices -->
+        <div class="legal-box">
+            <div class="legal-title">Important Legal Information</div>
+            <p class="legal-text">
+                <strong>Home Building Act 1989 (NSW):</strong> For residential building work valued over $5,000 (inc GST), the holder of a contractor licence is required to have a written contract with the homeowner. Work over $20,000 (inc GST) requires a contract that complies with the Home Building Act 1989.
+            </p>
+            <p class="legal-text">
+                <strong>Cooling-Off Period:</strong> Under the Home Building Act 1989 (NSW), for contracts over $20,000 (inc GST), the homeowner has a 5-business-day cooling-off period from the date of signing to withdraw from this contract.
+            </p>
+            <p class="legal-text" style="margin-bottom: 0;">
+                <strong>Licence:</strong> {{ business.trading_as or business.name }} — Contractor Licence No. {{ business.license }} — ABN: {{ business.abn }}
+            </p>
+        </div>
+
+        <!-- Signature (if signed) -->
+        {% if quote.signed_at %}
+        <div class="sig-section">
+            <div class="sig-title">Customer Acceptance</div>
+            {% if quote.signature_type == 'typed' %}
+            <p class="sig-typed">{{ quote.signature_name }}</p>
+            <p class="sig-meta">Electronically signed by: <strong>{{ quote.signature_name }}</strong></p>
+            {% elif quote.signature_data and quote.signature_data.startswith('data:') %}
+            <div class="sig-image">
+                <img src="{{ quote.signature_data }}" alt="Customer Signature">
+            </div>
+            <p class="sig-meta">Signed by: <strong>{{ quote.signature_name }}</strong></p>
+            {% else %}
+            <p class="sig-meta">Signed by: <strong>{{ quote.signature_name }}</strong></p>
+            {% endif %}
+            <p class="sig-meta">Date/Time: <strong>{{ quote.signed_at }}</strong></p>
+            {% if quote.signature_ip %}
+            <p class="sig-meta">IP Address: <strong>{{ quote.signature_ip }}</strong></p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ══════ FOOTER ══════ -->
+    <div class="footer">
+        <p class="biz-name">{{ business.trading_as or business.name }}</p>
+        <p>{{ business.address }}</p>
+        <p>Phone: {{ business.phone }} &nbsp;|&nbsp; Email: {{ business.email }}</p>
+        <p>ABN: {{ business.abn }} &nbsp;|&nbsp; Licence: {{ business.license }}</p>
+        <p class="powered">Powered by <img src="{{ ciq_logo_uri }}" alt="ConcreteIQ"></p>
+    </div>
+</body>
+</html>

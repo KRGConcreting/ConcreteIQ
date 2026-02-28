@@ -1,0 +1,439 @@
+{% extends "settings/base.html" %}
+
+{% set active_section = "backup" %}
+
+{% block title %}Database Backup - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="backupPage()" class="space-y-6">
+
+    <!-- Database Backup - Quick Actions -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-green">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Database Backup</h2>
+                <p>Export and manage your database backups</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Download Backup -->
+            <a href="/settings/backup/download"
+               class="p-5 rounded-xl border border-slate-200 bg-slate-50/50 group hover:border-orange-200 hover:bg-orange-50/30 transition-all duration-200 flex flex-col items-center text-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-slate-900 text-sm">Download Backup</h3>
+                    <p class="text-xs text-slate-500 mt-1">Create and download a fresh database backup file</p>
+                </div>
+            </a>
+
+            <!-- JSON Export -->
+            <a href="/settings/backup/export-json"
+               class="p-5 rounded-xl border border-slate-200 bg-slate-50/50 group hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200 flex flex-col items-center text-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-slate-900 text-sm">JSON Export</h3>
+                    <p class="text-xs text-slate-500 mt-1">Export all data as a portable JSON file</p>
+                </div>
+            </a>
+
+            <!-- Restore (scrolls to section) -->
+            <button @click="$refs.restoreSection.scrollIntoView({ behavior: 'smooth' })"
+                    class="p-5 rounded-xl border border-slate-200 bg-slate-50/50 group hover:border-red-200 hover:bg-red-50/30 transition-all duration-200 flex flex-col items-center text-center gap-3 cursor-pointer">
+                <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-slate-900 text-sm">Restore Database</h3>
+                    <p class="text-xs text-slate-500 mt-1">Upload a previous backup to restore data</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Backup History -->
+    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-yellow">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Backup History</h2>
+                <p>View and download previous database backups</p>
+            </div>
+        </div>
+
+        {% if backups and backups|length > 0 %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        <th class="pb-3 pr-4">Filename</th>
+                        <th class="pb-3 pr-4">Size</th>
+                        <th class="pb-3 pr-4">Created</th>
+                        <th class="pb-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for backup in backups %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="py-3 pr-4">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                                </svg>
+                                <span class="font-mono text-xs text-slate-700">{{ backup.filename }}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 pr-4 text-slate-600">
+                            {{ "%.1f"|format(backup.size_mb) }} MB
+                        </td>
+                        <td class="py-3 pr-4 text-slate-600">
+                            {{ backup.created_at }}
+                        </td>
+                        <td class="py-3 text-right">
+                            <a href="/settings/backup/download/{{ backup.filename }}"
+                               class="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-medium transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                Download
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                </svg>
+            </div>
+            <p class="text-sm text-slate-500">No backups found.</p>
+            <p class="text-xs text-slate-400 mt-1">Backups will appear here after you create one.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Restore Section -->
+    <div x-ref="restoreSection" class="form-section-card form-section-accent-blue p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Restore Database</h2>
+                <p>Upload a previous backup file to restore your data</p>
+            </div>
+        </div>
+
+        <!-- Warning Banner -->
+        <div class="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 mb-6">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-red-800">Danger Zone</p>
+                <p class="text-sm text-red-700 mt-1">
+                    Restoring will replace <strong>ALL</strong> current data. This cannot be undone.
+                    Make sure you download a backup of your current data before restoring.
+                </p>
+            </div>
+        </div>
+
+        <!-- Drag and Drop Upload Area -->
+        <form method="POST"
+              action="/settings/backup/restore"
+              enctype="multipart/form-data"
+              x-ref="restoreForm"
+              @submit.prevent="confirmRestore()">
+
+            <input type="hidden" name="csrf_token" :value="csrfToken">
+
+            <div class="relative"
+                 @dragover.prevent="isDragging = true"
+                 @dragleave.prevent="isDragging = false"
+                 @drop.prevent="handleDrop($event)">
+
+                <label :class="isDragging ? 'border-orange-400 bg-orange-50' : selectedFile ? 'border-green-400 bg-green-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'"
+                       class="flex flex-col items-center justify-center w-full py-10 px-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200">
+
+                    <input type="file"
+                           name="backup_file"
+                           accept=".db,.sql,.sqlite,.sqlite3"
+                           class="hidden"
+                           x-ref="fileInput"
+                           @change="handleFileSelect($event)">
+
+                    <!-- Drag state -->
+                    <template x-if="isDragging">
+                        <div class="text-center">
+                            <svg class="w-10 h-10 text-orange-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v12"/>
+                            </svg>
+                            <p class="text-sm font-medium text-orange-600">Drop your backup file here</p>
+                        </div>
+                    </template>
+
+                    <!-- File selected state -->
+                    <template x-if="!isDragging && selectedFile">
+                        <div class="text-center">
+                            <svg class="w-10 h-10 text-green-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="text-sm font-medium text-green-700" x-text="selectedFile.name"></p>
+                            <p class="text-xs text-green-600 mt-1" x-text="formatFileSize(selectedFile.size)"></p>
+                            <button type="button"
+                                    @click.stop="clearFile()"
+                                    class="text-xs text-slate-500 hover:text-red-600 mt-2 underline">
+                                Remove
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Default state -->
+                    <template x-if="!isDragging && !selectedFile">
+                        <div class="text-center">
+                            <svg class="w-10 h-10 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="text-sm font-medium text-slate-700">Drag and drop your backup file here</p>
+                            <p class="text-xs text-slate-500 mt-1">or click to browse</p>
+                            <p class="text-xs text-slate-400 mt-2">Accepted formats: .db, .sql, .sqlite, .sqlite3</p>
+                        </div>
+                    </template>
+
+                </label>
+            </div>
+
+            <!-- Restore Button -->
+            <div class="mt-4 flex items-center gap-3">
+                <button type="submit"
+                        :disabled="!selectedFile || isRestoring"
+                        :class="selectedFile && !isRestoring ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-300 cursor-not-allowed'"
+                        class="px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-colors flex items-center gap-2">
+                    <template x-if="!isRestoring">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Restore Database
+                        </span>
+                    </template>
+                    <template x-if="isRestoring">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Restoring...
+                        </span>
+                    </template>
+                </button>
+                <p class="text-xs text-slate-400" x-show="selectedFile">
+                    You will be asked to confirm before the restore begins.
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tips Card -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-green">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Backup Tips</h2>
+                <p>Best practices for keeping your data safe</p>
+            </div>
+        </div>
+
+        <ul class="space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Download regular backups before making major changes to your data.
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Store backup files in a separate location (cloud drive, external storage).
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Use JSON Export for a human-readable copy or to migrate data to another system.
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Always download a current backup before restoring from an older file.
+            </li>
+        </ul>
+    </div>
+
+    <!-- Restore Confirmation Modal -->
+    <div x-show="showConfirmModal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+         @keydown.escape.window="showConfirmModal = false">
+
+        <div x-show="showConfirmModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             @click.away="showConfirmModal = false"
+             class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900">Confirm Database Restore</h3>
+            </div>
+
+            <p class="text-sm text-slate-600 mb-2">
+                You are about to restore the database from:
+            </p>
+            <p class="text-sm font-mono font-medium text-slate-900 bg-slate-50 rounded-lg px-3 py-2 mb-4" x-text="selectedFile ? selectedFile.name : ''"></p>
+
+            <div class="p-3 bg-red-50 border border-red-200 rounded-lg mb-6">
+                <p class="text-sm text-red-800 font-medium">
+                    This will permanently replace ALL current data. This action cannot be undone.
+                </p>
+            </div>
+
+            <p class="text-sm text-slate-600 mb-4">
+                Type <strong class="font-mono">RESTORE</strong> to confirm:
+            </p>
+            <input type="text"
+                   x-model="confirmText"
+                   placeholder="Type RESTORE"
+                   class="input-field text-sm font-mono mb-4"
+                   @keydown.enter="if (confirmText === 'RESTORE') submitRestore()">
+
+            <div class="flex gap-3 justify-end">
+                <button @click="showConfirmModal = false; confirmText = ''"
+                        class="btn-v4 btn-v4-secondary text-sm">
+                    Cancel
+                </button>
+                <button @click="submitRestore()"
+                        :disabled="confirmText !== 'RESTORE'"
+                        :class="confirmText === 'RESTORE' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-300 cursor-not-allowed'"
+                        class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors">
+                    Restore Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function backupPage() {
+    return {
+        isDragging: false,
+        selectedFile: null,
+        isRestoring: false,
+        showConfirmModal: false,
+        confirmText: '',
+        csrfToken: getCsrfToken(),
+
+        handleDrop(event) {
+            this.isDragging = false;
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                this.setFile(files[0]);
+            }
+        },
+
+        handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                this.setFile(files[0]);
+            }
+        },
+
+        setFile(file) {
+            const validExtensions = ['.db', '.sql', '.sqlite', '.sqlite3'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!validExtensions.includes(ext)) {
+                Toast.error('Invalid file type. Please select a .db, .sql, .sqlite, or .sqlite3 file.');
+                return;
+            }
+            this.selectedFile = file;
+
+            // Update the file input so the form submission includes the file
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            this.$refs.fileInput.files = dt.files;
+        },
+
+        clearFile() {
+            this.selectedFile = null;
+            this.$refs.fileInput.value = '';
+        },
+
+        formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        },
+
+        confirmRestore() {
+            if (!this.selectedFile) return;
+            this.showConfirmModal = true;
+            this.confirmText = '';
+        },
+
+        submitRestore() {
+            if (this.confirmText !== 'RESTORE') return;
+            this.showConfirmModal = false;
+            this.isRestoring = true;
+            this.$refs.restoreForm.submit();
+        }
+    };
+}
+</script>
+{% endblock settings_content %}

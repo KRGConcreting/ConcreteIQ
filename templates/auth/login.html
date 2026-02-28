@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — ConcreteIQ</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico?v=3">
+    <link rel="icon" type="image/png" sizes="64x64" href="/static/images/favicon.png?v=3">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/images/favicon-192.png?v=3">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/images/favicon-192.png?v=3">
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        h1, h2, .font-display { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="h-full">
+    <div class="min-h-full login-gradient-bg relative overflow-hidden flex flex-col">
+
+        <!-- Floating shapes for ambience -->
+        <div class="login-shape" style="width: 300px; height: 300px; top: -100px; right: -50px;"></div>
+        <div class="login-shape" style="width: 200px; height: 200px; bottom: 10%; left: -60px;"></div>
+        <div class="login-shape" style="width: 150px; height: 150px; top: 40%; right: 15%;"></div>
+        <div class="login-shape" style="width: 100px; height: 100px; bottom: 25%; right: 40%;"></div>
+        <div class="login-shape" style="width: 80px; height: 80px; top: 20%; left: 20%; animation-delay: -3s;"></div>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10">
+            <div class="sm:mx-auto sm:w-full sm:max-w-md animate-in">
+                <!-- Logo -->
+                <div class="flex justify-center mb-8">
+                    <img src="/static/images/ConcreteIQ_Logo.png?v=2" alt="ConcreteIQ" class="h-10 brightness-0 invert opacity-90">
+                </div>
+                <h1 class="text-center text-2xl font-display font-bold text-white tracking-tight">Welcome back</h1>
+                <p class="mt-1.5 text-center text-white/40 text-sm">Sign in to your dashboard</p>
+            </div>
+
+            <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-[420px] animate-in delay-2">
+                <div class="bg-white py-8 px-6 shadow-2xl rounded-xl sm:px-10">
+                    {% if error %}
+                    <div class="mb-5 p-3 bg-red-50 border border-red-200 rounded-lg animate-in">
+                        <p class="text-sm text-red-700 font-medium">{{ error }}</p>
+                    </div>
+                    {% endif %}
+                    <form method="POST" action="/login" class="space-y-5">
+                        <input type="hidden" name="next" value="{{ next }}">
+                        <div>
+                            <label for="password" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+                            <div class="relative">
+                                <input type="password" name="password" id="password" required autofocus
+                                       class="input-field py-2.5 pl-10"
+                                       placeholder="">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="submit"
+                                    class="btn-v4 btn-v4-primary w-full py-2.5 text-sm font-bold rounded-lg">
+                                Sign in
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="relative z-10 text-center pb-6">
+            <p class="text-[11px] text-white/30 tracking-wide">
+                <span class="font-display font-semibold">ConcreteIQ</span> &mdash; Business Management System
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>

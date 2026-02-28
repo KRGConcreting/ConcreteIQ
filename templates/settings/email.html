@@ -1,0 +1,247 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Email Configuration - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="emailSettings()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 font-display">Email Configuration</h1>
+            <p class="text-slate-500 text-sm mt-1">Configure email settings for quotes, invoices, and reminders.</p>
+        </div>
+        <button @click="save()"
+                :disabled="isSaving"
+                class="btn-v4 btn-v4-primary">
+            <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <svg x-show="isSaving" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span x-text="isSaving ? 'Saving...' : 'Save Changes'"></span>
+        </button>
+    </div>
+
+    <!-- Postmark Status -->
+    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-yellow">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Postmark</h2>
+                <p>Email delivery service</p>
+            </div>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+            <div></div>
+            {% if postmark_configured %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-xl text-xs font-semibold">
+                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                Connected
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-100 text-red-700 rounded-xl text-xs font-semibold">
+                <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                Not Connected
+            </span>
+            {% endif %}
+        </div>
+
+        {% if not postmark_configured %}
+        <div class="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+            <p class="text-sm text-amber-800">
+                Postmark is not configured. Set up your API credentials in
+                <a href="/settings/integrations" class="font-medium text-orange-600 hover:underline">Integrations</a>
+                to enable email sending.
+            </p>
+        </div>
+        {% else %}
+        <p class="mt-4 text-sm text-slate-600">
+            Postmark is connected. Emails will be delivered via Postmark.
+            <a href="/settings/integrations" class="text-orange-600 hover:underline">Manage in Integrations</a>
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Email Settings -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Email Settings</h2>
+                <p>Sender name and address configuration</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">From Name</label>
+                <input type="text" x-model="email.from_name"
+                       placeholder="e.g. KRG Concreting"
+                       class="input-field">
+                <p class="text-xs text-slate-500 mt-1">Name shown in customer's inbox</p>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">From Address</label>
+                <input type="email" x-model="email.from_address"
+                       placeholder="quotes@example.com.au"
+                       class="input-field">
+                <p class="text-xs text-slate-500 mt-1">Must be verified in Postmark</p>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Reply-To Address</label>
+                <input type="email" x-model="email.reply_to"
+                       placeholder="contact@example.com.au"
+                       class="input-field">
+                <p class="text-xs text-slate-500 mt-1">Where customer replies will be sent</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Email -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-emerald">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Test Email</h2>
+                <p>Verify your configuration is working</p>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <input type="email" x-model="testEmail"
+                   placeholder="Email address"
+                   class="input-field flex-1">
+            <button @click="sendTest()"
+                    :disabled="isTesting || !testEmail"
+                    class="btn-v4 btn-v4-secondary whitespace-nowrap">
+                <svg x-show="!isTesting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                <svg x-show="isTesting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span x-text="isTesting ? 'Sending...' : 'Send Test Email'"></span>
+            </button>
+        </div>
+        <div x-show="testResult" x-transition class="mt-3">
+            <p :class="testSuccess ? 'text-green-600' : 'text-red-600'" class="text-sm" x-text="testResult"></p>
+        </div>
+    </div>
+
+    <!-- Enable/Disable -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Email Notifications</h2>
+                <p>Control outbound email delivery</p>
+            </div>
+        </div>
+        <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" x-model="email.enabled"
+                   class="w-5 h-5 text-orange-500 border-slate-300 rounded-lg focus:ring-orange-500">
+            <div>
+                <span class="font-medium text-slate-900">Enable Email Notifications</span>
+                <p class="text-sm text-slate-500">Send quote, invoice, and reminder emails to customers</p>
+            </div>
+        </label>
+    </div>
+
+    <!-- Email Templates Link -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-orange">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Email Templates</h2>
+                <p>Preview and edit all 15 automated email templates</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 mt-1">
+            <p class="text-sm text-slate-600 flex-1">
+                All email and PDF templates are managed in
+                <strong>Documents & Templates</strong> — preview, edit HTML source, and customise your customer-facing emails and documents in one place.
+            </p>
+            <a href="/settings/documents"
+               class="btn-v4 btn-v4-secondary whitespace-nowrap">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                <span>Open Templates</span>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function emailSettings() {
+    return {
+        email: {{ email | tojson }},
+        isSaving: false,
+        testEmail: '',
+        isTesting: false,
+        testResult: '',
+        testSuccess: false,
+        async save() {
+            this.isSaving = true;
+            try {
+                const response = await fetch('/settings/api/email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.email)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    Toast.success('Email settings saved successfully!');
+                } else {
+                    Toast.error(formatErrorDetail(data.detail, 'Error saving settings'));
+                }
+            } catch (e) {
+                Toast.error('Network error - please try again');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        async sendTest() {
+            if (!this.testEmail) {
+                alert('Enter an email address');
+                return;
+            }
+            this.isTesting = true;
+            this.testResult = '';
+            try {
+                const response = await fetch('/settings/api/email/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email_address: this.testEmail })
+                });
+                const data = await response.json();
+                this.testSuccess = data.success;
+                this.testResult = data.success
+                    ? 'Test email sent successfully! Check your inbox.'
+                    : `Error: ${data.error || 'Unknown error'}`;
+            } catch (e) {
+                this.testSuccess = false;
+                this.testResult = 'Network error - please try again';
+            } finally {
+                this.isTesting = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

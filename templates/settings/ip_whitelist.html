@@ -1,0 +1,229 @@
+{% extends "settings/base.html" %}
+
+{% block title %}IP Whitelist - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="ipWhitelist()" class="space-y-6 animate-in delay-1">
+
+    <!-- Current IP Info -->
+    <div class="flex items-center gap-3 p-4 rounded-xl bg-blue-50 border border-blue-200">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-semibold text-blue-800">Your Current IP</p>
+            <p class="text-sm text-blue-600 font-mono">{{ current_ip }}</p>
+        </div>
+    </div>
+
+    <!-- IP Whitelist Card -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>IP Whitelist</h2>
+                <p>Restrict admin access to specific IP addresses</p>
+            </div>
+        </div>
+
+        <p class="text-sm text-slate-600 mb-4">
+            When the whitelist is empty, all IPs are allowed.
+            Localhost (127.0.0.1, ::1) is always allowed regardless of whitelist settings.
+        </p>
+
+        <!-- Warning when whitelist is active -->
+        <template x-if="ips.length > 0">
+            <div class="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
+                <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-amber-800 text-sm">Whitelist is active</p>
+                    <p class="text-sm text-amber-600">
+                        Only the listed IP addresses can access admin routes.
+                        Make sure your current IP (<span class="font-mono">{{ current_ip }}</span>) is included
+                        to avoid locking yourself out.
+                    </p>
+                </div>
+            </div>
+        </template>
+
+        <!-- IP List -->
+        <div class="space-y-3 mb-6">
+            <template x-for="(ip, index) in ips" :key="index">
+                <div class="flex items-center gap-3">
+                    <input type="text"
+                           x-model="ips[index]"
+                           class="input-field font-mono flex-1"
+                           placeholder="e.g. 203.0.113.50"
+                           @keydown.enter.prevent="addIp()">
+                    <button type="button" @click="removeIp(index)"
+                            class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove IP">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <!-- Add IP / Add Current buttons -->
+        <div class="flex flex-wrap gap-3 mb-6">
+            <button type="button" @click="addIp()"
+                    class="btn-v4 btn-v4-secondary text-sm py-2 px-4">
+                <svg class="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add IP Address
+            </button>
+
+            <button type="button" @click="addCurrentIp()"
+                    class="btn-v4 btn-v4-secondary text-sm py-2 px-4">
+                <svg class="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                </svg>
+                Add My Current IP ({{ current_ip }})
+            </button>
+        </div>
+
+        <!-- Save / Clear buttons -->
+        <div class="flex items-center gap-3 border-t border-slate-100 pt-6">
+            <button type="button" @click="save()"
+                    class="btn-v4 btn-v4-primary py-2.5 px-6"
+                    :disabled="saving">
+                <span x-show="!saving">Save Whitelist</span>
+                <span x-show="saving" class="flex items-center gap-2">
+                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                </span>
+            </button>
+
+            <button type="button" @click="clearAll()"
+                    class="btn-v4 btn-v4-secondary py-2.5 px-4 text-red-600 border-red-200 hover:bg-red-50"
+                    x-show="ips.length > 0">
+                Clear All (Allow All IPs)
+            </button>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="form-section-card form-section-accent-slate p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-slate">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>How It Works</h2>
+                <p>Understanding IP whitelist behaviour</p>
+            </div>
+        </div>
+        <ul class="space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <strong>Empty whitelist</strong> = all IP addresses are allowed (default).
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <strong>Localhost</strong> (127.0.0.1 and ::1) is always allowed, even when whitelist is active.
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <strong>Public routes</strong> (customer portal, booking page) are never blocked by the whitelist.
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Blocked requests are logged in the <a href="/security/audit-log" class="text-orange-600 underline">Security Audit Log</a>.
+            </li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+function ipWhitelist() {
+    return {
+        ips: {{ whitelist | tojson }},
+        saving: false,
+
+        addIp(value) {
+            this.ips.push(value || '');
+            // Focus the new input after render
+            this.$nextTick(() => {
+                const inputs = this.$el.querySelectorAll('input[type="text"]');
+                if (inputs.length > 0) {
+                    inputs[inputs.length - 1].focus();
+                }
+            });
+        },
+
+        addCurrentIp() {
+            const currentIp = '{{ current_ip }}';
+            if (!this.ips.includes(currentIp)) {
+                this.ips.push(currentIp);
+            }
+        },
+
+        removeIp(index) {
+            this.ips.splice(index, 1);
+        },
+
+        clearAll() {
+            if (confirm('Remove all IPs from the whitelist? This will allow access from any IP address.')) {
+                this.ips = [];
+                this.save();
+            }
+        },
+
+        async save() {
+            // Filter out empty entries
+            const cleanIps = this.ips.filter(ip => ip.trim() !== '');
+
+            this.saving = true;
+            try {
+                const response = await fetch('/security/api/ip-whitelist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '',
+                    },
+                    body: JSON.stringify({ ips: cleanIps }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.ips = data.ips || cleanIps;
+                    Toast.success(data.message || 'IP whitelist saved');
+                } else {
+                    Toast.error(data.detail || 'Failed to save whitelist');
+                }
+            } catch (err) {
+                Toast.error('Network error saving whitelist');
+            } finally {
+                this.saving = false;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

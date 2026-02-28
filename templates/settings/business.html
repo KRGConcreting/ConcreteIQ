@@ -1,0 +1,237 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Business Details - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="businessSettings()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 font-display">Business Details</h1>
+            <p class="text-slate-500 text-sm mt-1">Company information displayed on quotes, invoices, and communications.</p>
+        </div>
+        <button @click="save()"
+                :disabled="isSaving"
+                class="btn-v4 btn-v4-primary">
+            <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <svg x-show="isSaving" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span x-text="isSaving ? 'Saving...' : 'Save Changes'"></span>
+        </button>
+    </div>
+
+    <!-- Company Information -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Company Information</h2>
+                <p>Legal entity and trading details</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Legal Business Name</label>
+                <input type="text" x-model="business.name"
+                       placeholder="e.g. John Smith Concreting Pty Ltd"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Trading As</label>
+                <input type="text" x-model="business.trading_as"
+                       placeholder="e.g. JS Concreting"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">ABN</label>
+                <input type="text" x-model="business.abn"
+                       placeholder="XX XXX XXX XXX"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Website</label>
+                <input type="text" x-model="business.website"
+                       placeholder="www.example.com.au"
+                       class="input-field">
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Details -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-emerald">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Contact Details</h2>
+                <p>How customers can reach you</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Phone</label>
+                <input type="text" x-model="business.phone"
+                       placeholder="0400 000 000"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+                <input type="email" x-model="business.email"
+                       placeholder="contact@example.com.au"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Address Line 1</label>
+                <input type="text" x-model="business.address_line1"
+                       placeholder="City or region"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Address Line 2</label>
+                <input type="text" x-model="business.address_line2"
+                       placeholder="State"
+                       class="input-field">
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Bank Details</h2>
+                <p>Displayed on invoices for bank transfer payments</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Bank Name</label>
+                <input type="text" x-model="business.bank_name"
+                       placeholder="e.g. Commonwealth Bank"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">BSB</label>
+                <input type="text" x-model="business.bank_bsb"
+                       placeholder="XXX-XXX"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Account Number</label>
+                <input type="text" x-model="business.bank_account"
+                       placeholder="XXXX XXXX"
+                       class="input-field">
+            </div>
+        </div>
+        <div class="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <p class="text-sm text-slate-600">
+                <span class="font-semibold">Note:</span> Bank details are stored securely and displayed on invoices sent to customers.
+            </p>
+        </div>
+    </div>
+
+    <!-- Proprietor's Earnings Goal -->
+    <div id="goals" class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-orange">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Proprietor's Earnings Goal</h2>
+                <p>Track your personal take-home against a target</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Goal Period</label>
+                <select x-model="goals.goal_type"
+                        class="input-field">
+                    <option value="weekly">Weekly</option>
+                    <option value="fortnightly">Fortnightly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Target Amount</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-semibold">$</span>
+                    <input type="number"
+                           x-model="goalAmountDollars"
+                           step="100"
+                           min="0"
+                           class="input-field pl-8">
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+            <p class="text-sm text-amber-800">
+                <span class="font-semibold">How it works:</span> Proprietor's Earnings = Customer Payment (ex GST) minus materials (at your actual cost), worker wages + super + PAYG, and expenses. Your own labour is NOT deducted - that's part of your profit. Material markup is automatically included as profit.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function businessSettings() {
+    return {
+        business: {{ business | tojson }},
+        goals: {{ goals | tojson }},
+        isSaving: false,
+
+        get goalAmountDollars() {
+            return (this.goals.goal_amount_cents || 180000) / 100;
+        },
+        set goalAmountDollars(value) {
+            this.goals.goal_amount_cents = Math.round(value * 100);
+        },
+
+        async save() {
+            this.isSaving = true;
+            try {
+                // Save business settings
+                const businessResponse = await fetch('/settings/api/business', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.business)
+                });
+
+                // Save goals settings
+                const goalsResponse = await fetch('/settings/api/goals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.goals)
+                });
+
+                if (businessResponse.ok && goalsResponse.ok) {
+                    Toast.success('Settings saved successfully!');
+                } else {
+                    const data = await businessResponse.json();
+                    Toast.error(formatErrorDetail(data.detail, 'Error saving settings'));
+                }
+            } catch (e) {
+                Toast.error('Network error - please try again');
+            } finally {
+                this.isSaving = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Report — ConcreteIQ{% endblock %}
+{% block page_title %}Customer Report{% endblock %}
+{% block mobile_title %}Customers Report{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Header -->
+<div class="page-hero animate-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+        <div class="flex items-center gap-4">
+            <a href="/reports" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <p class="page-hero-subtitle">Reports</p>
+                <h1 class="page-hero-title">Customer Report</h1>
+            </div>
+        </div>
+        <!-- Period selector -->
+        <div class="flex flex-wrap gap-2">
+            <a href="?period=week" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'week' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Week</a>
+            <a href="?period=month" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'month' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Month</a>
+            <a href="?period=quarter" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'quarter' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Quarter</a>
+            <a href="?period=year" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'year' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Year</a>
+        </div>
+    </div>
+    <p class="text-blue-200 text-sm mt-3 ml-14">{{ start_date.strftime('%d %b %Y') }} - {{ end_date.strftime('%d %b %Y') }}</p>
+</div>
+
+<div class="max-w-6xl mx-auto">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="metric-card card-enter card-enter-1" style="--metric-accent: #22c55e;">
+            <p class="metric-card-label">New Customers</p>
+            <p class="metric-card-value text-green-600">{{ stats.new_count }}</p>
+            <p class="metric-card-meta">This period</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-2" style="--metric-accent: #64748b;">
+            <p class="metric-card-label">Total Customers</p>
+            <p class="metric-card-value">{{ stats.total_count }}</p>
+            <p class="metric-card-meta">All time</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-3" style="--metric-accent: #3b82f6;">
+            <p class="metric-card-label">Repeat Customers</p>
+            <p class="metric-card-value text-blue-600">{{ stats.repeat_count }}</p>
+            <p class="metric-card-meta">2+ quotes</p>
+        </div>
+    </div>
+
+    <!-- Charts and tables -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- New vs repeat visual -->
+        <div class="premium-card card-gradient-top p-6 card-enter card-enter-4">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-blue">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Customer Mix</h3></div>
+            </div>
+            {% set single_count = stats.total_count - stats.repeat_count %}
+            <div class="h-64 mt-4">
+                <canvas id="customerMixChart"></canvas>
+            </div>
+            <div class="flex justify-center gap-6 mt-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span class="text-slate-600">Single Quote: <span class="font-display">{{ single_count }}</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span class="text-slate-600">Repeat: <span class="font-display">{{ stats.repeat_count }}</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers by location -->
+        <div class="premium-card overflow-hidden card-enter card-enter-5">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <div class="settings-section-header">
+                    <div class="settings-section-header-icon icon-bg-orange">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <div><h3 class="font-display font-semibold text-slate-900">Customers by Location</h3></div>
+                </div>
+            </div>
+            {% if stats.by_location %}
+                <div class="overflow-x-auto max-h-72">
+                    <table class="table-premium w-full">
+                        <thead class="sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Suburb</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Customers</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for item in stats.by_location %}
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-3 text-sm text-slate-900">{{ item.city }}</td>
+                                <td class="px-6 py-3 text-sm text-slate-900 text-right font-display">{{ item.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state-v4 text-center py-8">
+                    <p class="text-slate-500">No location data available</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Lead sources -->
+    {% if stats.by_source %}
+    <div class="premium-card p-6 mb-8 card-enter card-enter-6">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-green">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div><h3 class="font-display font-semibold text-slate-900">Lead Sources</h3></div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+            {% for item in stats.by_source %}
+            <div class="bg-slate-50 rounded-xl p-4 text-center">
+                <p class="text-2xl font-display font-bold text-slate-900">{{ item.count }}</p>
+                <p class="text-sm text-slate-600 mt-1">{{ item.source }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top customers table -->
+    <div class="premium-card overflow-hidden card-enter card-enter-7">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-purple">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Top Customers by Lifetime Value</h3></div>
+            </div>
+        </div>
+        {% if stats.top_by_revenue %}
+            <div class="overflow-x-auto">
+                <table class="table-premium w-full">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Quotes</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for item in stats.top_by_revenue %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-slate-500">{{ loop.index }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <a href="/customers/{{ item.customer_id }}" class="text-blue-600 hover:text-blue-800 font-medium">{{ item.name }}</a>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-900 text-right font-display">{{ item.quote_count }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-900 text-right font-display font-medium">{{ item.revenue_cents | money }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-v4 text-center py-8">
+                <p class="text-slate-500">No customer revenue data</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ctx = document.getElementById('customerMixChart').getContext('2d');
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Single Quote', 'Repeat Customer'],
+        datasets: [{
+            data: [{{ stats.total_count - stats.repeat_count }}, {{ stats.repeat_count }}],
+            backgroundColor: ['#3b82f6', '#22c55e'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        plugins: {
+            legend: {
+                display: false,
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

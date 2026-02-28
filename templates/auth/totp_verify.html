@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify 2FA — ConcreteIQ</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico?v=3">
+    <link rel="icon" type="image/png" sizes="64x64" href="/static/images/favicon.png?v=3">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/images/favicon-192.png?v=3">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/images/favicon-192.png?v=3">
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        h1, h2, .font-display { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; }
+        /* Auto-advance digit boxes */
+        .totp-input {
+            width: 3rem;
+            height: 3.5rem;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border-radius: 0.75rem;
+            border: 2px solid #e5e7eb;
+            transition: border-color 0.15s;
+        }
+        .totp-input:focus {
+            border-color: #1e293b;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+        }
+    </style>
+</head>
+<body class="h-full">
+    <div class="min-h-full login-gradient-bg relative overflow-hidden flex flex-col">
+
+        <!-- Floating shapes -->
+        <div class="login-shape" style="width: 300px; height: 300px; top: -100px; right: -50px;"></div>
+        <div class="login-shape" style="width: 200px; height: 200px; bottom: 10%; left: -60px;"></div>
+        <div class="login-shape" style="width: 150px; height: 150px; top: 40%; right: 15%;"></div>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10">
+            <div class="sm:mx-auto sm:w-full sm:max-w-md animate-in">
+                <div class="flex justify-center mb-6">
+                    <img src="/static/images/ConcreteIQ_Logo.png?v=2" alt="ConcreteIQ" class="h-12 drop-shadow-lg brightness-0 invert opacity-90">
+                </div>
+                <h1 class="text-center text-2xl font-display font-bold text-white tracking-tight">Two-Factor Authentication</h1>
+                <p class="mt-1 text-center text-white/40 text-sm">Enter the 6-digit code from your authenticator app</p>
+            </div>
+
+            <div class="mt-6 sm:mx-auto sm:w-full sm:max-w-md animate-in delay-2">
+                <div class="bg-white py-8 px-6 shadow-2xl rounded-2xl sm:px-10">
+                    {% if error %}
+                    <div class="mb-5 p-3 bg-red-50 border border-red-200 rounded-xl animate-in">
+                        <p class="text-sm text-red-700 font-medium">{{ error }}</p>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="/login/2fa" id="totp-form">
+                        <input type="hidden" name="challenge" value="{{ challenge }}">
+
+                        <!-- 6-digit code input boxes -->
+                        <div class="flex justify-center gap-2 mb-6">
+                            <input type="text" class="totp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="0" autofocus autocomplete="off">
+                            <input type="text" class="totp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="1" autocomplete="off">
+                            <input type="text" class="totp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="2" autocomplete="off">
+                            <div class="flex items-center"><span class="text-slate-300 text-2xl font-light">–</span></div>
+                            <input type="text" class="totp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="3" autocomplete="off">
+                            <input type="text" class="totp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="4" autocomplete="off">
+                            <input type="text" class="totp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-idx="5" autocomplete="off">
+                        </div>
+
+                        <!-- Hidden field that collects the full code -->
+                        <input type="hidden" name="totp_code" id="totp_code" value="">
+
+                        <button type="submit" id="submit-btn"
+                                class="btn-v4 btn-v4-primary w-full py-3 text-sm font-bold rounded-lg">
+                            Verify
+                        </button>
+                    </form>
+
+                    <div class="mt-4 text-center space-y-2">
+                        <button type="button" id="recovery-toggle" onclick="toggleRecoveryMode()"
+                                class="text-sm text-slate-400 hover:text-slate-700 transition-colors block mx-auto">
+                            Lost your authenticator? Use a recovery code
+                        </button>
+                        <a href="/login" class="text-sm text-slate-400 hover:text-slate-700 transition-colors block">
+                            &larr; Back to login
+                        </a>
+                    </div>
+
+                    <!-- Recovery code input (hidden by default) -->
+                    <div id="recovery-mode" class="hidden mt-6 pt-4 border-t border-slate-100">
+                        <p class="text-sm text-slate-600 mb-3 text-center">Enter one of your recovery codes</p>
+                        <form method="POST" action="/login/2fa" id="recovery-form">
+                            <input type="hidden" name="challenge" value="{{ challenge }}">
+                            <div class="mb-3">
+                                <input type="text" name="totp_code" id="recovery_code_input"
+                                       class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 text-center text-lg tracking-widest font-mono focus:border-slate-800 focus:outline-none focus:ring-0 transition-colors"
+                                       placeholder="XXXX-XXXX"
+                                       maxlength="9"
+                                       autocomplete="off">
+                            </div>
+                            <button type="submit"
+                                    class="btn-v4 btn-v4-primary w-full py-3 text-sm font-bold rounded-lg">
+                                Verify Recovery Code
+                            </button>
+                        </form>
+                        <button type="button" onclick="toggleRecoveryMode()"
+                                class="block mx-auto mt-3 text-sm text-slate-400 hover:text-slate-700 transition-colors">
+                            Use authenticator code instead
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="relative z-10 text-center pb-6">
+            <p class="text-[11px] text-white/30 tracking-wide">
+                <span class="font-display font-medium">ConcreteIQ</span> &mdash; Business Management System
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+    function toggleRecoveryMode() {
+        var totpSection = document.getElementById('totp-form');
+        var recoverySection = document.getElementById('recovery-mode');
+        var toggleBtn = document.getElementById('recovery-toggle');
+
+        if (recoverySection.classList.contains('hidden')) {
+            recoverySection.classList.remove('hidden');
+            totpSection.style.display = 'none';
+            toggleBtn.style.display = 'none';
+            document.getElementById('recovery_code_input').focus();
+        } else {
+            recoverySection.classList.add('hidden');
+            totpSection.style.display = '';
+            toggleBtn.style.display = '';
+            document.querySelectorAll('.totp-input')[0].focus();
+        }
+    }
+
+    (function() {
+        const inputs = document.querySelectorAll('.totp-input');
+        const hidden = document.getElementById('totp_code');
+        const form = document.getElementById('totp-form');
+
+        function collectCode() {
+            let code = '';
+            inputs.forEach(inp => code += inp.value);
+            hidden.value = code;
+            return code;
+        }
+
+        inputs.forEach((input, idx) => {
+            input.addEventListener('input', (e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                e.target.value = val.charAt(0) || '';
+
+                if (val && idx < inputs.length - 1) {
+                    inputs[idx + 1].focus();
+                }
+
+                const code = collectCode();
+                if (code.length === 6) {
+                    form.submit();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                    inputs[idx - 1].focus();
+                    inputs[idx - 1].value = '';
+                }
+            });
+
+            // Handle paste
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+                for (let i = 0; i < paste.length && i + idx < inputs.length; i++) {
+                    inputs[idx + i].value = paste[i];
+                }
+                const nextIdx = Math.min(idx + paste.length, inputs.length - 1);
+                inputs[nextIdx].focus();
+
+                const code = collectCode();
+                if (code.length === 6) {
+                    form.submit();
+                }
+            });
+        });
+
+        form.addEventListener('submit', () => collectCode());
+    })();
+    </script>
+</body>
+</html>

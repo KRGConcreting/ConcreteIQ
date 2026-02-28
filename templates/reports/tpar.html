@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}TPAR Report — ConcreteIQ{% endblock %}
+{% block page_title %}TPAR Report{% endblock %}
+{% block mobile_title %}TPAR{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Hero Header -->
+    <div class="page-hero animate-in">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <div class="relative">
+                <p class="page-hero-subtitle">Taxable Payments Annual Report</p>
+                <h1 class="page-hero-title">TPAR FY{{ fy }}</h1>
+            </div>
+            <div class="flex items-center gap-2 relative">
+                <a href="/reports/tpar?fy={{ fy - 1 }}" class="inline-flex items-center gap-1 px-3 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    FY{{ fy - 1 }}
+                </a>
+                <a href="/reports/tpar?fy={{ fy + 1 }}" class="inline-flex items-center gap-1 px-3 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    FY{{ fy + 1 }}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                <a href="/reports/tpar/export-csv?fy={{ fy }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export CSV
+                </a>
+                <a href="/reports" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Due Date Banner -->
+    {% if days_remaining < 0 %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-1">
+        <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-display font-bold text-red-800">TPAR Overdue by {{ (-days_remaining) }} days</p>
+            <p class="text-sm text-red-600">Was due {{ due_date.strftime('%d %b %Y') }}. Lodge ASAP to avoid penalties.</p>
+        </div>
+    </div>
+    {% elif days_remaining <= 30 %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-1">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-display font-bold text-amber-800">TPAR Due in {{ days_remaining }} Days</p>
+            <p class="text-sm text-amber-600">Due {{ due_date.strftime('%d %b %Y') }}. Export CSV and provide to your accountant.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in delay-2">
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-slate-900">{{ total_vendors }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">Subcontractors</p>
+        </div>
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-slate-900">${{ '{:,.0f}'.format(grand_total_cents / 100) }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">Total Paid (inc GST)</p>
+        </div>
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-slate-900">${{ '{:,.0f}'.format(grand_gst_cents / 100) }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">GST Included</p>
+        </div>
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-slate-900">{{ due_date.strftime('%d %b') }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">Due Date</p>
+        </div>
+    </div>
+
+    <!-- Period Info -->
+    <div class="premium-card p-4 animate-in delay-3">
+        <div class="flex items-center gap-2 text-sm text-slate-600">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>Reporting period: <strong>{{ fy_start.strftime('%d %b %Y') }}</strong> to <strong>{{ fy_end.strftime('%d %b %Y') }}</strong></span>
+        </div>
+    </div>
+
+    <!-- Subcontractor Payments Table -->
+    {% if vendors %}
+    <div class="premium-card overflow-hidden animate-in delay-4">
+        <div class="p-5 border-b border-slate-100">
+            <h3 class="font-display font-bold text-slate-900">Payments by Subcontractor</h3>
+            <p class="text-sm text-slate-500 mt-1">All payments made to subcontractors during FY{{ fy }}.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="text-left py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Payee (Subcontractor)</th>
+                        <th class="text-center py-3 px-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Payments</th>
+                        <th class="text-right py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Total Paid (inc GST)</th>
+                        <th class="text-right py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">GST Included</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for v in vendors %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 px-5">
+                            <p class="font-medium text-slate-900 text-sm">{{ v.name }}</p>
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600">{{ v.payment_count }}</span>
+                        </td>
+                        <td class="py-3 px-5 text-right font-display font-bold text-slate-900 text-sm">${{ '{:,.2f}'.format(v.total_cents / 100) }}</td>
+                        <td class="py-3 px-5 text-right text-sm text-slate-500">${{ '{:,.2f}'.format(v.gst_cents / 100) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="bg-slate-50 border-t-2 border-slate-200">
+                        <td class="py-3 px-5 font-display font-bold text-slate-900">Total</td>
+                        <td class="py-3 px-3 text-center font-bold text-slate-600 text-sm">{{ vendors | sum(attribute='payment_count') }}</td>
+                        <td class="py-3 px-5 text-right font-display font-bold text-slate-900">${{ '{:,.2f}'.format(grand_total_cents / 100) }}</td>
+                        <td class="py-3 px-5 text-right font-bold text-slate-500">${{ '{:,.2f}'.format(grand_gst_cents / 100) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="premium-card overflow-hidden animate-in delay-4">
+        <div class="empty-state-v4">
+            <div class="empty-state-v4-icon">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <h3 class="empty-state-v4-title">No subcontractor payments</h3>
+            <p class="empty-state-v4-text">No expenses with category "Subcontractor" were found for FY{{ fy }}. Log subcontractor expenses in Xero.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Help / Info Card -->
+    <div class="premium-card card-gradient-top p-6 animate-in delay-5">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">About TPAR</h3>
+        </div>
+        <div class="text-sm text-slate-600 space-y-2">
+            <p><strong>What is it?</strong> Businesses in the building & construction industry must report payments made to subcontractors each financial year.</p>
+            <p><strong>Who needs to lodge?</strong> Any business that pays subcontractors for building/construction services.</p>
+            <p><strong>When?</strong> Due <strong>28 August</strong> following the end of the financial year.</p>
+            <p><strong>What you need:</strong> Each subcontractor's name, ABN, and total amount paid (including GST).</p>
+            <p><strong>How to lodge:</strong> Export the CSV and provide it to your accountant, or lodge directly via ATO Online Services.</p>
+            <p class="text-xs text-slate-400 mt-3">Tip: Make sure you record the ABN for each subcontractor in the Supplier Contact Book for accurate reporting.</p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

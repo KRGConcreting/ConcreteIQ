@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Revenue Report — ConcreteIQ{% endblock %}
+{% block page_title %}Revenue Report{% endblock %}
+{% block mobile_title %}Revenue Report{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Header -->
+<div class="page-hero animate-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+        <div class="flex items-center gap-4">
+            <a href="/reports" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <p class="page-hero-subtitle">Reports</p>
+                <h1 class="page-hero-title">Revenue Report</h1>
+            </div>
+        </div>
+        <!-- Period selector -->
+        <div class="flex flex-wrap gap-2">
+            <a href="?period=week" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'week' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Week</a>
+            <a href="?period=month" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'month' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Month</a>
+            <a href="?period=quarter" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'quarter' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Quarter</a>
+            <a href="?period=year" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'year' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Year</a>
+        </div>
+    </div>
+    <p class="text-blue-200 text-sm mt-3 ml-14">{{ start_date.strftime('%d %b %Y') }} - {{ end_date.strftime('%d %b %Y') }}</p>
+</div>
+
+<div class="max-w-6xl mx-auto">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="metric-card card-enter card-enter-1" style="--metric-accent: #22c55e;">
+            <p class="metric-card-label">Revenue This Period</p>
+            <p class="metric-card-value text-green-600">{{ stats.total_revenue_cents | money }}</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-2" style="--metric-accent: #3b82f6;">
+            <p class="metric-card-label">Avg Job Value</p>
+            <p class="metric-card-value">{{ stats.avg_job_value_cents | money }}</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-3" style="--metric-accent: #6366f1;">
+            <p class="metric-card-label">Collected (All Time)</p>
+            <p class="metric-card-value text-blue-600">{{ stats.collected_cents | money }}</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-4" style="--metric-accent: #ef4444;">
+            <p class="metric-card-label">Outstanding</p>
+            <p class="metric-card-value text-red-600">{{ stats.outstanding_cents | money }}</p>
+        </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Monthly revenue chart -->
+        <div class="premium-card card-gradient-top p-6 card-enter card-enter-5">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-green">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Revenue by Month</h3></div>
+            </div>
+            {% if stats.by_month %}
+                <div class="h-64 mt-4">
+                    <canvas id="monthlyRevenueChart"></canvas>
+                </div>
+            {% else %}
+                <div class="empty-state-v4 text-center py-8">
+                    <p class="text-slate-500">No revenue data for this period</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Revenue by stage -->
+        <div class="premium-card p-6 card-enter card-enter-6">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-purple">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Revenue by Payment Stage</h3></div>
+            </div>
+            <div class="space-y-4 mt-4">
+                {% set total_stage = stats.by_stage.booking + stats.by_stage.prepour + stats.by_stage.completion + stats.by_stage.variation + stats.by_stage.manual + stats.by_stage.other %}
+                {% if total_stage == 0 %}{% set total_stage = 1 %}{% endif %}
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Booking (30%)</span>
+                        <span class="font-display font-medium">{{ stats.by_stage.booking | money }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-4">
+                        <div class="bg-blue-500 h-4 rounded-full"
+                             style="width: {{ (stats.by_stage.booking / total_stage * 100) | int }}%">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Pre-Pour (60%)</span>
+                        <span class="font-display font-medium">{{ stats.by_stage.prepour | money }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-4">
+                        <div class="bg-green-500 h-4 rounded-full"
+                             style="width: {{ (stats.by_stage.prepour / total_stage * 100) | int }}%">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Completion (10%)</span>
+                        <span class="font-display font-medium">{{ stats.by_stage.completion | money }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-4">
+                        <div class="bg-yellow-500 h-4 rounded-full"
+                             style="width: {{ (stats.by_stage.completion / total_stage * 100) | int }}%">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Variations</span>
+                        <span class="font-display font-medium">{{ stats.by_stage.variation | money }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-4">
+                        <div class="bg-purple-500 h-4 rounded-full"
+                             style="width: {{ (stats.by_stage.variation / total_stage * 100) | int }}%">
+                        </div>
+                    </div>
+                </div>
+
+                {% if stats.by_stage.manual > 0 or stats.by_stage.other > 0 %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Other</span>
+                        <span class="font-display font-medium">{{ (stats.by_stage.manual + stats.by_stage.other) | money }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-4">
+                        <div class="bg-slate-500 h-4 rounded-full"
+                             style="width: {{ ((stats.by_stage.manual + stats.by_stage.other) / total_stage * 100) | int }}%">
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Top customers table -->
+    <div class="premium-card overflow-hidden card-enter card-enter-7">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-blue">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Top Customers by Revenue</h3></div>
+            </div>
+        </div>
+        {% if stats.top_customers %}
+            <div class="overflow-x-auto">
+                <table class="table-premium w-full">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Customer</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for item in stats.top_customers %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-slate-500">{{ loop.index }}</td>
+                            <td class="px-6 py-4 text-sm">
+                                <a href="/customers/{{ item.customer_id }}" class="text-blue-600 hover:text-blue-800 font-medium">{{ item.name }}</a>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-900 text-right font-display font-medium">{{ item.revenue_cents | money }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-v4 text-center py-8">
+                <p class="text-slate-500">No revenue data for this period</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Export link -->
+    <div class="mt-6 flex justify-center gap-4 card-enter card-enter-8">
+        <a href="/reports/api/export/invoices?start={{ start_date }}&end={{ end_date }}"
+           class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all inline-flex items-center gap-2 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Export Invoices
+        </a>
+        <a href="/reports/api/export/payments?start={{ start_date }}&end={{ end_date }}"
+           class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all inline-flex items-center gap-2 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Export Payments
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if stats.by_month %}
+const ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ stats.by_month | map(attribute='month') | list | tojson }},
+        datasets: [{
+            label: 'Revenue',
+            data: {{ stats.by_month | map(attribute='revenue_cents') | list | tojson }}.map(v => v / 100),
+            backgroundColor: '#22c55e',
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return '$' + context.raw.toLocaleString('en-AU', {minimumFractionDigits: 2});
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

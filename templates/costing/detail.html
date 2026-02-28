@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Job Costing - {{ quote.quote_number }} — ConcreteIQ{% endblock %}
+{% block mobile_title %}Job Costing{% endblock %}
+{% block page_title %}Job Costing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Flash messages -->
+    {% set messages = get_flashed_messages(request) %}
+    {% for msg in messages %}
+    <div class="p-4 rounded-xl {{ 'bg-green-50 border border-green-200 text-green-800' if msg.category == 'success' else 'bg-red-50 border border-red-200 text-red-800' }}">
+        <p class="text-sm font-medium">{{ msg.message }}</p>
+    </div>
+    {% endfor %}
+
+    <!-- Header -->
+    <div class="flex items-center justify-between animate-in">
+        <div>
+            <h2 class="text-xl font-display font-bold text-slate-900">
+                {{ quote.quote_number }} — {{ quote.job_name or 'Job Costing' }}
+            </h2>
+            <p class="text-sm text-slate-500 mt-0.5">
+                {{ customer.name if customer else 'Unknown' }}
+                {% if quote.job_type %}<span class="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">{{ quote.job_type }}</span>{% endif %}
+            </p>
+        </div>
+        <a href="/quotes/{{ quote.id }}" class="btn-v4 btn-v4-secondary text-sm px-4 py-2">
+            ← Back to Quote
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Costing Form (left 2 cols) -->
+        <div class="lg:col-span-2 animate-in delay-1">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Actual Costs</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="/costing/{{ quote.id }}" class="space-y-4">
+                        <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Concrete -->
+                            <div>
+                                <label class="field-label">Concrete Cost ($)</label>
+                                <input type="number" name="actual_concrete_dollars" step="0.01" min="0"
+                                       value="{{ '%.2f' % (costing.actual_concrete_cents / 100) if costing.actual_concrete_cents else '' }}"
+                                       class="input-field" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label class="field-label">Concrete Volume (m&sup3;)</label>
+                                <input type="number" name="actual_concrete_m3" step="0.01" min="0"
+                                       value="{{ costing.actual_concrete_m3 if costing.actual_concrete_m3 else '' }}"
+                                       class="input-field" placeholder="0.00">
+                            </div>
+
+                            <!-- Labour -->
+                            <div>
+                                <label class="field-label">Labour Cost ($)</label>
+                                <input type="number" name="actual_labour_dollars" step="0.01" min="0"
+                                       value="{{ '%.2f' % (costing.actual_labour_cents / 100) if costing.actual_labour_cents else '' }}"
+                                       class="input-field" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label class="field-label">Labour Hours</label>
+                                <input type="number" name="actual_labour_hours" step="0.25" min="0"
+                                       value="{{ costing.actual_labour_hours if costing.actual_labour_hours else '' }}"
+                                       class="input-field" placeholder="0.00">
+                            </div>
+
+                            <!-- Materials -->
+                            <div>
+                                <label class="field-label">Materials ($)</label>
+                                <input type="number" name="actual_materials_dollars" step="0.01" min="0"
+                                       value="{{ '%.2f' % (costing.actual_materials_cents / 100) if costing.actual_materials_cents else '' }}"
+                                       class="input-field" placeholder="0.00">
+                            </div>
+
+                            <!-- Pump -->
+                            <div>
+                                <label class="field-label">Concrete Pump ($)</label>
+                                <input type="number" name="actual_pump_dollars" step="0.01" min="0"
+                                       value="{{ '%.2f' % (costing.actual_pump_cents / 100) if costing.actual_pump_cents else '' }}"
+                                       class="input-field" placeholder="0.00">
+                            </div>
+
+                            <!-- Other -->
+                            <div>
+                                <label class="field-label">Other Costs ($)</label>
+                                <input type="number" name="actual_other_dollars" step="0.01" min="0"
+                                       value="{{ '%.2f' % (costing.actual_other_cents / 100) if costing.actual_other_cents else '' }}"
+                                       class="input-field" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label class="field-label">Other Description</label>
+                                <input type="text" name="other_description"
+                                       value="{{ costing.other_description or '' }}"
+                                       class="input-field" placeholder="e.g. Skip bin, subcontractor">
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div>
+                            <label class="field-label">Notes</label>
+                            <textarea name="notes" rows="3" class="input-field"
+                                      placeholder="Any notes about actual costs, delays, issues...">{{ costing.notes or '' }}</textarea>
+                        </div>
+
+                        <button type="submit" class="btn-v4 btn-v4-primary py-2.5 px-6">
+                            Save Costing
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Panel (right col) -->
+        <div class="animate-in delay-2">
+            <div class="space-y-4">
+
+                <!-- Profit Summary -->
+                <div class="card">
+                    <div class="card-body text-center">
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Profit</p>
+                        <p class="text-3xl font-display font-bold {{ 'text-green-600' if analysis.profit_cents >= 0 else 'text-red-600' }}">
+                            {{ analysis.profit_cents | currency }}
+                        </p>
+                        <p class="text-sm mt-1 {{ 'text-green-600' if analysis.margin_percent >= 0 else 'text-red-600' }}">
+                            {{ '%.1f' % analysis.margin_percent }}% margin
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Quoted vs Actual -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title text-sm">Quoted vs Actual</h3>
+                    </div>
+                    <div class="card-body space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-600">Quoted Total</span>
+                            <span class="font-semibold text-slate-900">{{ analysis.quoted_total_cents | currency }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-600">Actual Costs</span>
+                            <span class="font-semibold text-slate-900">{{ analysis.actual_total_cents | currency }}</span>
+                        </div>
+                        <div class="border-t border-slate-100 pt-3 flex justify-between items-center">
+                            <span class="text-sm font-medium text-slate-700">Profit</span>
+                            <span class="font-bold {{ 'text-green-600' if analysis.profit_cents >= 0 else 'text-red-600' }}">
+                                {{ analysis.profit_cents | currency }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Metrics -->
+                {% if analysis.actual_total_cents > 0 %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title text-sm">Key Metrics</h3>
+                    </div>
+                    <div class="card-body space-y-3 text-sm">
+                        {% if analysis.area_m2 > 0 %}
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Revenue / m&sup2;</span>
+                            <span class="font-medium">{{ analysis.revenue_per_m2_cents | currency }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Cost / m&sup2;</span>
+                            <span class="font-medium">{{ analysis.cost_per_m2_cents | currency }}</span>
+                        </div>
+                        {% endif %}
+                        {% if analysis.labour_hours > 0 %}
+                        <div class="flex justify-between">
+                            <span class="text-slate-600">Profit / Hour</span>
+                            <span class="font-medium {{ 'text-green-600' if analysis.hourly_rate_achieved_cents > 0 else 'text-red-600' }}">
+                                {{ analysis.hourly_rate_achieved_cents | currency }}/hr
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Cost Breakdown -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title text-sm">Cost Breakdown</h3>
+                    </div>
+                    <div class="card-body space-y-2 text-sm">
+                        {% if analysis.concrete_pct > 0 %}
+                        <div class="flex items-center gap-2">
+                            <div class="w-24 text-slate-600">Concrete</div>
+                            <div class="flex-1 bg-slate-100 rounded-full h-2">
+                                <div class="bg-blue-500 rounded-full h-2" style="width: {{ analysis.concrete_pct }}%"></div>
+                            </div>
+                            <div class="w-12 text-right font-medium">{{ analysis.concrete_pct }}%</div>
+                        </div>
+                        {% endif %}
+                        {% if analysis.labour_pct > 0 %}
+                        <div class="flex items-center gap-2">
+                            <div class="w-24 text-slate-600">Labour</div>
+                            <div class="flex-1 bg-slate-100 rounded-full h-2">
+                                <div class="bg-orange-500 rounded-full h-2" style="width: {{ analysis.labour_pct }}%"></div>
+                            </div>
+                            <div class="w-12 text-right font-medium">{{ analysis.labour_pct }}%</div>
+                        </div>
+                        {% endif %}
+                        {% if analysis.materials_pct > 0 %}
+                        <div class="flex items-center gap-2">
+                            <div class="w-24 text-slate-600">Materials</div>
+                            <div class="flex-1 bg-slate-100 rounded-full h-2">
+                                <div class="bg-green-500 rounded-full h-2" style="width: {{ analysis.materials_pct }}%"></div>
+                            </div>
+                            <div class="w-12 text-right font-medium">{{ analysis.materials_pct }}%</div>
+                        </div>
+                        {% endif %}
+                        {% if analysis.pump_pct > 0 %}
+                        <div class="flex items-center gap-2">
+                            <div class="w-24 text-slate-600">Pump</div>
+                            <div class="flex-1 bg-slate-100 rounded-full h-2">
+                                <div class="bg-purple-500 rounded-full h-2" style="width: {{ analysis.pump_pct }}%"></div>
+                            </div>
+                            <div class="w-12 text-right font-medium">{{ analysis.pump_pct }}%</div>
+                        </div>
+                        {% endif %}
+                        {% if analysis.other_pct > 0 %}
+                        <div class="flex items-center gap-2">
+                            <div class="w-24 text-slate-600">Other</div>
+                            <div class="flex-1 bg-slate-100 rounded-full h-2">
+                                <div class="bg-slate-500 rounded-full h-2" style="width: {{ analysis.other_pct }}%"></div>
+                            </div>
+                            <div class="w-12 text-right font-medium">{{ analysis.other_pct }}%</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

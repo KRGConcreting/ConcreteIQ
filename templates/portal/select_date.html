@@ -1,0 +1,387 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Select Start Date - {{ quote.quote_number }}{% endblock %}
+
+{% block content %}
+<div x-data="dateSelector()" class="space-y-6">
+
+    <!-- Progress Indicator -->
+    <div class="flex items-center justify-center gap-2 text-sm animate-fade-in-up">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <span class="text-slate-600 hidden sm:inline">View Quote</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <span class="text-slate-600 hidden sm:inline">Sign & Accept</span>
+        </div>
+        <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-semibold">3</div>
+            <span class="font-semibold text-slate-900 hidden sm:inline">Select Date</span>
+        </div>
+    </div>
+
+    <!-- Success Header -->
+    <div class="portal-card animate-fade-in-up delay-1">
+        <div class="px-6 py-6 sm:px-8 bg-gradient-to-r from-green-50 to-white text-center">
+            <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900 font-display mb-2">Quote Accepted!</h2>
+            <p class="text-slate-600">Now select your preferred start date to complete your booking</p>
+        </div>
+
+        <!-- Signed Notice -->
+        <div class="px-6 py-4 sm:px-8 bg-green-50/50 border-t border-b border-green-100">
+            <div class="flex items-center justify-center gap-3">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-green-800 font-medium text-sm">
+                    Signed by <strong>{{ quote.signature_name }}</strong> on
+                    {{ quote.signed_at.strftime('%d %B %Y at %H:%M') if quote.signed_at else 'N/A' }}
+                </p>
+            </div>
+        </div>
+
+        <!-- First Payment Info -->
+        <div class="px-6 py-5 sm:px-8 bg-blue-50/50 border-b border-blue-100">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-bold text-blue-900 uppercase tracking-wider mb-2">First Payment Required</h4>
+                    <p class="text-3xl font-bold text-blue-700 mb-2">${{ "%.2f"|format(deposit_amount) }}</p>
+                    <p class="text-sm text-blue-700">
+                        An invoice for your first payment has been sent to your email.
+                        Once paid, we'll confirm your selected start date.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="portal-card animate-fade-in-up delay-2">
+        <div class="px-6 py-4 sm:px-8 border-b border-slate-100">
+            <h3 class="text-lg font-semibold text-slate-900 font-display">Select Your Preferred Start Date</h3>
+            <p class="text-sm text-slate-500 mt-1">Choose when you'd like us to begin your project</p>
+        </div>
+
+        <div class="px-6 py-6 sm:px-8">
+            <!-- Calendar Header -->
+            <div class="flex items-center justify-between mb-5">
+                <button
+                    @click="previousMonth()"
+                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-200"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <h3 class="text-xl font-bold text-slate-900" x-text="currentMonthYear"></h3>
+                <button
+                    @click="nextMonth()"
+                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors duration-200"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Day Headers -->
+            <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-1">
+                <template x-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']">
+                    <div class="text-center text-xs font-semibold text-slate-500 uppercase py-2" x-text="day"></div>
+                </template>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div class="grid grid-cols-7 gap-1 sm:gap-2">
+                <template x-for="day in calendarDays" :key="day.key">
+                    <button
+                        @click="selectDay(day)"
+                        :disabled="!day.isAvailable"
+                        :class="{
+                            'bg-green-500 text-white border-green-600 shadow-md ring-2 ring-green-300': day.isSelected,
+                            'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:shadow-sm': day.isAvailable && !day.isSelected,
+                            'bg-red-50 text-red-400 border-red-200 cursor-not-allowed': day.isBusy && !day.isPast && !day.isOtherMonth,
+                            'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed': day.isWeekend && !day.isBusy && !day.isPast && !day.isOtherMonth,
+                            'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed': day.isPast && !day.isOtherMonth,
+                            'bg-transparent text-slate-200 border-transparent cursor-default': day.isOtherMonth,
+                            'ring-2 ring-primary-400': day.isToday && !day.isSelected
+                        }"
+                        class="aspect-square rounded-lg border transition-all duration-200 text-sm font-medium flex items-center justify-center"
+                        x-text="day.date"
+                    ></button>
+                </template>
+            </div>
+
+            <!-- Legend -->
+            <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-6 text-xs sm:text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
+                    <span class="text-slate-600">Available</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded bg-red-50 border border-red-200"></div>
+                    <span class="text-slate-600">Busy</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded bg-slate-50 border border-slate-100"></div>
+                    <span class="text-slate-600">Weekend / Past</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded bg-green-500"></div>
+                    <span class="text-slate-600">Selected</span>
+                </div>
+            </div>
+
+            <!-- Selected Date Display -->
+            <div x-show="selectedDate" x-cloak x-transition class="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl text-center">
+                <p class="text-sm text-green-700 mb-1">Selected Date:</p>
+                <p class="text-2xl font-bold text-green-900" x-text="formatSelectedDate()"></p>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="mt-6">
+                <button
+                    @click="confirmDate()"
+                    :disabled="!selectedDate || isSubmitting"
+                    class="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-green-500/30"
+                >
+                    <span x-show="!isSubmitting" class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Confirm Start Date
+                    </span>
+                    <span x-show="isSubmitting" class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Confirming...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Error Message -->
+            <div x-show="errorMessage" x-cloak x-transition class="mt-4 flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-red-700 text-sm" x-text="errorMessage"></p>
+            </div>
+
+            <!-- Back link -->
+            <div class="text-center mt-4">
+                <a href="/p/{{ token }}" class="text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                    &larr; Back to Quote
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dateSelector() {
+    return {
+        currentDate: new Date(),
+        selectedDate: null,
+        busyDates: {{ busy_dates|tojson }},
+        calendarDays: [],
+        isSubmitting: false,
+        errorMessage: '',
+
+        init() {
+            this.generateCalendar();
+        },
+
+        get currentMonthYear() {
+            return this.currentDate.toLocaleDateString('en-AU', {
+                month: 'long',
+                year: 'numeric'
+            });
+        },
+
+        generateCalendar() {
+            const year = this.currentDate.getFullYear();
+            const month = this.currentDate.getMonth();
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const prevLastDay = new Date(year, month, 0);
+
+            // Monday = 0 in our grid (ISO week)
+            let firstDayOfWeek = firstDay.getDay() - 1;
+            if (firstDayOfWeek < 0) firstDayOfWeek = 6;
+
+            const lastDate = lastDay.getDate();
+            const prevLastDate = prevLastDay.getDate();
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            this.calendarDays = [];
+
+            // Previous month days
+            for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+                const date = prevLastDate - i;
+                this.calendarDays.push({
+                    date: date,
+                    fullDate: new Date(year, month - 1, date),
+                    isOtherMonth: true,
+                    isAvailable: false,
+                    isPast: false,
+                    isWeekend: false,
+                    isBusy: false,
+                    isToday: false,
+                    isSelected: false,
+                    key: `prev-${date}`
+                });
+            }
+
+            // Current month days
+            for (let date = 1; date <= lastDate; date++) {
+                const fullDate = new Date(year, month, date);
+                const dateStr = this.toISODate(fullDate);
+                const dayOfWeek = fullDate.getDay();
+
+                const isPast = fullDate < today;
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                const isBusy = this.busyDates.includes(dateStr);
+                const isToday = fullDate.getTime() === today.getTime();
+                const isAvailable = !isPast && !isWeekend && !isBusy;
+                const isSelected = this.selectedDate &&
+                    this.toISODate(this.selectedDate) === dateStr;
+
+                this.calendarDays.push({
+                    date: date,
+                    fullDate: fullDate,
+                    dateStr: dateStr,
+                    isOtherMonth: false,
+                    isPast: isPast,
+                    isWeekend: isWeekend,
+                    isBusy: isBusy,
+                    isToday: isToday,
+                    isAvailable: isAvailable,
+                    isSelected: isSelected,
+                    key: `curr-${date}`
+                });
+            }
+
+            // Next month days to fill grid
+            const remainingDays = 42 - this.calendarDays.length;
+            for (let date = 1; date <= remainingDays; date++) {
+                this.calendarDays.push({
+                    date: date,
+                    fullDate: new Date(year, month + 1, date),
+                    isOtherMonth: true,
+                    isAvailable: false,
+                    isPast: false,
+                    isWeekend: false,
+                    isBusy: false,
+                    isToday: false,
+                    isSelected: false,
+                    key: `next-${date}`
+                });
+            }
+        },
+
+        toISODate(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        },
+
+        previousMonth() {
+            this.currentDate = new Date(
+                this.currentDate.getFullYear(),
+                this.currentDate.getMonth() - 1,
+                1
+            );
+            this.generateCalendar();
+        },
+
+        nextMonth() {
+            this.currentDate = new Date(
+                this.currentDate.getFullYear(),
+                this.currentDate.getMonth() + 1,
+                1
+            );
+            this.generateCalendar();
+        },
+
+        selectDay(day) {
+            if (!day.isAvailable) return;
+            this.selectedDate = day.fullDate;
+            this.generateCalendar();
+        },
+
+        formatSelectedDate() {
+            if (!this.selectedDate) return '';
+            return this.selectedDate.toLocaleDateString('en-AU', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        },
+
+        async confirmDate() {
+            if (!this.selectedDate) return;
+
+            this.errorMessage = '';
+            this.isSubmitting = true;
+
+            try {
+                const response = await fetch('/p/{{ token }}/confirm-date', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requested_date: this.toISODate(this.selectedDate)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = data.redirect_url || '/p/{{ token }}/success';
+                } else {
+                    this.errorMessage = formatErrorDetail(data.detail, 'An error occurred. Please try again.');
+                }
+            } catch (error) {
+                this.errorMessage = 'Network error. Please check your connection and try again.';
+            } finally {
+                this.isSubmitting = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

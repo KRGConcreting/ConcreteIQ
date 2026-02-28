@@ -1,0 +1,865 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — ConcreteIQ{% endblock %}
+
+{% block content %}
+
+<!-- Welcome Hero -->
+<div class="page-hero animate-in mb-8">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+        <div class="relative">
+            <p class="page-hero-subtitle">Welcome Back,</p>
+            <h1 class="page-hero-title">Kyle</h1>
+        </div>
+        <div class="flex items-center gap-3 relative">
+            <a href="/quotes/new" class="btn-v4 btn-v4-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Quote
+            </a>
+            <a href="/customers/new" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                New Customer
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+    <!-- Revenue This Month -->
+    <div class="card-enter card-enter-1 relative overflow-hidden bg-gradient-to-br from-orange-500 via-orange-500 to-amber-500 rounded-2xl p-5 text-white shadow-lg shadow-orange-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/8 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
+        <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+        <div class="relative">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">Revenue</p>
+            </div>
+            <p class="text-3xl font-display font-bold counter-animated">{{ stats.revenue_this_month_cents | money if stats.revenue_this_month_cents else '$0' }}</p>
+            {% if stats.trends and stats.trends.revenue_percent %}
+                <p class="text-sm mt-1 text-white/60 flex items-center gap-1">
+                    {% if stats.trends.revenue_percent > 0 %}
+                    <svg class="w-3.5 h-3.5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    {% else %}
+                    <svg class="w-3.5 h-3.5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                    {% endif %}
+                    {{ stats.trends.revenue_percent }}% vs last month
+                </p>
+            {% else %}
+                <p class="text-sm mt-1 text-white/50">This month</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Jobs Booked This Month -->
+    <div class="card-enter card-enter-2 relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-500 to-indigo-500 rounded-2xl p-5 text-white shadow-lg shadow-blue-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/8 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
+        <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+        <div class="relative">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">Jobs Booked</p>
+            </div>
+            <p class="text-3xl font-display font-bold">{{ stats.jobs_this_month or stats.jobs_this_week or 0 }}</p>
+            <p class="text-sm text-white/50 mt-1">Confirmed this month</p>
+        </div>
+    </div>
+
+    <!-- Outstanding Invoices -->
+    <div class="card-enter card-enter-3 relative overflow-hidden bg-gradient-to-br from-rose-500 via-rose-500 to-pink-500 rounded-2xl p-5 text-white shadow-lg shadow-rose-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/8 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
+        <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+        <div class="relative">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">Outstanding</p>
+            </div>
+            <p class="text-3xl font-display font-bold counter-animated">{{ stats.outstanding_cents | money if stats.outstanding_cents else '$0' }}</p>
+            {% if stats.overdue_count %}
+                <p class="text-sm text-white/60 mt-1 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 bg-yellow-300 rounded-full animate-pulse"></span>
+                    {{ stats.overdue_count }} overdue
+                </p>
+            {% else %}
+                <p class="text-sm text-white/50 mt-1">{{ stats.invoices_unpaid or 0 }} unpaid</p>
+            {% endif %}
+        </div>
+    </div>
+
+
+    <!-- Quotes / Pipeline Value -->
+    <a href="/quotes" class="card-enter card-enter-4 relative overflow-hidden bg-gradient-to-br from-emerald-500 via-emerald-500 to-teal-500 rounded-2xl p-5 text-white shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group block">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/8 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
+        <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+        <div class="relative">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-wider">Quotes</p>
+            </div>
+            <p class="text-3xl font-display font-bold counter-animated">{{ stats.quotes_value_cents | money if stats.quotes_value_cents else '$0' }}</p>
+            <p class="text-sm text-white/50 mt-1">{{ stats.quotes_this_month or 0 }} sent · {{ stats.conversion_rate or 0 }}% won</p>
+        </div>
+    </a>
+
+</div>
+
+<!-- Proprietor's Earnings Goal -->
+{% if goal and goal.goal_amount_cents > 0 %}
+<div class="animate-in delay-5 premium-card card-gradient-top p-6 mb-8">
+    <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div>
+                <a href="/reports/earnings" class="font-display font-bold text-slate-900 hover:text-orange-600 transition-colors text-lg">
+                    {{ goal.goal_type | capitalize }} Earnings
+                </a>
+                <p class="text-xs text-slate-400">Proprietor's take-home goal</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/reports/earnings" class="text-sm text-orange-500 hover:text-orange-600 font-medium">View history</a>
+            <a href="/settings/business#goals" class="text-slate-400 hover:text-slate-600 transition-colors" title="Edit goal settings">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Amount Display -->
+    <div class="flex items-end gap-2 mb-4">
+        <span class="text-3xl font-display font-bold {% if goal.current_cents < 0 %}text-red-600{% else %}text-slate-900{% endif %}">
+            {% if goal.current_cents < 0 %}-{% endif %}${{ '{:,.0f}'.format((goal.current_cents if goal.current_cents >= 0 else -goal.current_cents) / 100) }}
+        </span>
+        <span class="text-lg text-slate-400 mb-0.5">
+            of ${{ '{:,.0f}'.format(goal.goal_amount_cents / 100) }}
+        </span>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="relative h-4 bg-slate-100 rounded-full overflow-hidden mb-3">
+        {% if goal.status == 'achieved' %}
+        <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-emerald-400 rounded-full progress-bar-animated"
+             data-progress-to="100"></div>
+        {% elif goal.status == 'on_track' %}
+        <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-500 to-amber-400 rounded-full progress-bar-animated"
+             data-progress-to="{{ goal.percentage }}"></div>
+        {% elif goal.current_cents < 0 %}
+        <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-red-600 to-red-400 rounded-full progress-bar-animated"
+             data-progress-to="5"></div>
+        {% else %}
+        <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-red-500 to-orange-400 rounded-full progress-bar-animated"
+             data-progress-to="{{ goal.percentage }}"></div>
+        {% endif %}
+
+        {% if goal.percentage > 0 %}
+        <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-xs font-bold {% if goal.percentage > 50 %}text-white{% else %}text-slate-600{% endif %}">
+                {{ goal.percentage | round | int }}%
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Status Message -->
+    <div class="flex items-center justify-between text-sm">
+        <div class="flex items-center gap-2">
+            {% if goal.status == 'achieved' %}
+            <span class="inline-flex items-center gap-1.5 text-green-600 font-semibold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Goal reached!
+            </span>
+            {% elif goal.status == 'on_track' %}
+            <span class="text-green-600">On track</span>
+            {% elif goal.current_cents < 0 %}
+            <span class="text-red-600">In the red</span>
+            {% else %}
+            <span class="text-amber-600">Behind pace</span>
+            {% endif %}
+            <span class="text-slate-200">|</span>
+            <span class="text-slate-500">{{ goal.jobs_completed }} job{% if goal.jobs_completed != 1 %}s{% endif %} paid</span>
+        </div>
+        <div class="text-slate-500">
+            {% if goal.days_remaining > 0 and goal.remaining_cents > 0 %}
+            ${{ '{:,.0f}'.format(goal.remaining_cents / 100) }} to go
+            <span class="text-slate-200 mx-1">|</span>
+            {{ goal.days_remaining }} day{% if goal.days_remaining != 1 %}s{% endif %} left
+            {% elif goal.status == 'achieved' %}
+            +${{ '{:,.0f}'.format((goal.current_cents - goal.goal_amount_cents) / 100) }} over goal
+            {% endif %}
+        </div>
+    </div>
+
+    {% if goal.status != 'achieved' and goal.days_remaining > 0 and goal.daily_rate_needed_cents > 0 %}
+    <div class="mt-3 pt-3 border-t border-slate-100">
+        <p class="text-xs text-slate-500">
+            Need ~${{ '{:,.0f}'.format(goal.daily_rate_needed_cents / 100) }}/day to hit target
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Pay Distribution Breakdown -->
+    {% if goal.goal_type == 'weekly' %}
+    <div class="mt-4 pt-4 border-t border-slate-100" x-data="paySplitWidget({{ goal.current_cents }}, {{ goal.goal_amount_cents }})">
+        <div class="flex items-center justify-between mb-3">
+            <button @click="showSplit = !showSplit" class="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-orange-600 transition-colors">
+                <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                Pay Distribution
+                <svg class="w-3 h-3 transition-transform" :class="showSplit ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <a href="/reports/pay-split" class="text-xs text-orange-500 hover:text-orange-600 font-medium">Full calculator</a>
+        </div>
+
+        <div x-show="showSplit" x-transition>
+            <!-- Toggle: Current vs Goal -->
+            <div class="flex items-center gap-2 mb-3">
+                <button @click="useGoal = false; recalc()"
+                        class="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
+                        :class="!useGoal ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400 hover:text-slate-600'">
+                    Current ($<span x-text="fmt(currentEarnings)"></span>)
+                </button>
+                <button @click="useGoal = true; recalc()"
+                        class="px-3 py-1 rounded-lg text-xs font-semibold transition-all"
+                        :class="useGoal ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400 hover:text-slate-600'">
+                    Goal ($<span x-text="fmt(goalAmount)"></span>)
+                </button>
+            </div>
+
+            <!-- Distribution Table -->
+            <div class="space-y-1.5">
+                <template x-for="item in splits" :key="item.name">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full" :class="item.dot"></div>
+                            <span class="text-xs text-slate-600" x-text="item.name"></span>
+                        </div>
+                        <span class="text-xs font-display font-bold text-slate-800">$<span x-text="fmt(item.amount)"></span></span>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Total check -->
+            <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">Total</span>
+                <span class="text-xs font-display font-bold text-slate-900">$<span x-text="fmt(total)"></span></span>
+            </div>
+
+            <template x-if="activeAmount <= 0">
+                <p class="text-xs text-slate-400 text-center mt-2">No earnings yet this week — toggle to "Goal" to see the target split.</p>
+            </template>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Annual Projection Section -->
+    {% if projection and projection.confidence != 'none' %}
+    <div class="mt-4 pt-4 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Projected This Year</p>
+                <p class="text-xl font-display font-bold text-slate-900 mt-1">
+                    ${{ '{:,.0f}'.format(projection.projected_annual_cents / 100) }}
+                </p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Monthly Avg</p>
+                <p class="text-xl font-display font-bold text-slate-900 mt-1">
+                    ${{ '{:,.0f}'.format(projection.monthly_average_cents / 100) }}
+                </p>
+            </div>
+        </div>
+        <p class="text-xs mt-2 {% if projection.confidence == 'high' %}text-green-600{% elif projection.confidence == 'medium' %}text-slate-500{% else %}text-amber-600{% endif %}">
+            {% if projection.confidence == 'high' %}
+            Reliable projection ({{ projection.months_data }} months data)
+            {% elif projection.confidence == 'medium' %}
+            Based on {{ projection.months_data }} months
+            {% else %}
+            Limited data - projection will improve
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Pour Conditions & Quick Stats Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+
+    <!-- Pour Conditions Widget -->
+    {% if weather is defined and weather %}
+    <div class="animate-in delay-6 relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl p-5 text-white shadow-lg hover:shadow-xl transition-all">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
+        <div class="flex items-center justify-between mb-4 relative">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                </div>
+                <h3 class="font-display font-bold text-sm">Pour Conditions</h3>
+            </div>
+            <span class="text-blue-200 text-xs font-medium">{{ weather.location or 'Local' }}</span>
+        </div>
+
+        <div class="flex items-start gap-4 relative">
+            <div>
+                <p class="text-5xl font-display font-bold leading-none">{{ weather.temp_c or '--' }}°</p>
+                <p class="text-blue-200 text-sm mt-1">{{ weather.day or 'Today' }}</p>
+                <p class="text-blue-300 text-xs">{{ weather.rain_chance or 0 }}% rain</p>
+            </div>
+            <div class="flex-1 space-y-2">
+                {% if weather.risk %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold
+                             {% if weather.risk == 'poor' %}bg-red-500/90 text-white{% elif weather.risk == 'marginal' %}bg-yellow-400 text-yellow-900{% else %}bg-green-400 text-green-900{% endif %}">
+                    {{ weather.risk | upper }}
+                </span>
+                {% endif %}
+                <p class="text-blue-200 text-sm">Wind: {{ weather.wind_kph or 0 }} km/h</p>
+            </div>
+        </div>
+
+        {% if weather.tomorrow %}
+        <div class="mt-4 pt-4 border-t border-white/10">
+            <div class="flex items-center justify-between">
+                <span class="text-blue-200 text-sm">Tomorrow: {{ weather.tomorrow.temp_c or '--' }}° / {{ weather.tomorrow.rain_chance or 0 }}% rain</span>
+                {% if weather.tomorrow.is_no_go %}
+                <span class="px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white uppercase">no-go</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <a href="/pour-planner" class="inline-flex items-center gap-1 mt-3 text-sm text-blue-200 hover:text-white transition group">
+            View 7-day forecast
+            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+    </div>
+    {% else %}
+    <div class="animate-in delay-6 premium-card p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-bold text-slate-900">Pour Conditions</h3>
+            <a href="/pour-planner" class="text-sm text-orange-500 hover:text-orange-600 font-medium">View forecast</a>
+        </div>
+        <div class="empty-state-v4 py-6">
+            <div class="empty-state-v4-icon" style="width:48px;height:48px;">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                </svg>
+            </div>
+            <p class="empty-state-v4-title">Weather unavailable</p>
+            <p class="empty-state-v4-text">Visit Pour Planner for forecasts</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="animate-in delay-7 premium-card p-5 lg:col-span-2">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">Quick Stats</h3>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="text-center p-4 rounded-xl bg-violet-50/80 border border-violet-100/60 hover:bg-violet-100 hover:border-violet-200 transition-all group">
+                <p class="text-2xl font-display font-bold text-violet-600 group-hover:scale-105 transition-transform">{{ stats.conversion_rate or 0 }}%</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Conversion Rate</p>
+            </div>
+            <div class="text-center p-4 rounded-xl bg-blue-50/80 border border-blue-100/60 hover:bg-blue-100 hover:border-blue-200 transition-all group">
+                <p class="text-2xl font-display font-bold text-blue-600 group-hover:scale-105 transition-transform">{{ stats.quotes_sent or 0 }}</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Quotes Sent</p>
+            </div>
+            <div class="text-center p-4 rounded-xl bg-emerald-50/80 border border-emerald-100/60 hover:bg-emerald-100 hover:border-emerald-200 transition-all group">
+                <p class="text-2xl font-display font-bold text-emerald-600 group-hover:scale-105 transition-transform">{{ stats.quotes_accepted or 0 }}</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Quotes Won</p>
+            </div>
+            <div class="text-center p-4 rounded-xl bg-red-50/80 border border-red-100/60 hover:bg-red-100 hover:border-red-200 transition-all group">
+                <p class="text-2xl font-display font-bold text-red-500 group-hover:scale-105 transition-transform">{{ stats.overdue_cents | money if stats.overdue_cents else '$0' }}</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Overdue</p>
+            </div>
+            <div class="text-center p-4 rounded-xl bg-green-50/80 border border-green-100/60 hover:bg-green-100 hover:border-green-200 transition-all group">
+                <p class="text-2xl font-display font-bold text-green-600 group-hover:scale-105 transition-transform">{{ stats.ytd_revenue_cents | money if stats.ytd_revenue_cents else '$0' }}</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">YTD Revenue</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Payment Progress Section -->
+{% if payment_stats %}
+<div class="animate-in delay-8 premium-card p-5 mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">Payment Progress</h3>
+        </div>
+        <a href="/invoices?view=jobs" class="text-sm text-orange-500 hover:text-orange-600 font-medium">View all invoices</a>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <a href="/invoices" class="p-4 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 text-white hover:shadow-lg hover:-translate-y-0.5 transition-all group">
+            <p class="text-red-100 text-xs uppercase tracking-wider font-semibold">Outstanding</p>
+            <p class="text-2xl font-display font-bold mt-1 group-hover:scale-105 transition-transform origin-left">${{ '{:,.0f}'.format(payment_stats.outstanding_total_cents / 100) }}</p>
+        </a>
+        <a href="/invoices?status=awaiting_deposit" class="p-4 rounded-xl bg-amber-50 border border-amber-200/60 hover:bg-amber-100 hover:-translate-y-0.5 transition-all group">
+            <p class="text-amber-600 text-xs uppercase tracking-wide font-semibold">1st Payments</p>
+            <p class="text-2xl font-display font-bold text-amber-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.awaiting_deposit_count }}</p>
+            <p class="text-xs text-amber-500 mt-1">awaiting payment</p>
+        </a>
+        <a href="/invoices?status=awaiting_prepour" class="p-4 rounded-xl bg-blue-50 border border-blue-200/60 hover:bg-blue-100 hover:-translate-y-0.5 transition-all group">
+            <p class="text-blue-600 text-xs uppercase tracking-wide font-semibold">Pre-Pour</p>
+            <p class="text-2xl font-display font-bold text-blue-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.awaiting_prepour_count }}</p>
+            <p class="text-xs text-blue-500 mt-1">awaiting payment</p>
+        </a>
+        <a href="/invoices?status=awaiting_final" class="p-4 rounded-xl bg-purple-50 border border-purple-200/60 hover:bg-purple-100 hover:-translate-y-0.5 transition-all group">
+            <p class="text-purple-600 text-xs uppercase tracking-wide font-semibold">Final</p>
+            <p class="text-2xl font-display font-bold text-purple-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.awaiting_final_count }}</p>
+            <p class="text-xs text-purple-500 mt-1">awaiting payment</p>
+        </a>
+        <a href="/invoices?status=overdue" class="p-4 rounded-xl bg-red-50 border border-red-200/60 hover:bg-red-100 hover:-translate-y-0.5 transition-all group">
+            <p class="text-red-600 text-xs uppercase tracking-wide font-semibold">Overdue</p>
+            <p class="text-2xl font-display font-bold text-red-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.overdue_count }}</p>
+            <p class="text-xs text-red-500 mt-1">need attention</p>
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Charts & Quote Aging Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+
+    <!-- Monthly Revenue Chart -->
+    <div class="animate-in delay-9 premium-card overflow-hidden lg:col-span-2">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <h3 class="font-display font-bold text-slate-900">Monthly Revenue</h3>
+            </div>
+            <a href="/reports/revenue" class="text-sm text-orange-500 hover:text-orange-600 font-medium">View details</a>
+        </div>
+        <div class="p-6">
+            <div id="revenue-chart" style="min-height: 260px;"></div>
+        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if monthly_revenue is defined and monthly_revenue %}
+            var labels = [{% for month in monthly_revenue %}'{{ month.label }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+            var amounts = [{% for month in monthly_revenue %}{{ month.amount }}{% if not loop.last %}, {% endif %}{% endfor %}];
+            {% else %}
+            var labels = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
+            var amounts = [0, 0, 0, 0, 0, 0];
+            {% endif %}
+
+            var options = {
+                series: [{
+                    name: 'Revenue',
+                    data: amounts
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 260,
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    toolbar: { show: false },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800,
+                        animateGradually: { enabled: true, delay: 100 }
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        borderRadius: 8,
+                        borderRadiusApplication: 'end',
+                        columnWidth: '55%',
+                        distributed: false
+                    }
+                },
+                colors: ['#E87A2E'],
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shade: 'light',
+                        type: 'vertical',
+                        shadeIntensity: 0.2,
+                        gradientToColors: ['#fb923c'],
+                        opacityFrom: 1,
+                        opacityTo: 0.85,
+                        stops: [0, 100]
+                    }
+                },
+                dataLabels: { enabled: false },
+                xaxis: {
+                    categories: labels,
+                    labels: {
+                        style: {
+                            colors: '#9ca3af',
+                            fontSize: '12px',
+                            fontWeight: 500
+                        }
+                    },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: {
+                        formatter: function(val) { return '$' + (val >= 1000 ? (val/1000).toFixed(0) + 'k' : val); },
+                        style: {
+                            colors: '#9ca3af',
+                            fontSize: '12px'
+                        }
+                    }
+                },
+                grid: {
+                    borderColor: '#f3f4f6',
+                    strokeDashArray: 4,
+                    yaxis: { lines: { show: true } },
+                    xaxis: { lines: { show: false } }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) { return '$' + val.toLocaleString(); }
+                    },
+                    style: { fontSize: '13px' },
+                    theme: 'light'
+                },
+                states: {
+                    hover: { filter: { type: 'darken', value: 0.08 } }
+                }
+            };
+
+            var chart = new ApexCharts(document.querySelector('#revenue-chart'), options);
+            chart.render();
+        });
+        </script>
+    </div>
+
+    <!-- Quote Aging -->
+    <div class="animate-in delay-10 premium-card p-5">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">Quote Aging</h3>
+        </div>
+        <div class="space-y-2">
+            {% set qa = quote_aging if quote_aging is defined else {} %}
+            <div class="flex items-center justify-between p-3 rounded-xl bg-green-50/60 border-l-[3px] border-green-500 hover:bg-green-50 transition-colors">
+                <span class="text-slate-700 text-sm font-medium">Current (Today)</span>
+                <span class="font-display font-bold text-green-600">{{ qa.today or 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-xl bg-lime-50/60 border-l-[3px] border-lime-500 hover:bg-lime-50 transition-colors">
+                <span class="text-slate-700 text-sm font-medium">1-7 Days</span>
+                <span class="font-display font-bold text-slate-900">{{ qa.week or 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-xl bg-yellow-50/60 border-l-[3px] border-yellow-500 hover:bg-yellow-50 transition-colors">
+                <span class="text-slate-700 text-sm font-medium">8-14 Days</span>
+                <span class="font-display font-bold text-yellow-600">{{ qa.two_weeks or 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-xl bg-orange-50/60 border-l-[3px] border-orange-500 hover:bg-orange-50 transition-colors">
+                <span class="text-slate-700 text-sm font-medium">15-30 Days</span>
+                <span class="font-display font-bold text-orange-600">{{ qa.month or 0 }}</span>
+            </div>
+            <div class="flex items-center justify-between p-3 rounded-xl bg-red-50/60 border-l-[3px] border-red-500 hover:bg-red-50 transition-colors">
+                <span class="text-slate-700 text-sm font-medium">Over 30 Days</span>
+                <span class="font-display font-bold text-red-600">{{ qa.over_month or 0 }}</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Action Items — Pending Reminders -->
+{% if reminder_alerts is defined and reminder_alerts %}
+<div class="animate-in premium-card p-5 mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">Action Items</h3>
+            <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-700">{{ reminder_alerts|length }}</span>
+        </div>
+        <a href="/notifications" class="text-sm text-orange-500 hover:text-orange-600 font-medium">All notifications</a>
+    </div>
+
+    <div class="space-y-3 max-h-80 overflow-y-auto sidebar-scroll">
+        {% for alert in reminder_alerts %}
+        <div class="flex items-center gap-4 p-3 rounded-xl border transition-all hover:shadow-sm
+            {% if 'final' in alert.type %}bg-red-50 border-red-200/60
+            {% elif 'firm' in alert.type %}bg-amber-50 border-amber-200/60
+            {% else %}bg-blue-50 border-blue-200/60{% endif %}"
+             id="alert-{{ alert.id }}">
+            <div class="flex-shrink-0">
+                {% if 'final' in alert.type %}
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                {% elif 'firm' in alert.type %}
+                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                {% else %}
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-slate-900">{{ alert.title }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ alert.message }}</p>
+            </div>
+            <div class="flex-shrink-0 flex items-center gap-2">
+                {% if alert.invoice_id %}
+                <a href="/invoices/{{ alert.invoice_id }}"
+                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg transition-all
+                   {% if 'final' in alert.type %}bg-red-600 text-white hover:bg-red-700
+                   {% elif 'firm' in alert.type %}bg-amber-500 text-white hover:bg-amber-600
+                   {% else %}bg-blue-500 text-white hover:bg-blue-600{% endif %}">
+                    View Invoice
+                </a>
+                {% endif %}
+                <button @click="dismissAlert({{ alert.id }})"
+                        class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        title="Dismiss">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function dismissAlert(notificationId) {
+    fetch('/notifications/api/' + notificationId + '/read', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var el = document.getElementById('alert-' + notificationId);
+            if (el) {
+                el.style.transition = 'all 0.3s ease-out';
+                el.style.opacity = '0';
+                el.style.maxHeight = '0';
+                el.style.padding = '0';
+                el.style.marginBottom = '0';
+                setTimeout(function() { el.remove(); }, 300);
+            }
+        })
+        .catch(function(err) { console.error('Dismiss failed:', err); });
+}
+</script>
+{% endif %}
+
+<!-- Upcoming Jobs & Recent Quotes Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+    <!-- Upcoming Jobs -->
+    <div class="animate-in premium-card overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                </div>
+                <h3 class="font-display font-bold text-slate-900">Upcoming Jobs</h3>
+            </div>
+            <a href="/schedule" class="text-sm text-orange-500 hover:text-orange-600 font-medium">View all</a>
+        </div>
+        <div class="p-5">
+            {% if upcoming_jobs %}
+                <div class="space-y-3">
+                    {% for job in upcoming_jobs %}
+                    <a href="/quotes/{{ job.quote_id }}" class="block p-4 bg-slate-50/80 rounded-xl border border-slate-100 hover:bg-orange-50/60 hover:border-orange-200 transition-all hover:shadow-sm group">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-semibold text-slate-900 group-hover:text-orange-700 transition-colors">{{ job.customer_name }}</p>
+                                <p class="text-sm text-slate-500 mt-0.5">{{ job.job_name or job.quote_number }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-slate-900">{{ job.scheduled_date | date_short if job.scheduled_date else '-' }}</p>
+                                <p class="text-sm text-slate-500">{{ job.total_cents | money }}</p>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-v4 py-8">
+                    <div class="empty-state-v4-icon" style="width:48px;height:48px;">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <p class="empty-state-v4-title">No upcoming jobs</p>
+                    <p class="empty-state-v4-text">Jobs will appear here when confirmed</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Quotes -->
+    <div class="animate-in delay-1 premium-card overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <h3 class="font-display font-bold text-slate-900">Recent Quotes</h3>
+            </div>
+            <a href="/quotes" class="text-sm text-orange-500 hover:text-orange-600 font-medium">View all</a>
+        </div>
+        <div class="p-5">
+            {% if recent_quotes is defined and recent_quotes %}
+                <div class="space-y-3">
+                    {% for quote in recent_quotes %}
+                    <a href="/quotes/{{ quote.id }}" class="block p-4 bg-slate-50/80 rounded-xl border border-slate-100 hover:bg-orange-50/60 hover:border-orange-200 transition-all hover:shadow-sm group">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-semibold text-slate-900 group-hover:text-orange-700 transition-colors">{{ quote.quote_number }}</p>
+                                <p class="text-sm text-slate-500 mt-0.5">{{ quote.customer_name }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-slate-900">{{ quote.total_cents | money }}</p>
+                                <span class="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full
+                                    {% if quote.status == 'accepted' %}bg-green-100 text-green-700
+                                    {% elif quote.status == 'sent' %}bg-blue-100 text-blue-700
+                                    {% elif quote.status == 'declined' %}bg-red-100 text-red-700
+                                    {% elif quote.status == 'draft' %}bg-slate-100 text-slate-700
+                                    {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                    {{ quote.status | capitalize }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-v4 py-8">
+                    <div class="empty-state-v4-icon" style="width:48px;height:48px;">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <p class="empty-state-v4-title">No recent quotes</p>
+                    <p class="empty-state-v4-text">Create your first quote to get started</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+function paySplitWidget(currentCents, goalCents) {
+    const THRESHOLD = 1543;
+    // Base weekly allocations for the 7 standard accounts
+    const BASE = [
+        { name: 'Daily Account', base: 257, dot: 'bg-orange-400', keySplit: true },
+        { name: 'PAYG Tax', base: 322, dot: 'bg-blue-400', taxSplit: true },
+        { name: 'Vehicle', base: 278, dot: 'bg-slate-400' },
+        { name: 'Health', base: 86, dot: 'bg-red-400' },
+        { name: 'Fun Card', base: 212, dot: 'bg-pink-400', keySplit: true },
+        { name: 'Savings', base: 330, dot: 'bg-emerald-400', keySplit: true },
+        { name: 'Subscriptions', base: 58, dot: 'bg-violet-400' },
+    ];
+    // "Keep" dispersal weights (proportional to base amounts)
+    const KEEP_ACCOUNTS = BASE.filter(a => a.keySplit);
+    const KEEP_TOTAL_BASE = KEEP_ACCOUNTS.reduce((s, a) => s + a.base, 0); // 257+212+330 = 799
+
+    return {
+        showSplit: false,
+        useGoal: currentCents <= 0,
+        currentEarnings: currentCents / 100,
+        goalAmount: goalCents / 100,
+        activeAmount: 0,
+        splits: [],
+        excess: 0,
+        trustee: 0,
+        total: 0,
+
+        fmt(val) {
+            if (!val || isNaN(val)) return '0.00';
+            return val.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        recalc() {
+            const amt = this.useGoal ? this.goalAmount : this.currentEarnings;
+            this.activeAmount = amt;
+            if (amt <= 0) { this.splits = []; this.excess = 0; this.total = 0; return; }
+
+            const ratio = Math.min(amt / THRESHOLD, 1);
+            this.excess = Math.max(0, amt - THRESHOLD);
+
+            // Excess splits
+            this.trustee = Math.round(this.excess * 0.50 * 100) / 100;
+            const extraTax = Math.round(this.excess * 0.22 * 100) / 100;
+            const keepPool = Math.round(this.excess * 0.28 * 100) / 100;
+
+            // Build split rows: base allocation + excess dispersal
+            this.splits = BASE.map(a => {
+                let amount = Math.round(a.base * ratio * 100) / 100;
+                // Merge Extra Tax into PAYG Tax
+                if (a.taxSplit) amount += extraTax;
+                // Disperse Keep proportionally into Daily, Fun Card, Savings
+                if (a.keySplit) amount += Math.round(keepPool * (a.base / KEEP_TOTAL_BASE) * 100) / 100;
+                return { name: a.name, dot: a.dot, amount };
+            });
+
+            // Trustee as a main row
+            if (this.trustee > 0) {
+                this.splits.push({ name: 'Trustee Account', dot: 'bg-emerald-500', amount: this.trustee });
+            }
+
+            this.total = this.splits.reduce((s, a) => s + a.amount, 0);
+        },
+
+        init() {
+            this.recalc();
+        }
+    };
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,339 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Security Settings - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div class="space-y-6 animate-in delay-1">
+
+    {% if success is defined and success %}
+    <script>document.addEventListener('DOMContentLoaded', function() { Toast.success({{ success | tojson }}); });</script>
+    {% endif %}
+    {% if error is defined and error %}
+    <script>document.addEventListener('DOMContentLoaded', function() { Toast.error({{ error | tojson }}); });</script>
+    {% endif %}
+
+    <!-- ================================================================= -->
+    <!-- Password Change Section                                           -->
+    <!-- ================================================================= -->
+    <div class="form-section-card form-section-accent-red p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-red">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Change Password</h2>
+                <p>Update your admin login credentials</p>
+            </div>
+        </div>
+
+        {% if password_error %}
+        <div class="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+            {{ password_error }}
+        </div>
+        {% endif %}
+        {% if password_success %}
+        <div class="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+            {{ password_success }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/settings/security/password">
+            <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+
+            <div class="space-y-3 max-w-md">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Current Password</label>
+                    <input type="password" name="current_password" required
+                           class="input-field">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">New Password</label>
+                    <input type="password" name="new_password" required minlength="8"
+                           class="input-field">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Confirm New Password</label>
+                    <input type="password" name="confirm_password" required minlength="8"
+                           class="input-field">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-v4 btn-v4-primary mt-4">
+                Update Password
+            </button>
+        </form>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- Session Management Section                                        -->
+    <!-- ================================================================= -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-orange">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Session Management</h2>
+                <p>Manage active sessions and revoke access</p>
+            </div>
+        </div>
+
+        <p class="text-sm text-slate-500 mb-4">If you suspect unauthorized access, revoke all active sessions. You will be logged out and need to sign in again.</p>
+        <form method="POST" action="/settings/security/revoke-sessions">
+            <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+            <button type="submit" class="btn-v4 btn-v4-secondary text-red-600 border-red-200 hover:bg-red-50"
+                    onclick="return confirm('This will log out ALL sessions including this one. Continue?')">
+                Revoke All Sessions
+            </button>
+        </form>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 2FA Status Card                                                   -->
+    <!-- ================================================================= -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Two-Factor Authentication</h2>
+                <p>Add an extra layer of security with TOTP</p>
+            </div>
+        </div>
+
+        <p class="text-sm text-slate-600 mb-4">
+            When enabled, you'll need to enter a 6-digit code from your authenticator app
+            (Google Authenticator, Authy, 1Password, etc.) each time you log in.
+        </p>
+
+        <!-- Current Status -->
+        <div class="flex items-center gap-3 p-4 rounded-xl mb-6 {{ 'bg-green-50 border border-green-200' if totp_enabled else 'bg-amber-50 border border-amber-200' }}">
+            {% if totp_enabled %}
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-green-800">2FA is enabled</p>
+                <p class="text-sm text-green-600">Your account is protected with two-factor authentication.</p>
+            </div>
+            {% else %}
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-amber-800">2FA is not enabled</p>
+                <p class="text-sm text-amber-600">Your account is protected by password only. Enable 2FA for added security.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if show_recovery_codes is defined and show_recovery_codes %}
+        <!-- ===================== RECOVERY CODES DISPLAY ===================== -->
+        <div class="border-t border-slate-100 pt-6">
+            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-amber-800 text-sm">Save Your Recovery Codes</p>
+                        <p class="text-sm text-amber-700 mt-1">
+                            These codes can be used to access your account if you lose your authenticator device.
+                            Each code can only be used once. Store them in a safe place &mdash; they will not be shown again.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-4 mb-4" id="recovery-codes-block">
+                <div class="grid grid-cols-2 gap-2">
+                    {% for code in recovery_codes %}
+                    <code class="block text-center text-sm font-mono bg-white px-3 py-2 rounded-lg border border-slate-200 select-all">{{ code }}</code>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="copyRecoveryCodes()" class="btn-v4 btn-v4-secondary text-sm">
+                    <svg class="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    Copy Codes
+                </button>
+                <a href="/settings/security" class="btn-v4 btn-v4-primary text-sm">
+                    I've Saved These Codes
+                </a>
+            </div>
+
+            <script>
+            function copyRecoveryCodes() {
+                var codes = [{% for code in recovery_codes %}"{{ code }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+                var text = "ConcreteIQ Recovery Codes\\n" + "=".repeat(30) + "\\n" + codes.join("\\n");
+                navigator.clipboard.writeText(text).then(function() {
+                    Toast.success("Recovery codes copied to clipboard");
+                });
+            }
+            </script>
+        </div>
+
+        {% elif setup_mode %}
+        <!-- ===================== SETUP MODE ===================== -->
+        <div class="border-t border-slate-100 pt-6">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">Set Up Authenticator App</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- QR Code -->
+                <div class="text-center">
+                    <p class="text-sm text-slate-600 mb-3">
+                        <strong>Step 1:</strong> Scan this QR code with your authenticator app
+                    </p>
+                    <div class="inline-block p-4 bg-white border-2 border-slate-200 rounded-xl shadow-sm">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="TOTP QR Code" class="w-48 h-48">
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3">
+                        Or enter this key manually:<br>
+                        <code class="text-xs font-mono bg-slate-100 px-2 py-1 rounded select-all">{{ totp_secret }}</code>
+                    </p>
+                </div>
+
+                <!-- Verify Code -->
+                <div>
+                    <p class="text-sm text-slate-600 mb-3">
+                        <strong>Step 2:</strong> Enter the 6-digit code from your app to verify
+                    </p>
+                    <form method="POST" action="/settings/security/totp/enable" class="space-y-4">
+                        <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+                        <input type="hidden" name="totp_secret" value="{{ totp_secret }}">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Verification Code</label>
+                            <input type="text" name="totp_code"
+                                   class="input-field text-center text-2xl tracking-widest font-mono"
+                                   placeholder="000000"
+                                   maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+                                   autocomplete="off" autofocus required>
+                        </div>
+                        <button type="submit" class="btn-v4 btn-v4-primary w-full py-2.5">
+                            Enable 2FA
+                        </button>
+                    </form>
+                    <a href="/settings/security" class="block text-center text-sm text-slate-500 hover:text-slate-700 mt-3">
+                        Cancel setup
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% elif totp_enabled %}
+        <!-- ===================== RECOVERY CODE STATUS ===================== -->
+        {% if recovery_code_count is defined and recovery_code_count > 0 %}
+        <div class="flex items-center gap-3 p-4 rounded-xl mb-6 bg-slate-50 border border-slate-200">
+            <svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+            </svg>
+            <div>
+                <p class="text-sm font-medium text-slate-700">{{ recovery_code_count }} recovery code{{ 's' if recovery_code_count != 1 else '' }} remaining</p>
+                <p class="text-xs text-slate-500">Use a recovery code if you lose access to your authenticator app.</p>
+            </div>
+        </div>
+        {% elif recovery_code_count is defined and recovery_code_count == 0 and totp_enabled %}
+        <div class="flex items-center gap-3 p-4 rounded-xl mb-6 bg-red-50 border border-red-200">
+            <svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div>
+                <p class="text-sm font-medium text-red-700">No recovery codes remaining</p>
+                <p class="text-xs text-red-500">Consider disabling and re-enabling 2FA to generate new recovery codes.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ===================== DISABLE MODE ===================== -->
+        <div class="border-t border-slate-100 pt-6">
+            <h3 class="text-base font-semibold text-slate-900 mb-2">Disable Two-Factor Authentication</h3>
+            <p class="text-sm text-slate-600 mb-4">
+                Enter a code from your authenticator app to confirm disabling 2FA.
+            </p>
+            <form method="POST" action="/settings/security/totp/disable" class="flex items-end gap-3 max-w-md">
+                <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Current Code</label>
+                    <input type="text" name="totp_code"
+                           class="input-field text-center text-lg tracking-widest font-mono"
+                           placeholder="000000"
+                           maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+                           autocomplete="off" required>
+                </div>
+                <button type="submit" class="btn-v4 btn-v4-secondary py-2.5 px-4 text-red-600 border-red-200 hover:bg-red-50">
+                    Disable 2FA
+                </button>
+            </form>
+        </div>
+
+        {% else %}
+        <!-- ===================== ENABLE BUTTON ===================== -->
+        <form method="POST" action="/settings/security/totp/setup">
+            <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+            <button type="submit" class="btn-v4 btn-v4-primary py-2.5 px-6">
+                <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Set Up 2FA
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Security Tips -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Security Tips</h2>
+                <p>Best practices to keep your account secure</p>
+            </div>
+        </div>
+        <ul class="space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Use a strong, unique password for your ConcreteIQ account.
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Enable 2FA to protect against password compromise.
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Save your recovery codes in a secure location as a backup.
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Recommended apps: Google Authenticator, Authy, 1Password, Microsoft Authenticator.
+            </li>
+        </ul>
+    </div>
+
+</div>
+{% endblock %}

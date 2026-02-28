@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}ATO Compliance Calendar — ConcreteIQ{% endblock %}
+{% block page_title %}Compliance Calendar{% endblock %}
+{% block mobile_title %}Compliance{% endblock %}
+
+{% block content %}
+<div x-data="complianceSync()" class="space-y-6">
+
+    <!-- Hero Header -->
+    <div class="page-hero animate-in">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <div class="relative">
+                <p class="page-hero-subtitle">ATO & Business Obligations</p>
+                <h1 class="page-hero-title">Compliance Calendar FY{{ fy }}</h1>
+            </div>
+            <div class="flex items-center gap-2 relative">
+                <a href="/reports/compliance?fy={{ fy - 1 }}" class="inline-flex items-center gap-1 px-3 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    FY{{ fy - 1 }}
+                </a>
+                <a href="/reports/compliance?fy={{ fy + 1 }}" class="inline-flex items-center gap-1 px-3 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    FY{{ fy + 1 }}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                <a href="/reports" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Calendar Sync Card -->
+    <div class="premium-card card-gradient-top p-6 animate-in delay-1">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="font-display font-bold text-slate-900 text-lg">Sync to Google Calendar</h3>
+                <p class="text-sm text-slate-500 mt-1">Push all FY{{ fy }} ATO deadlines to your Google Calendar with reminders 1 week and 1 day before each due date. Colour-coded by type.</p>
+                <div class="flex items-center gap-3 mt-4">
+                    <button @click="syncToCalendar()" :disabled="syncing"
+                            class="btn-v4 btn-v4-primary">
+                        <template x-if="!syncing">
+                            <span class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Sync All Deadlines
+                            </span>
+                        </template>
+                        <template x-if="syncing">
+                            <span class="flex items-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                Syncing...
+                            </span>
+                        </template>
+                    </button>
+                    <span x-show="syncResult" x-transition x-cloak class="text-sm font-medium"
+                          :class="syncError ? 'text-red-600' : 'text-green-600'"
+                          x-text="syncResult"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colour Legend -->
+        <div class="flex flex-wrap gap-3 mt-5 pt-4 border-t border-slate-100">
+            <span class="text-xs text-slate-400 font-medium">Calendar colours:</span>
+            <span class="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                <span class="w-3 h-3 rounded-sm bg-indigo-500"></span>BAS
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                <span class="w-3 h-3 rounded-sm bg-emerald-600"></span>Super
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                <span class="w-3 h-3 rounded-sm bg-purple-500"></span>TPAR
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                <span class="w-3 h-3 rounded-sm bg-yellow-500"></span>Tax Return
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                <span class="w-3 h-3 rounded-sm bg-orange-500"></span>Insurance
+            </span>
+        </div>
+    </div>
+
+    <!-- Alert Banners -->
+    {% if overdue_count > 0 %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-2">
+        <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-display font-bold text-red-800">{{ overdue_count }} Overdue {{ 'Deadline' if overdue_count == 1 else 'Deadlines' }}</p>
+            <p class="text-sm text-red-600">Action required — these obligations are past their due date.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if due_soon_count > 0 %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-2">
+        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-display font-bold text-amber-800">{{ due_soon_count }} Due Soon</p>
+            <p class="text-sm text-amber-600">These deadlines are within the next 14 days.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in delay-3">
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-red-600">{{ overdue_count }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">Overdue</p>
+        </div>
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-amber-600">{{ due_soon_count }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">Due Soon</p>
+        </div>
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-blue-600">{{ upcoming_count }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">Upcoming</p>
+        </div>
+        <div class="premium-card p-4 text-center">
+            <p class="text-2xl font-display font-bold text-slate-900">{{ deadlines | length }}</p>
+            <p class="text-xs text-slate-500 font-medium mt-1">Total Deadlines</p>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="space-y-4">
+        {% for month, items in by_month.items() %}
+        <div class="animate-in delay-{{ loop.index + 3 if loop.index <= 5 else 8 }}">
+            <!-- Month Header -->
+            <div class="flex items-center gap-3 mb-3">
+                <h3 class="font-display font-bold text-slate-900 text-lg">{{ month }}</h3>
+                <div class="flex-1 h-px bg-slate-200"></div>
+            </div>
+
+            <!-- Deadline Cards -->
+            <div class="space-y-2 ml-2">
+                {% for d in items %}
+                <div class="premium-card p-4 border-l-4
+                    {% if d.status == 'overdue' %}border-l-red-500
+                    {% elif d.status == 'due_soon' %}border-l-amber-500
+                    {% elif d.status == 'upcoming' %}border-l-blue-500
+                    {% else %}border-l-slate-200{% endif %}">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-3">
+                            <!-- Icon -->
+                            <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                                {% if d.category == 'bas' %}bg-indigo-50 text-indigo-500
+                                {% elif d.category == 'super' %}bg-emerald-50 text-emerald-500
+                                {% elif d.category == 'tpar' %}bg-purple-50 text-purple-500
+                                {% elif d.category == 'tax' %}bg-blue-50 text-blue-500
+                                {% elif d.category == 'insurance' %}bg-amber-50 text-amber-500
+                                {% else %}bg-slate-50 text-slate-500{% endif %}">
+                                {% if d.icon == 'calculator' %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                </svg>
+                                {% elif d.icon == 'shield' %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                                {% else %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-slate-900 text-sm">{{ d.name }}</h4>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ d.description }}</p>
+                                <p class="text-xs font-medium mt-1
+                                    {% if d.status == 'overdue' %}text-red-600
+                                    {% elif d.status == 'due_soon' %}text-amber-600
+                                    {% else %}text-slate-400{% endif %}">
+                                    Due {{ d.due_date.strftime('%d %b %Y') }}
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Status Badge -->
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.625rem] font-bold border whitespace-nowrap
+                            {% if d.status == 'overdue' %}bg-red-50 text-red-700 border-red-200
+                            {% elif d.status == 'due_soon' %}bg-amber-50 text-amber-700 border-amber-200
+                            {% elif d.status == 'upcoming' %}bg-blue-50 text-blue-700 border-blue-200
+                            {% else %}bg-slate-50 text-slate-500 border-slate-200{% endif %}">
+                            {{ d.status_label }}
+                        </span>
+                    </div>
+
+                    <!-- Quick links for BAS & TPAR -->
+                    {% if d.category == 'bas' and d.quarter %}
+                    <div class="mt-3 pt-2 border-t border-slate-100">
+                        <a href="/reports/bas?fy={{ fy }}&quarter={{ d.quarter }}" class="text-xs font-medium text-orange-600 hover:text-orange-700">
+                            View BAS Dashboard &rarr;
+                        </a>
+                    </div>
+                    {% elif d.category == 'tpar' %}
+                    <div class="mt-3 pt-2 border-t border-slate-100">
+                        <a href="/reports/tpar?fy={{ fy }}" class="text-xs font-medium text-orange-600 hover:text-orange-700">
+                            View TPAR Report &rarr;
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Help Card -->
+    <div class="premium-card p-6 animate-in delay-8">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">About These Deadlines</h3>
+        </div>
+        <div class="text-sm text-slate-600 space-y-2">
+            <p><strong>BAS</strong> — Quarterly GST reporting. Lodge via myGov or your BAS agent.</p>
+            <p><strong>Super Guarantee</strong> — 11.5% of ordinary time earnings, paid quarterly to workers' super funds.</p>
+            <p><strong>TPAR</strong> — Annual report of payments to subcontractors. Required for building & construction.</p>
+            <p><strong>Insurance</strong> — Workers Comp and Public Liability typically renew annually. Dates shown are estimates.</p>
+            <p class="text-xs text-slate-400 mt-3">Dates may differ if using a registered tax/BAS agent (extended deadlines). Always confirm with your accountant.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function complianceSync() {
+    return {
+        syncing: false,
+        syncResult: '',
+        syncError: false,
+
+        async syncToCalendar() {
+            this.syncing = true;
+            this.syncResult = '';
+            this.syncError = false;
+
+            try {
+                var response = await fetch('/integrations/api/sync-compliance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': getCsrfToken(),
+                    },
+                    body: JSON.stringify({ fy: {{ fy }} }),
+                });
+
+                var data = await response.json();
+
+                if (data.message && data.synced === 0 && data.skipped === 0) {
+                    this.syncResult = data.message;
+                    this.syncError = true;
+                } else if (data.synced > 0) {
+                    this.syncResult = data.synced + ' deadlines added to Google Calendar';
+                    Toast.success(this.syncResult);
+                } else if (data.skipped > 0 && data.synced === 0) {
+                    this.syncResult = 'All ' + data.skipped + ' deadlines already in calendar';
+                } else {
+                    this.syncResult = 'No deadlines to sync';
+                }
+            } catch (err) {
+                this.syncResult = 'Failed to sync — check Google Calendar config';
+                this.syncError = true;
+                Toast.error(this.syncResult);
+            } finally {
+                this.syncing = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

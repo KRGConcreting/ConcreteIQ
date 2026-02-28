@@ -1,0 +1,236 @@
+{% extends "settings/base.html" %}
+
+{% block title %}SMS Configuration - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="smsSettings()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 font-display">SMS Configuration</h1>
+            <p class="text-slate-500 text-sm mt-1">Configure Vonage SMS for quote and invoice notifications.</p>
+        </div>
+        <button @click="save()"
+                :disabled="isSaving"
+                class="btn-v4 btn-v4-primary"
+            <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <svg x-show="isSaving" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span x-text="isSaving ? 'Saving...' : 'Save Changes'"></span>
+        </button>
+    </div>
+
+    <!-- Enable/Disable -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-orange">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <div>
+                <h2>SMS Notifications</h2>
+                <p>Enable or disable SMS delivery to customers</p>
+            </div>
+        </div>
+        <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" x-model="sms.enabled"
+                   class="w-5 h-5 text-orange-500 border-slate-300 rounded-lg focus:ring-orange-500">
+            <div>
+                <span class="font-medium text-slate-900">Enable SMS Notifications</span>
+                <p class="text-sm text-slate-500">Send quote and invoice notifications via SMS</p>
+            </div>
+        </label>
+    </div>
+
+    <!-- Vonage Status -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2" x-show="sms.enabled" x-transition>
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Vonage SMS</h2>
+                <p>SMS delivery service</p>
+            </div>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+            <div></div>
+            <template x-if="sms.vonage_api_key && sms.vonage_api_secret">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-xl text-xs font-semibold">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Connected
+                </span>
+            </template>
+            <template x-if="!sms.vonage_api_key || !sms.vonage_api_secret">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-100 text-red-700 rounded-xl text-xs font-semibold">
+                    <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                    Not Connected
+                </span>
+            </template>
+        </div>
+
+        <div class="mt-4">
+            <template x-if="!sms.vonage_api_key || !sms.vonage_api_secret">
+                <div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p class="text-sm text-amber-800">
+                        Vonage is not configured. Set up your API credentials in
+                        <a href="/settings/integrations" class="font-medium text-orange-600 hover:underline">Integrations</a>
+                        to enable SMS sending.
+                    </p>
+                </div>
+            </template>
+            <template x-if="sms.vonage_api_key && sms.vonage_api_secret">
+                <p class="text-sm text-slate-600">
+                    Vonage is connected. SMS will be sent via Vonage.
+                    <a href="/settings/integrations" class="text-orange-600 hover:underline">Manage in Integrations</a>
+                </p>
+            </template>
+        </div>
+    </div>
+
+    <!-- Test SMS -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3" x-show="sms.enabled" x-transition>
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-emerald">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Test SMS</h2>
+                <p>Verify your configuration is working</p>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" x-model="testPhone"
+                   placeholder="Phone number (e.g. 0412345678)"
+                   class="input-field flex-1">
+            <button @click="sendTest()"
+                    :disabled="isTesting || !testPhone"
+                    class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg x-show="!isTesting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                <svg x-show="isTesting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span x-text="isTesting ? 'Sending...' : 'Send Test SMS'"></span>
+            </button>
+        </div>
+        <div x-show="testResult" x-transition class="mt-3">
+            <p :class="testSuccess ? 'text-green-600' : 'text-red-600'" class="text-sm" x-text="testResult"></p>
+        </div>
+    </div>
+
+    <!-- SMS Usage Info -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>When are SMS sent?</h2>
+                <p>Automatic SMS triggers based on your workflow</p>
+            </div>
+        </div>
+        <ul class="space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+                </svg>
+                Quote sent notifications (with portal link)
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+                </svg>
+                Invoice sent notifications (with payment link)
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+                </svg>
+                Payment reminders (based on notification settings)
+            </li>
+            <li class="flex items-start gap-2">
+                <svg class="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+                </svg>
+                Job reminders (before scheduled pour date)
+            </li>
+        </ul>
+        <div class="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <p class="text-xs text-slate-600">SMS will only be sent if the customer has SMS notifications enabled.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function smsSettings() {
+    return {
+        sms: {{ sms | tojson }},
+        isSaving: false,
+        testPhone: '',
+        isTesting: false,
+        testResult: '',
+        testSuccess: false,
+
+        async save() {
+            this.isSaving = true;
+            try {
+                const response = await fetch('/settings/api/sms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.sms)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    Toast.success('SMS settings saved successfully!');
+                } else {
+                    Toast.error(formatErrorDetail(data.detail, 'Error saving settings'));
+                }
+            } catch (e) {
+                Toast.error('Network error - please try again');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        async sendTest() {
+            if (!this.testPhone) {
+                alert('Enter a phone number');
+                return;
+            }
+            this.isTesting = true;
+            this.testResult = '';
+            try {
+                // Save first to ensure credentials are up to date
+                await fetch('/settings/api/sms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.sms)
+                });
+
+                const response = await fetch('/settings/api/sms/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: this.testPhone })
+                });
+                const data = await response.json();
+                this.testSuccess = data.success;
+                this.testResult = data.success
+                    ? 'Test SMS sent successfully! Check your phone.'
+                    : `Error: ${data.error || 'Unknown error'}`;
+            } catch (e) {
+                this.testSuccess = false;
+                this.testResult = 'Network error - please try again';
+            } finally {
+                this.isTesting = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

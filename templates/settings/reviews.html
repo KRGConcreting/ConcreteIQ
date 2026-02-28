@@ -1,0 +1,64 @@
+{% extends "settings/base.html" %}
+
+{% block settings_content %}
+<div class="space-y-6 animate-in delay-1">
+    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-yellow">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Google Reviews</h2>
+                <p>Configure your Google Business review collection settings</p>
+            </div>
+        </div>
+
+        <form method="POST" action="/settings/reviews" class="space-y-5">
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                <div>
+                    <p class="font-medium text-slate-900">Enable Review Requests</p>
+                    <p class="text-sm text-slate-500">Automatically send review requests after job completion</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="enabled" value="true" class="sr-only peer"
+                           {% if reviews.get('enabled', false) %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                </label>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Google Review URL</label>
+                <input type="url" name="google_review_url" value="{{ google_review_url }}"
+                       class="input-field"
+                       placeholder="https://g.page/r/XXXXX/review">
+                <p class="text-xs text-slate-400 mt-1">The direct link to your Google review page. Find this in Google Business Profile.</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Delay (days after completion)</label>
+                <input type="number" name="delay_days" value="{{ reviews.get('delay_days', 1) }}" min="0" max="14"
+                       class="input-field w-32">
+                <p class="text-xs text-slate-400 mt-1">How many days after job completion to send the review request.</p>
+            </div>
+
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <h4 class="text-sm font-semibold text-blue-800 mb-2">SMS Preview</h4>
+                <p class="text-sm text-blue-700 font-mono bg-white rounded p-3 border border-blue-200">
+                    Hi {first_name}, thanks for choosing KRG Concreting! We'd love a quick Google review: {review_url} - Kyle
+                </p>
+            </div>
+
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <h4 class="text-sm font-semibold text-blue-800 mb-2">Email Preview</h4>
+                <p class="text-sm text-blue-700">A review request email will be sent with a link to your Google review page, thanking the customer for choosing KRG Concreting.</p>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100">
+                <button type="submit" class="btn-v4 btn-v4-primary">Save Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

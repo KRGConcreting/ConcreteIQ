@@ -1,0 +1,256 @@
+<!-- FILE: quotes/list.html -->
+{% extends "base.html" %}
+
+{% block title %}Quotes{% endblock %}
+{% block page_title %}Quotes{% endblock %}
+{% block mobile_title %}Quotes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Hero Banner -->
+    <div class="page-hero animate-in">
+        <div class="flex items-center justify-between flex-wrap gap-4 relative">
+            <div>
+                <p class="page-hero-subtitle">Manage your quotations</p>
+                <h1 class="page-hero-title">Quotes</h1>
+                <p class="page-hero-subtitle" style="margin-top: 0.5rem;">
+                    {{ total }} quote{{ 's' if total != 1 else '' }}{% if status_filter %} &mdash; {{ status_filter|replace('_', ' ')|title }}{% endif %}
+                </p>
+            </div>
+            <a href="/quotes/new" class="btn-v4 btn-v4-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Quote
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="filter-strip animate-in delay-1">
+        <a href="/quotes"
+           class="filter-pill {{ 'active' if not status_filter else '' }}">
+            All
+        </a>
+        <a href="/quotes?status=draft"
+           class="filter-pill {{ 'active' if status_filter == 'draft' else '' }}">
+            Draft
+        </a>
+        <a href="/quotes?status=sent"
+           class="filter-pill {{ 'active' if status_filter == 'sent' else '' }}">
+            Sent
+        </a>
+        <a href="/quotes?status=accepted"
+           class="filter-pill {{ 'active' if status_filter == 'accepted' else '' }}">
+            Accepted
+        </a>
+        <a href="/quotes?status=confirmed"
+           class="filter-pill {{ 'active' if status_filter == 'confirmed' else '' }}">
+            Confirmed
+        </a>
+        <a href="/quotes?status=pour_stage"
+           class="filter-pill {{ 'active' if status_filter == 'pour_stage' else '' }}">
+            Pour Stage
+        </a>
+        <a href="/quotes?status=pending_completion"
+           class="filter-pill {{ 'active' if status_filter == 'pending_completion' else '' }}">
+            Pending
+        </a>
+        <a href="/quotes?status=completed"
+           class="filter-pill {{ 'active' if status_filter == 'completed' else '' }}">
+            Completed
+        </a>
+    </div>
+
+    <!-- Quote List -->
+    <div class="premium-card overflow-hidden animate-in delay-2">
+        {% if quotes %}
+        <ul class="divide-y divide-slate-100">
+            {% for quote in quotes %}
+            <li class="list-item-premium group">
+                <a href="/quotes/{{ quote.id }}" class="block">
+                    <div class="px-5 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-3">
+                                    {% set icon_colors = {
+                                        'draft': 'from-slate-100 to-slate-200 text-slate-500',
+                                        'sent': 'from-blue-50 to-blue-100 text-blue-600',
+                                        'viewed': 'from-purple-50 to-purple-100 text-purple-600',
+                                        'accepted': 'from-green-50 to-green-100 text-green-600',
+                                        'confirmed': 'from-emerald-50 to-emerald-100 text-emerald-600',
+                                        'pour_stage': 'from-indigo-50 to-indigo-100 text-indigo-600',
+                                        'pending_completion': 'from-cyan-50 to-cyan-100 text-cyan-600',
+                                        'completed': 'from-teal-50 to-teal-100 text-teal-600',
+                                        'declined': 'from-red-50 to-red-100 text-red-500',
+                                        'expired': 'from-orange-50 to-orange-100 text-orange-500',
+                                    } %}
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br {{ icon_colors.get(quote.status, 'from-slate-100 to-slate-200 text-slate-500') }} flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105">
+                                        {% if quote.status == 'completed' %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        {% elif quote.status in ('accepted', 'confirmed') %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {% elif quote.status == 'sent' %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                        </svg>
+                                        {% elif quote.status == 'pour_stage' %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                        </svg>
+                                        {% elif quote.status == 'pending_completion' %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {% elif quote.status == 'declined' %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                        {% elif quote.status == 'expired' %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                        {% else %}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        {% endif %}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2.5 flex-wrap">
+                                            <span class="text-sm font-bold text-slate-900 font-display">
+                                                {{ quote.quote_number or 'Q-' ~ quote.id }}
+                                            </span>
+                                            {% set status_colors = {
+                                                'draft': 'bg-slate-50 text-slate-600 border border-slate-200',
+                                                'sent': 'bg-blue-50 text-blue-700 border border-blue-200',
+                                                'viewed': 'bg-purple-50 text-purple-700 border border-purple-200',
+                                                'accepted': 'bg-green-50 text-green-700 border border-green-200',
+                                                'confirmed': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                                                'pour_stage': 'bg-indigo-50 text-indigo-700 border border-indigo-200',
+                                                'pending_completion': 'bg-cyan-50 text-cyan-700 border border-cyan-200',
+                                                'completed': 'bg-teal-50 text-teal-700 border border-teal-200',
+                                                'declined': 'bg-red-50 text-red-700 border border-red-200',
+                                                'expired': 'bg-orange-50 text-orange-700 border border-orange-200',
+                                            } %}
+                                            {% set status_labels = {
+                                                'pour_stage': 'Pour Stage',
+                                                'pending_completion': 'Pending',
+                                            } %}
+                                            <span class="badge {{ status_colors.get(quote.status, 'bg-slate-50 text-slate-600 border border-slate-200') }}">
+                                                {{ status_labels.get(quote.status, quote.status|title) }}
+                                            </span>
+                                            {% if quote.job_type %}
+                                            <span class="badge bg-orange-50 text-orange-700 border border-orange-200">
+                                                {{ quote.job_type }}
+                                            </span>
+                                            {% endif %}
+                                            {% if quote.viewed_at %}
+                                            <span class="inline-flex items-center gap-1 text-xs text-blue-500 font-medium" title="Viewed by client {{ quote.viewed_at.strftime('%d %b %Y at %H:%M') }}">
+                                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <span class="hidden sm:inline">Viewed</span>
+                                            </span>
+                                            {% elif quote.status in ('sent',) %}
+                                            <span class="inline-flex items-center gap-1 text-xs text-slate-300" title="Not yet viewed by client">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                                <span class="hidden sm:inline">Not viewed</span>
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="mt-1 text-sm text-slate-500 truncate">
+                                            {{ quote.site_address or 'No address' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ml-4 flex items-center gap-3">
+                                <div class="text-right">
+                                    <p class="text-base font-bold text-slate-900 font-display">
+                                        ${{ '{:,.0f}'.format((quote.total_cents or 0) / 100) }}
+                                    </p>
+                                    <p class="text-xs text-slate-400">
+                                        {{ quote.created_at.strftime('%d %b %Y') if quote.created_at else '' }}
+                                    </p>
+                                </div>
+                                <svg class="w-5 h-5 text-slate-300 group-hover:text-orange-500 transition-colors hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Pagination -->
+        {% if pages > 1 %}
+        <div class="px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+            <div class="text-sm text-slate-500">
+                Showing <span class="font-semibold text-slate-700">{{ (page - 1) * page_size + 1 }}</span> to <span class="font-semibold text-slate-700">{{ [(page * page_size), total]|min }}</span> of <span class="font-semibold text-slate-700">{{ total }}</span>
+            </div>
+            <div class="flex gap-1.5">
+                {% if page > 1 %}
+                <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page - 1 }}"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Previous
+                </a>
+                {% endif %}
+                {% if page < pages %}
+                <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page + 1 }}"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all">
+                    Next
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state-v4">
+            <div class="empty-state-v4-icon">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <h3 class="empty-state-v4-title">No quotes{% if status_filter %} &mdash; {{ status_filter|replace('_', ' ')|title }}{% endif %}</h3>
+            <p class="empty-state-v4-text">
+                {% if status_filter %}
+                No quotes match this filter. Try <a href="/quotes" class="text-orange-500 hover:text-orange-600 font-medium">clearing filters</a>.
+                {% else %}
+                Get started by creating your first quote.
+                {% endif %}
+            </p>
+            {% if not status_filter %}
+            <div>
+                <a href="/quotes/new" class="btn-v4 btn-v4-primary">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    New Quote
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Quote{% endblock %} - {{ business.trading_as }}</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico?v=3">
+    <link rel="icon" type="image/png" sizes="64x64" href="/static/images/favicon.png?v=3">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/images/favicon-192.png?v=3">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/images/favicon-192.png?v=3">
+
+    <!-- Tailwind CSS (pre-compiled) -->
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        function formatErrorDetail(detail, fallback) {
+            if (!detail) return fallback || 'An unexpected error occurred';
+            if (typeof detail === 'string') return detail;
+            if (Array.isArray(detail)) {
+                return detail.map(function(e) {
+                    if (typeof e === 'string') return e;
+                    var field = (e.loc && e.loc.length > 1) ? e.loc[e.loc.length - 1] : '';
+                    var msg = e.msg || JSON.stringify(e);
+                    return field ? field + ': ' + msg : msg;
+                }).join('; ');
+            }
+            if (typeof detail === 'object') {
+                return detail.msg || detail.message || JSON.stringify(detail);
+            }
+            return String(detail);
+        }
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Signature Pad -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-slide-down { animation: slideDown 0.3s ease-out forwards; }
+        .delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .delay-4 { animation-delay: 0.4s; opacity: 0; }
+        .delay-5 { animation-delay: 0.5s; opacity: 0; }
+
+        .portal-card {
+            background: white;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .signature-pad {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.75rem;
+            background-color: #fafafa;
+            touch-action: none;
+            transition: all 0.3s ease;
+        }
+        .signature-pad:hover {
+            border-color: #E87A2E;
+            background-color: #fff;
+        }
+        .signature-pad.active {
+            border-color: #E87A2E;
+            border-style: solid;
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(249,115,22,0.1);
+        }
+
+        .bg-pattern {
+            background-color: #f8fafc;
+            background-image: radial-gradient(circle at 1px 1px, rgba(15,23,42,0.03) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+<body class="min-h-full bg-pattern">
+
+    <!-- Brand Stripe -->
+    <div class="h-1 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500"></div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <img src="/static/images/KyleRGyoles_Concreting_Logo.png?v=2" alt="{{ business.trading_as }}" class="h-10">
+                    <div class="hidden sm:block border-l border-slate-200 pl-4">
+                        <h1 class="text-lg font-bold text-slate-900 font-display">{{ business.trading_as }}</h1>
+                        <p class="text-xs text-slate-500">{{ business.phone }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <a href="mailto:{{ business.email }}" class="text-sm text-slate-500 hover:text-orange-600 transition-colors">{{ business.email }}</a>
+                </div>
+            </div>
+            <div class="sm:hidden mt-3 pt-3 border-t border-slate-100">
+                <h1 class="text-lg font-bold text-slate-900 font-display">{{ business.trading_as }}</h1>
+                <p class="text-xs text-slate-500">{{ business.phone }}</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-100 mt-auto">
+        <div class="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-center sm:text-left">
+                    <p class="text-sm font-medium text-slate-700">{{ business.trading_as }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ business.name }} | ABN: {{ business.abn }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400">Powered by</span>
+                    <img src="/static/images/ConcreteIQ_Logo.png" alt="ConcreteIQ" class="h-5 opacity-50">
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

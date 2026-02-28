@@ -1,0 +1,462 @@
+{% extends "settings/base.html" %}
+{% block title %}Crew Productivity - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="productivitySettings()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-display font-bold text-slate-900">Crew Productivity</h1>
+            <p class="text-sm text-slate-500 mt-1">Edit crew productivity rates used by the quote calculator</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- Reset to Defaults -->
+            <button @click="resetDefaults()"
+                    class="inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-red-500 transition-colors"
+                    :class="{ 'opacity-50 pointer-events-none': isSaving }">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Reset Defaults
+            </button>
+            <!-- Save Button (visible when dirty) -->
+            <button x-show="isDirty" x-transition
+                    @click="save()"
+                    :disabled="isSaving"
+                    class="btn-v4 btn-v4-primary inline-flex items-center gap-2 text-sm">
+                <template x-if="isSaving">
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                </template>
+                <template x-if="!isSaving">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </template>
+                <span x-text="isSaving ? 'Saving...' : 'Save Changes'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Setup & Preparation -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-orange">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Setup & Preparation</h2>
+                <p>Formwork, subbase, and preparation productivity rates</p>
+            </div>
+        </div>
+        <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="task in tasks.setup" :key="task.key">
+                    <div class="border border-slate-100 rounded-xl p-4 hover:border-orange-200 hover:bg-orange-50/30 transition-all"
+                         :class="{ 'ring-2 ring-orange-300 border-orange-300': isFieldDirty('productivity_' + task.key) }">
+                        <h3 class="text-sm font-semibold text-slate-900 mb-3" x-text="task.label"></h3>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="0.1" step="0.5"
+                                   class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                                   x-model.number="task.rate"
+                                   @input="markDirty()">
+                            <span class="text-xs text-slate-500 font-medium" x-text="task.unit"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Joints -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Control Joints</h2>
+                <p>Sawcut and tooled joint productivity rates</p>
+            </div>
+        </div>
+        <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="task in tasks.joints" :key="task.key">
+                    <div class="border border-slate-100 rounded-xl p-4 hover:border-blue-200 hover:bg-blue-50/30 transition-all"
+                         :class="{ 'ring-2 ring-blue-300 border-blue-300': isFieldDirty('productivity_' + task.key) }">
+                        <h3 class="text-sm font-semibold text-slate-900 mb-3" x-text="task.label"></h3>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="0.1" step="0.5"
+                                   class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                                   x-model.number="task.rate"
+                                   @input="markDirty()">
+                            <span class="text-xs text-slate-500 font-medium" x-text="task.unit"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pour Rates -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-green">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Pouring & Finishing</h2>
+                <p>Summer and winter pour rates and minimums</p>
+            </div>
+        </div>
+        <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Summer -->
+                <div class="border border-green-200 rounded-xl p-4 bg-green-50/30"
+                     :class="{ 'ring-2 ring-green-400': isFieldDirty('pour_summer_rate') || isFieldDirty('pour_summer_min') }">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/></svg>
+                            Summer Pour
+                        </h3>
+                        <span class="text-xs text-slate-400">Nov&ndash;Mar</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 font-medium w-16">Rate:</label>
+                            <input type="number" min="0.1" step="0.5"
+                                   class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                                   x-model.number="pour.summer_rate"
+                                   @input="markDirty()">
+                            <span class="text-xs text-slate-500 font-medium">m&sup2;/hr</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 font-medium w-16">Min hrs:</label>
+                            <input type="number" min="0" step="0.25"
+                                   class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                                   x-model.number="pour.summer_min"
+                                   @input="markDirty()">
+                            <span class="text-xs text-slate-500 font-medium">hrs/pour</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Winter -->
+                <div class="border border-blue-200 rounded-xl p-4 bg-blue-50/30"
+                     :class="{ 'ring-2 ring-blue-400': isFieldDirty('pour_winter_rate') || isFieldDirty('pour_winter_min') }">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12.75 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM7.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM8.25 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM9.75 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM10.5 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM12.75 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM14.25 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 17.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 15.75a.75.75 0 100-1.5.75.75 0 000 1.5zM15 12.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM16.5 13.5a.75.75 0 100-1.5.75.75 0 000 1.5z"/><path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd"/></svg>
+                            Winter Pour
+                        </h3>
+                        <span class="text-xs text-slate-400">Apr&ndash;Oct</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 font-medium w-16">Rate:</label>
+                            <input type="number" min="0.1" step="0.5"
+                                   class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                                   x-model.number="pour.winter_rate"
+                                   @input="markDirty()">
+                            <span class="text-xs text-slate-500 font-medium">m&sup2;/hr</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-500 font-medium w-16">Min hrs:</label>
+                            <input type="number" min="0" step="0.25"
+                                   class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                                   x-model.number="pour.winter_min"
+                                   @input="markDirty()">
+                            <span class="text-xs text-slate-500 font-medium">hrs/pour</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finishing & Wash -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Finishing & Wash</h2>
+                <p>Wash, acid wash, and sealer productivity rates</p>
+            </div>
+        </div>
+        <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="task in tasks.finishing" :key="task.key">
+                    <div class="border border-slate-100 rounded-xl p-4 hover:border-purple-200 hover:bg-purple-50/30 transition-all"
+                         :class="{ 'ring-2 ring-purple-300 border-purple-300': isFieldDirty('productivity_' + task.key) }">
+                        <h3 class="text-sm font-semibold text-slate-900 mb-3" x-text="task.label"></h3>
+                        <div class="flex items-center gap-2">
+                            <input type="number" min="0.1" step="0.5"
+                                   class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                                   x-model.number="task.rate"
+                                   @input="markDirty()">
+                            <span class="text-xs text-slate-500 font-medium" x-text="task.unit"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Time References -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-slate">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Other Time References</h2>
+                <p>Pier and step construction time estimates</p>
+            </div>
+        </div>
+        <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="border border-slate-100 rounded-xl p-4"
+                     :class="{ 'ring-2 ring-slate-400 border-slate-400': isFieldDirty('material_pier_labour_hrs') }">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-1">Pier Construction</h3>
+                    <p class="text-xs text-slate-400 mb-3">Sono tube, starter bar, pour</p>
+                    <div class="flex items-center gap-2">
+                        <input type="number" min="0.1" step="0.1"
+                               class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                               x-model.number="other.pier_hrs"
+                               @input="markDirty()">
+                        <span class="text-xs text-slate-500 font-medium">hrs/pier</span>
+                    </div>
+                </div>
+                <div class="border border-slate-100 rounded-xl p-4"
+                     :class="{ 'ring-2 ring-slate-400 border-slate-400': isFieldDirty('material_step_hours') }">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-1">Step Construction</h3>
+                    <p class="text-xs text-slate-400 mb-3">Formwork + pour per step</p>
+                    <div class="flex items-center gap-2">
+                        <input type="number" min="0.1" step="0.1"
+                               class="input-field w-24 text-sm !py-1.5 !px-2.5 text-right font-mono"
+                               x-model.number="other.step_hrs"
+                               @input="markDirty()">
+                        <span class="text-xs text-slate-500 font-medium">hrs/step</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sticky bottom save bar (for scrolled pages) -->
+    <div x-show="isDirty" x-transition
+         class="sticky bottom-4 z-30">
+        <div class="bg-white/95 backdrop-blur border border-orange-200 rounded-2xl shadow-lg px-6 py-3 flex items-center justify-between">
+            <p class="text-sm text-slate-600">
+                <span class="font-semibold text-orange-600" x-text="dirtyCount()"></span> unsaved change<span x-show="dirtyCount() !== 1">s</span>
+            </p>
+            <div class="flex items-center gap-3">
+                <button @click="discardChanges()" class="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">
+                    Discard
+                </button>
+                <button @click="save()"
+                        :disabled="isSaving"
+                        class="btn-v4 btn-v4-primary inline-flex items-center gap-2 text-sm">
+                    <template x-if="isSaving">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    </template>
+                    <span x-text="isSaving ? 'Saving...' : 'Save Changes'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function productivitySettings() {
+    const p = {{ pricing | tojson }};
+
+    /* Default values — used for Reset to Defaults */
+    const DEFAULTS = {
+        productivity_formwork: 22.5,
+        productivity_subbase: 50,
+        productivity_moisture_barrier: 100,
+        productivity_isolation_joint: 10,
+        productivity_dowels: 30,
+        productivity_fence_sheeting: 20,
+        productivity_rebates: 10,
+        productivity_sawcut: 60,
+        productivity_tooled_joint: 15,
+        productivity_wash_next: 30,
+        productivity_wash_same: 25,
+        productivity_acid_wash: 40,
+        productivity_sealer: 50,
+        pour_summer_rate: 30,
+        pour_summer_min: 2.0,
+        pour_winter_rate: 25,
+        pour_winter_min: 2.5,
+        material_pier_labour_hrs: 0.6,
+        material_step_hours: 1.5,
+    };
+
+    /* Snapshot of saved values (to detect dirty state) */
+    const savedValues = { ...DEFAULTS };
+    for (const key of Object.keys(DEFAULTS)) {
+        if (p[key] !== undefined && p[key] !== null) {
+            savedValues[key] = parseFloat(p[key]) || DEFAULTS[key];
+        }
+    }
+
+    return {
+        tasks: {
+            setup: [
+                { key: 'formwork',          label: 'Formwork',          rate: savedValues.productivity_formwork,          unit: 'lm/hr' },
+                { key: 'subbase',           label: 'Subbase',           rate: savedValues.productivity_subbase,           unit: 'm\u00b2/hr' },
+                { key: 'moisture_barrier',  label: 'Moisture Barrier',  rate: savedValues.productivity_moisture_barrier,  unit: 'm\u00b2/hr' },
+                { key: 'isolation_joint',   label: 'Isolation Joint',   rate: savedValues.productivity_isolation_joint,   unit: 'lm/hr' },
+                { key: 'dowels',            label: 'Dowels',            rate: savedValues.productivity_dowels,            unit: '/hr' },
+                { key: 'fence_sheeting',    label: 'Fence Sheeting',    rate: savedValues.productivity_fence_sheeting,    unit: 'lm/hr' },
+                { key: 'rebates',           label: 'Rebates',           rate: savedValues.productivity_rebates,           unit: 'lm/hr' },
+            ],
+            joints: [
+                { key: 'sawcut',        label: 'Sawcut',        rate: savedValues.productivity_sawcut,        unit: 'lm/hr' },
+                { key: 'tooled_joint',  label: 'Tooled Joint',  rate: savedValues.productivity_tooled_joint,  unit: 'lm/hr' },
+            ],
+            finishing: [
+                { key: 'wash_next',  label: 'Wash (Next Day)',  rate: savedValues.productivity_wash_next,  unit: 'm\u00b2/hr' },
+                { key: 'wash_same',  label: 'Wash (Same Day)',  rate: savedValues.productivity_wash_same,  unit: 'm\u00b2/hr' },
+                { key: 'acid_wash',  label: 'Acid Wash',        rate: savedValues.productivity_acid_wash,  unit: 'm\u00b2/hr' },
+                { key: 'sealer',     label: 'Sealer',           rate: savedValues.productivity_sealer,     unit: 'm\u00b2/hr' },
+            ],
+        },
+
+        pour: {
+            summer_rate: savedValues.pour_summer_rate,
+            summer_min:  savedValues.pour_summer_min,
+            winter_rate: savedValues.pour_winter_rate,
+            winter_min:  savedValues.pour_winter_min,
+        },
+
+        other: {
+            pier_hrs: savedValues.material_pier_labour_hrs,
+            step_hrs: savedValues.material_step_hours,
+        },
+
+        /* Dirty tracking */
+        isDirty: false,
+        _savedSnapshot: JSON.parse(JSON.stringify(savedValues)),
+
+        /* UI state */
+        isSaving: false,
+
+        /* Build the current values map (matching DB keys) */
+        currentValues() {
+            const vals = {};
+            for (const group of Object.values(this.tasks)) {
+                for (const t of group) {
+                    vals['productivity_' + t.key] = t.rate;
+                }
+            }
+            vals.pour_summer_rate = this.pour.summer_rate;
+            vals.pour_summer_min  = this.pour.summer_min;
+            vals.pour_winter_rate = this.pour.winter_rate;
+            vals.pour_winter_min  = this.pour.winter_min;
+            vals.material_pier_labour_hrs = this.other.pier_hrs;
+            vals.material_step_hours      = this.other.step_hrs;
+            return vals;
+        },
+
+        /* Check if a specific field has changed from saved */
+        isFieldDirty(key) {
+            const cur = this.currentValues();
+            return cur[key] !== undefined && cur[key] !== this._savedSnapshot[key];
+        },
+
+        /* Count of changed fields */
+        dirtyCount() {
+            const cur = this.currentValues();
+            let count = 0;
+            for (const key of Object.keys(cur)) {
+                if (cur[key] !== this._savedSnapshot[key]) count++;
+            }
+            return count;
+        },
+
+        /* Mark dirty (called from @input on rate fields) */
+        markDirty() {
+            this.$nextTick(() => {
+                this.isDirty = this.dirtyCount() > 0;
+            });
+        },
+
+        /* Save changes to the server */
+        async save() {
+            this.isSaving = true;
+            try {
+                const payload = this.currentValues();
+                const response = await fetch('/settings/api/pricing', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': getCsrfToken(),
+                    },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    Toast.success('Productivity rates saved successfully!');
+                    /* Update saved snapshot so dirty tracking resets */
+                    this._savedSnapshot = { ...payload };
+                    this.isDirty = false;
+                } else {
+                    Toast.error(formatErrorDetail(data.detail, 'Error saving settings'));
+                }
+            } catch (e) {
+                Toast.error('Network error \u2014 please try again');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        /* Discard unsaved changes (revert to last saved state) */
+        discardChanges() {
+            const snap = this._savedSnapshot;
+            for (const group of Object.values(this.tasks)) {
+                for (const t of group) {
+                    t.rate = snap['productivity_' + t.key];
+                }
+            }
+            this.pour.summer_rate = snap.pour_summer_rate;
+            this.pour.summer_min  = snap.pour_summer_min;
+            this.pour.winter_rate = snap.pour_winter_rate;
+            this.pour.winter_min  = snap.pour_winter_min;
+            this.other.pier_hrs   = snap.material_pier_labour_hrs;
+            this.other.step_hrs   = snap.material_step_hours;
+            this.isDirty = false;
+        },
+
+        /* Reset all rates to factory defaults */
+        resetDefaults() {
+            if (!confirm('Reset all productivity rates to default values? You will still need to click Save to persist.')) return;
+            const d = DEFAULTS;
+            for (const group of Object.values(this.tasks)) {
+                for (const t of group) {
+                    t.rate = d['productivity_' + t.key];
+                }
+            }
+            this.pour.summer_rate = d.pour_summer_rate;
+            this.pour.summer_min  = d.pour_summer_min;
+            this.pour.winter_rate = d.pour_winter_rate;
+            this.pour.winter_min  = d.pour_winter_min;
+            this.other.pier_hrs   = d.material_pier_labour_hrs;
+            this.other.step_hrs   = d.material_step_hours;
+            this.markDirty();
+        },
+    };
+}
+</script>
+{% endblock %}

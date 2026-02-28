@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if quote else 'New' }} Labour Quote — ConcreteIQ{% endblock %}
+
+{% block content %}
+<div x-data="labourQuote()" class="space-y-6">
+    <!-- Hero Header -->
+    <div class="page-hero">
+        <div class="flex items-center gap-4">
+            <a href="{{ '/quotes/' ~ quote.id if quote else '/quotes/new' }}" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="page-hero-title">
+                    {% if quote %}Edit Labour Quote — {{ quote.quote_number }}{% else %}Invoice Labour{% endif %}
+                </h1>
+                <p class="page-hero-subtitle">Calculate labour costs with PAYG, super, and WorkCover</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Form -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Customer & Job -->
+            <div class="premium-card card-gradient-top p-6 card-enter card-enter-1">
+                <div class="settings-section-header">
+                    <div class="settings-section-header-icon icon-bg-blue">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900">Job Details</h2>
+                        <p class="text-sm text-slate-500">Customer, worker, and location</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Customer <span class="text-red-500">*</span></label>
+                        <select x-model="form.customer_id" class="input-field w-full" required>
+                            <option value="">-- Select Customer --</option>
+                            {% for c in customers %}
+                            <option value="{{ c.id }}" {% if customer and customer.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Worker Name <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="form.worker_name" placeholder="e.g. Corbain" class="input-field w-full" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Work Date <span class="text-red-500">*</span></label>
+                        <input type="date" x-model="form.work_date" class="input-field w-full" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Job Name</label>
+                        <input type="text" x-model="form.job_name" placeholder="Auto-generated if blank" class="input-field w-full">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Job Address</label>
+                        <input type="text" x-model="form.job_address" placeholder="Optional" class="input-field w-full">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Labour Details -->
+            <div class="premium-card p-6 card-enter card-enter-2">
+                <div class="settings-section-header">
+                    <div class="settings-section-header-icon icon-bg-orange">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900">Labour</h2>
+                        <p class="text-sm text-slate-500">Hours and rate configuration</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Hours Worked <span class="text-red-500">*</span></label>
+                        <input type="number" x-model.number="form.hours" step="0.5" min="0.5" max="24" placeholder="8" class="input-field w-full" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Rate Type</label>
+                        <select x-model="form.rate_type" class="input-field w-full">
+                            <option value="team_tier">Team Tier</option>
+                            <option value="custom">Custom Rate</option>
+                        </select>
+                    </div>
+                    <div x-show="form.rate_type === 'team_tier'">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Team Tier</label>
+                        <div class="flex gap-2">
+                            {% for tier_name, tier_data in team_rates.items() %}
+                            <button type="button"
+                                    @click="form.team_tier = '{{ tier_name }}'"
+                                    :class="form.team_tier === '{{ tier_name }}' ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                    class="flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all">
+                                {{ tier_name }}
+                                <span class="block text-xs opacity-75">${{ '{:.0f}'.format(tier_data['hourly'] / 100) }}/hr</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div x-show="form.rate_type === 'custom'">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Hourly Rate (ex GST)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                            <input type="number" x-model.number="form.custom_rate" step="1" min="1" placeholder="220" class="input-field w-full pl-8">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">/hr</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="premium-card p-6 card-enter card-enter-3">
+                <div class="settings-section-header">
+                    <div class="settings-section-header-icon icon-bg-amber">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900">Notes</h2>
+                        <p class="text-sm text-slate-500">Customer-facing and internal notes</p>
+                    </div>
+                </div>
+                <textarea x-model="form.notes" rows="3" placeholder="Notes shown on the quote/invoice..." class="input-field w-full mt-4"></textarea>
+                <textarea x-model="form.internal_notes" rows="2" placeholder="Internal notes (not shown to customer)..." class="input-field w-full mt-3 bg-slate-50"></textarea>
+            </div>
+        </div>
+
+        <!-- Calculation Summary -->
+        <div class="lg:col-span-1">
+            <div class="sticky top-20 space-y-4">
+                <div class="premium-card p-6 card-enter card-enter-2">
+                    <div class="settings-section-header">
+                        <div class="settings-section-header-icon icon-bg-purple">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-900">Calculation</h2>
+                            <p class="text-sm text-slate-500">Cost breakdown</p>
+                        </div>
+                    </div>
+                    <div class="space-y-3 text-sm mt-4">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Rate</span>
+                            <span class="font-medium" x-text="'$' + (hourlyRate / 100).toFixed(2) + '/hr'"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Hours</span>
+                            <span class="font-medium" x-text="form.hours + ' hrs'"></span>
+                        </div>
+                        <div class="flex justify-between border-t border-slate-100 pt-2">
+                            <span class="text-slate-700 font-medium">Gross Wages</span>
+                            <span class="font-bold" x-text="'$' + (grossCents / 100).toFixed(2)"></span>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-2 space-y-1">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Payroll On-Costs</p>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Super (12%)</span>
+                                <span x-text="'$' + (superCents / 100).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">WorkCover (3%)</span>
+                                <span x-text="'$' + (workcoverCents / 100).toFixed(2)"></span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-200 pt-2 space-y-1">
+                            <div class="flex justify-between font-medium">
+                                <span class="text-slate-700">Subtotal (ex GST)</span>
+                                <span x-text="'$' + (subtotalCents / 100).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between text-slate-500">
+                                <span>GST (10%)</span>
+                                <span x-text="'$' + (gstCents / 100).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between text-lg font-bold text-slate-900 border-t border-slate-200 pt-2 mt-2">
+                                <span>Total</span>
+                                <span x-text="'$' + (totalCents / 100).toFixed(2)"></span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-2 space-y-1">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Worker Take-Home</p>
+                            <div class="flex justify-between text-slate-500">
+                                <span>PAYG Withheld (17%)</span>
+                                <span x-text="'-$' + (paygCents / 100).toFixed(2)"></span>
+                            </div>
+                            <div class="flex justify-between text-green-700 font-medium">
+                                <span>Net Wages</span>
+                                <span x-text="'$' + (netWagesCents / 100).toFixed(2)"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="button"
+                        @click="submit()"
+                        :disabled="!canSubmit || submitting"
+                        class="w-full btn-v4 btn-v4-primary">
+                    <template x-if="!submitting">
+                        <span x-text="'{{ 'Update' if quote else 'Create' }} Labour Quote — $' + (totalCents / 100).toFixed(2)"></span>
+                    </template>
+                    <template x-if="submitting">
+                        <span class="flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            Saving...
+                        </span>
+                    </template>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function labourQuote() {
+    const existing = {{ ((quote.calculator_input | tojson) if quote and quote.calculator_input else 'null') | safe }};
+    const TEAM_RATES = {{ team_rates | tojson | safe }};
+
+    return {
+        submitting: false,
+        form: {
+            customer_id: {{ (customer.id if customer else (quote.customer_id if quote else '')) | tojson }},
+            worker_name: existing ? existing.worker_name || '' : '',
+            work_date: existing ? existing.work_date || new Date().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            job_name: {{ (quote.job_name if quote else '') | tojson }},
+            job_address: {{ (quote.job_address if quote else '') | tojson }},
+            hours: existing ? existing.hours || 8 : 8,
+            rate_type: existing && existing.hourly_rate_cents && !existing.team_tier ? 'custom' : 'team_tier',
+            team_tier: existing ? existing.team_tier || 'Standard' : 'Standard',
+            custom_rate: existing ? (existing.hourly_rate_cents || 22000) / 100 : 220,
+            notes: {{ (quote.notes or '') | tojson }},
+            internal_notes: {{ (quote.internal_notes or '') | tojson }},
+        },
+
+        get hourlyRate() {
+            if (this.form.rate_type === 'custom') {
+                return Math.round((this.form.custom_rate || 0) * 100);
+            }
+            const tier = TEAM_RATES[this.form.team_tier] || TEAM_RATES['Standard'];
+            return tier.hourly;
+        },
+        get grossCents() { return Math.round(this.hourlyRate * (this.form.hours || 0)); },
+        get paygCents() { return Math.round(this.grossCents * 0.17); },
+        get superCents() { return Math.round(this.grossCents * 0.12); },
+        get workcoverCents() { return Math.round(this.grossCents * 0.03); },
+        get subtotalCents() { return this.grossCents + this.superCents + this.workcoverCents; },
+        get gstCents() { return Math.round(this.subtotalCents * 0.10); },
+        get totalCents() { return this.subtotalCents + this.gstCents; },
+        get netWagesCents() { return this.grossCents - this.paygCents; },
+
+        get canSubmit() {
+            return this.form.customer_id && this.form.worker_name && this.form.hours > 0 && this.form.work_date;
+        },
+
+        async submit() {
+            if (!this.canSubmit || this.submitting) return;
+            this.submitting = true;
+
+            const payload = {
+                customer_id: parseInt(this.form.customer_id),
+                job_name: this.form.job_name || null,
+                job_address: this.form.job_address || null,
+                work_date: this.form.work_date,
+                worker_name: this.form.worker_name,
+                hours: this.form.hours,
+                team_tier: this.form.team_tier,
+                hourly_rate_cents: this.form.rate_type === 'custom' ? this.hourlyRate : null,
+                notes: this.form.notes || null,
+                internal_notes: this.form.internal_notes || null,
+            };
+
+            try {
+                const res = await fetch('/quotes/api/create-labour', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to create quote');
+                }
+
+                const data = await res.json();
+                window.location.href = '/quotes/' + data.id;
+            } catch (err) {
+                alert(err.message);
+                this.submitting = false;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

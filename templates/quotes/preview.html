@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}Preview {{ quote.quote_number }} - ConcreteIQ{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+    .sortable-ghost { opacity: 0.4; }
+    .sortable-chosen { box-shadow: 0 8px 25px -5px rgba(0,0,0,0.15); }
+    .group-card { transition: box-shadow 0.2s, transform 0.15s; }
+    .group-card:hover { box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08); }
+    .toggle-sm {
+        width: 36px; height: 20px; border-radius: 10px;
+        background: #d1d5db; transition: background 0.2s;
+        position: relative; cursor: pointer;
+    }
+    .toggle-sm.active { background: #E87A2E; }
+    .toggle-sm::after {
+        content: ''; position: absolute; top: 2px; left: 2px;
+        width: 16px; height: 16px; border-radius: 50%;
+        background: white; transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .toggle-sm.active::after { transform: translateX(16px); }
+    .diff-positive { color: #059669; }
+    .diff-negative { color: #dc2626; }
+    .diff-zero { color: #6b7280; }
+    .action-bar {
+        backdrop-filter: blur(12px);
+        background: rgba(255,255,255,0.85);
+        border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .send-banner {
+        background: linear-gradient(135deg, #fff7ed, #fef3c7);
+        border: 1px solid #f59e0b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="quotePreview()" x-init="init()" class="max-w-7xl mx-auto px-4 py-6 pb-24">
+
+    <!-- SEND BANNER (shown when redirected with ?action=send) -->
+    <div x-show="showSendBanner" x-transition class="send-banner rounded-xl p-4 mb-6 flex items-center gap-3">
+        <svg class="w-6 h-6 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div>
+            <p class="text-sm font-semibold text-amber-800">Review before sending</p>
+            <p class="text-xs text-amber-600">Check the line items below, then click "Send Quote" when ready.</p>
+        </div>
+        <button @click="showSendBanner = false" class="ml-auto text-amber-400 hover:text-amber-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-slate-900">Quote Preview</h1>
+                <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 uppercase tracking-wide">Draft</span>
+            </div>
+            <div class="flex items-center gap-3 mt-1 text-sm text-slate-500">
+                <span class="font-medium text-slate-700">{{ quote.quote_number }}</span>
+                <span>&middot;</span>
+                <span>{{ customer.name if customer else 'No customer' }}</span>
+                {% if quote.job_address %}
+                <span>&middot;</span>
+                <span class="truncate max-w-xs">{{ quote.job_address }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <a href="/quotes/{{ quote.id }}/edit" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+            Back to Calculator
+        </a>
+    </div>
+
+    <!-- TWO COLUMN LAYOUT -->
+    <div class="flex gap-6">
+
+        <!-- MAIN CONTENT -->
+        <div class="flex-1 min-w-0">
+
+            <!-- LINE ITEM GROUPS -->
+            <div x-ref="groupList" class="space-y-4">
+                <template x-for="(group, groupIdx) in groups" :key="group.id">
+                    <div class="group-card bg-white rounded-xl border border-slate-200 overflow-hidden">
+
+                        <!-- Group Header -->
+                        <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-100">
+                            <!-- Drag handle -->
+                            <div class="drag-handle text-slate-300 hover:text-slate-500 flex-shrink-0">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+                            </div>
+
+                            <!-- Category name (editable) -->
+                            <input type="text"
+                                x-model="group.category"
+                                class="flex-1 bg-transparent border-0 text-sm font-semibold text-slate-900 focus:ring-0 focus:outline-none px-0 py-0"
+                                placeholder="Category name">
+
+                            <!-- Group total (editable) -->
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <span class="text-xs text-slate-400">$</span>
+                                <input type="number"
+                                    :value="(group.total_cents / 100).toFixed(2)"
+                                    @change="updateGroupTotal(group.id, $event.target.value)"
+                                    class="w-28 text-right bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-orange-300 focus:border-orange-300"
+                                    step="0.01" min="0">
+                                <span class="text-[10px] text-slate-400">ex GST</span>
+                            </div>
+
+                            <!-- Delete group -->
+                            <button @click="deleteGroup(group.id)" class="text-slate-300 hover:text-red-500 transition-colors flex-shrink-0 ml-1" title="Delete group">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+
+                        <!-- Sub-items + toggle -->
+                        <div class="px-4 py-3 space-y-2">
+
+                            <!-- Show sub-prices toggle -->
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Line item descriptions</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-slate-400">Show prices</span>
+                                    <div class="toggle-sm" :class="group.show_sub_prices ? 'active' : ''"
+                                        @click="group.show_sub_prices = !group.show_sub_prices"></div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-items list -->
+                            <template x-for="(sub, subIdx) in group.sub_items" :key="groupIdx + '-' + subIdx">
+                                <div class="flex items-center gap-2 group/sub">
+                                    <span class="text-slate-300 text-xs">&bull;</span>
+                                    <input type="text"
+                                        x-model="sub.description"
+                                        class="flex-1 bg-transparent border-0 text-sm text-slate-600 focus:ring-0 focus:outline-none px-0 py-0.5 placeholder:text-slate-300"
+                                        placeholder="Description...">
+                                    <!-- Sub-item price (only if toggle is on) -->
+                                    <template x-if="group.show_sub_prices">
+                                        <div class="flex items-center gap-1 flex-shrink-0">
+                                            <span class="text-xs text-slate-300">$</span>
+                                            <input type="number"
+                                                :value="sub.price_cents ? (sub.price_cents / 100).toFixed(2) : ''"
+                                                @change="sub.price_cents = $event.target.value ? Math.round(parseFloat($event.target.value) * 100) : null"
+                                                class="w-20 text-right bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-slate-600 focus:ring-1 focus:ring-orange-200"
+                                                step="0.01" min="0"
+                                                placeholder="-">
+                                        </div>
+                                    </template>
+                                    <!-- Delete sub-item -->
+                                    <button @click="deleteSubItem(group.id, subIdx)"
+                                        class="text-slate-200 hover:text-red-400 transition-colors opacity-0 group-hover/sub:opacity-100 flex-shrink-0"
+                                        title="Remove item">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+                            </template>
+
+                            <!-- Add sub-item -->
+                            <button @click="addSubItem(group.id)" class="text-xs text-orange-500 hover:text-orange-600 font-medium mt-1 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Add item
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ADD GROUP BUTTON -->
+            <button @click="addGroup()" class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 rounded-xl text-sm font-medium text-slate-500 hover:border-orange-300 hover:text-orange-600 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Add Group
+            </button>
+
+            <!-- TOTALS -->
+            <div class="mt-6 bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div class="px-5 py-4">
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm text-slate-600">
+                            <span>Subtotal (ex GST)</span>
+                            <span class="font-medium" x-text="formatMoney(subtotalCents)"></span>
+                        </div>
+                        <div class="flex justify-between text-sm text-slate-600">
+                            <span>GST (10%)</span>
+                            <span class="font-medium" x-text="formatMoney(gstCents)"></span>
+                        </div>
+                        <div class="flex justify-between items-center pt-3 border-t border-slate-200">
+                            <span class="text-lg font-bold text-slate-900">Total (inc GST)</span>
+                            <span class="text-2xl font-extrabold text-orange-600" x-text="formatMoney(totalCents)"></span>
+                        </div>
+                        {% if quote.calculator_input %}
+                        <div class="flex justify-between text-xs text-slate-400 pt-1">
+                            <span>Rate per m&sup2;</span>
+                            <span x-text="'$' + (totalCents / {{ quote.calculator_input.slab_area or 1 }} / 100).toFixed(2) + '/m&sup2;'"></span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Payment Schedule -->
+                <div class="px-5 py-3 bg-orange-50/50 border-t border-orange-100">
+                    <p class="text-[10px] text-orange-600 font-semibold uppercase tracking-wider mb-2">Payment Schedule</p>
+                    <div class="space-y-1.5 text-sm">
+                        <div class="flex justify-between text-slate-600">
+                            <span>First Payment (30%)</span>
+                            <span class="font-medium" x-text="formatMoney(depositCents)"></span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Progress Payment (60%)</span>
+                            <span class="font-medium" x-text="formatMoney(prepourCents)"></span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Final Payment (10%)</span>
+                            <span class="font-medium" x-text="formatMoney(completionCents)"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOTES -->
+            <div class="mt-6">
+                <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 block">Customer Notes</label>
+                <textarea x-model="notes" rows="3"
+                    class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-orange-300 focus:border-orange-300 resize-none"
+                    placeholder="Any notes visible to the customer..."></textarea>
+            </div>
+        </div>
+
+        <!-- INTERNAL SIDEBAR -->
+        <div class="w-72 flex-shrink-0 hidden lg:block">
+            <div class="sticky top-4 space-y-4">
+
+                <!-- Internal Summary -->
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div class="px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Internal Only</span>
+                        </div>
+                    </div>
+                    <div class="px-4 py-3 space-y-3 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Raw Cost</span>
+                            <span class="font-medium text-slate-700" x-text="formatMoney(comparison.raw_cost_cents)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Calculator Markup</span>
+                            <span class="font-medium text-slate-700" x-text="formatMoney(comparison.markup_cents)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Labour Margin</span>
+                            <span class="font-medium text-slate-700" x-text="formatMoney(comparison.labour_margin_cents)"></span>
+                        </div>
+                        <div class="border-t border-slate-100 pt-2 flex justify-between">
+                            <span class="text-slate-500">Est. Profit</span>
+                            <span class="font-bold" :class="comparison.estimated_profit_cents >= 0 ? 'text-emerald-600' : 'text-red-600'"
+                                x-text="formatMoney(comparison.estimated_profit_cents)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Margin</span>
+                            <span class="font-medium text-slate-600" x-text="comparison.profit_margin_percent + '%'"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Difference Indicator -->
+                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2">Calculator vs Customer</p>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Calculator</span>
+                            <span class="font-medium text-slate-700" x-text="formatMoney(comparison.calculator_subtotal_cents)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Customer</span>
+                            <span class="font-medium text-slate-700" x-text="formatMoney(subtotalCents)"></span>
+                        </div>
+                        <div class="border-t border-slate-100 pt-2 flex justify-between items-center">
+                            <span class="text-slate-500">Difference</span>
+                            <span class="font-bold text-sm"
+                                :class="{
+                                    'diff-positive': liveDifference > 0,
+                                    'diff-negative': liveDifference < 0,
+                                    'diff-zero': liveDifference === 0
+                                }"
+                                x-text="liveDifference === 0 ? 'Matches' : (liveDifference > 0 ? '+' : '') + formatMoney(liveDifference)">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save status -->
+                <div class="text-center text-xs text-slate-400" x-show="lastSaved">
+                    <span x-text="'Saved ' + lastSaved"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STICKY ACTION BAR -->
+    <div class="action-bar fixed bottom-0 left-0 right-0 z-40 py-3 px-6">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <a href="/quotes/{{ quote.id }}/edit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                Calculator
+            </a>
+            <div class="flex items-center gap-3">
+                <button @click="savePreview()" :disabled="isSaving"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <span x-text="isSaving ? 'Saving...' : 'Save Draft'"></span>
+                </button>
+                <button @click="downloadPDF()"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                    PDF
+                </button>
+                <button @click="sendQuote()" :disabled="isSending"
+                    class="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 shadow-sm transition-colors disabled:opacity-50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    <span x-text="isSending ? 'Sending...' : 'Send Quote'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function quotePreview() {
+    return {
+        quoteId: {{ quote.id }},
+        groups: {{ quote.customer_line_items | tojson }},
+        notes: {{ (quote.notes or '') | tojson }},
+        comparison: {{ comparison | tojson }},
+        isSaving: false,
+        isSending: false,
+        lastSaved: null,
+        showSendBanner: new URLSearchParams(window.location.search).get('action') === 'send',
+        sortable: null,
+
+        // ---- Computed ----
+        get subtotalCents() {
+            return this.groups.reduce((sum, g) => sum + (g.total_cents || 0), 0);
+        },
+        get gstCents() {
+            return Math.round(this.subtotalCents * 0.10);
+        },
+        get totalCents() {
+            return this.subtotalCents + this.gstCents;
+        },
+        get depositCents() {
+            return Math.round(this.totalCents * 0.30);
+        },
+        get prepourCents() {
+            return Math.round(this.totalCents * 0.60);
+        },
+        get completionCents() {
+            return this.totalCents - this.depositCents - this.prepourCents;
+        },
+        get liveDifference() {
+            return this.subtotalCents - (this.comparison.calculator_subtotal_cents || 0);
+        },
+
+        // ---- Methods ----
+        formatMoney(cents) {
+            if (cents === null || cents === undefined) return '$0.00';
+            const negative = cents < 0;
+            const abs = Math.abs(cents);
+            const str = '$' + (abs / 100).toLocaleString('en-AU', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+            return negative ? '-' + str : str;
+        },
+
+        addGroup() {
+            this.groups.push({
+                id: crypto.randomUUID(),
+                category: 'New Item',
+                sub_items: [{ description: '', price_cents: null }],
+                total_cents: 0,
+                show_sub_prices: false,
+                sort_order: this.groups.length,
+            });
+        },
+
+        deleteGroup(groupId) {
+            if (this.groups.length <= 1) {
+                alert('You need at least one group');
+                return;
+            }
+            this.groups = this.groups.filter(g => g.id !== groupId);
+        },
+
+        addSubItem(groupId) {
+            const group = this.groups.find(g => g.id === groupId);
+            if (group) {
+                group.sub_items.push({ description: '', price_cents: null });
+            }
+        },
+
+        deleteSubItem(groupId, subIdx) {
+            const group = this.groups.find(g => g.id === groupId);
+            if (group && group.sub_items.length > 1) {
+                group.sub_items.splice(subIdx, 1);
+            }
+        },
+
+        updateGroupTotal(groupId, dollarValue) {
+            const group = this.groups.find(g => g.id === groupId);
+            if (group) {
+                group.total_cents = Math.round(parseFloat(dollarValue || 0) * 100);
+            }
+        },
+
+        async savePreview() {
+            this.isSaving = true;
+            try {
+                // Update sort_order from current array position
+                this.groups.forEach((g, i) => g.sort_order = i);
+
+                const response = await fetch(`/quotes/api/${this.quoteId}/preview`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customer_line_items: this.groups,
+                        notes: this.notes,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(formatErrorDetail(err.detail, 'Error saving'));
+                }
+
+                const data = await response.json();
+                this.comparison = data.comparison;
+                this.lastSaved = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+            } catch (error) {
+                console.error('Save error:', error);
+                alert(error.message || 'Failed to save preview');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        async sendQuote() {
+            // Save first
+            await this.savePreview();
+            if (this.isSaving) return; // save failed
+
+            this.isSending = true;
+            try {
+                const response = await fetch(`/quotes/api/${this.quoteId}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(formatErrorDetail(err.detail, 'Error sending quote'));
+                }
+
+                window.location.href = `/quotes/${this.quoteId}`;
+            } catch (error) {
+                console.error('Send error:', error);
+                alert(error.message || 'Failed to send quote');
+                this.isSending = false;
+            }
+        },
+
+        downloadPDF() {
+            window.open(`/quotes/api/${this.quoteId}/pdf`, '_blank');
+        },
+
+        init() {
+            this.$nextTick(() => {
+                if (this.$refs.groupList && typeof Sortable !== 'undefined') {
+                    this.sortable = new Sortable(this.$refs.groupList, {
+                        handle: '.drag-handle',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        chosenClass: 'sortable-chosen',
+                        onEnd: (evt) => {
+                            // Reorder the Alpine data array to match DOM
+                            const item = this.groups.splice(evt.oldIndex, 1)[0];
+                            this.groups.splice(evt.newIndex, 0, item);
+                        },
+                    });
+                }
+            });
+        },
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "settings/base.html" %}
+
+{% block settings_content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900 font-display">SMS Templates</h2>
+            <p class="text-sm text-slate-500 mt-1">Customise the SMS messages sent to customers. Use variables like <code class="bg-slate-100 px-1 rounded-lg">&#123;first_name&#125;</code> to personalise.</p>
+        </div>
+    </div>
+
+    <form action="/settings/sms-templates" method="POST" class="space-y-6">
+
+        <!-- Available Variables -->
+        <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-orange">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Available Variables</h2>
+                    <p>Use these placeholders in your templates</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;first_name&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;customer_name&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;address&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;eta&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;business_name&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;job_date&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;quote_number&#125;</code>
+            </div>
+        </div>
+
+        <!-- On My Way (no ETA) -->
+        <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">On My Way (no ETA)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when you click "On My Way" without an ETA</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-semibold">Schedule</span>
+            </div>
+            <textarea name="on_my_way" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, we're heading to {address} now! See you soon! - {business_name}">{{ sms_templates.get('on_my_way', '') }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+        </div>
+
+        <!-- On My Way (with ETA) -->
+        <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">On My Way (with ETA)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when you click "On My Way" with an ETA selected</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-semibold">Schedule</span>
+            </div>
+            <textarea name="on_my_way_eta" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, we're heading to {address} now! ETA roughly {eta} minutes. See you soon! - {business_name}">{{ sms_templates.get('on_my_way_eta', '') }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+        </div>
+
+        <!-- Day Before Reminder -->
+        <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Day Before Reminder</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent the day before a scheduled job</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Auto</span>
+            </div>
+            <textarea name="day_before_reminder" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, quick reminder: we'll be at {address} tomorrow for your concrete job. If there's anything you need to prepare, please let us know! - {business_name}">{{ sms_templates.get('day_before_reminder', '') }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+        </div>
+
+        <!-- Job Complete -->
+        <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-5">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Job Complete</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when a job is marked as completed</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-700 border border-green-200 rounded-xl text-xs font-semibold">Auto</span>
+            </div>
+            <textarea name="job_complete" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, your concrete job at {address} is now complete! Thanks for choosing {business_name}.">{{ sms_templates.get('job_complete', '') }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+        </div>
+
+        <!-- Character Count Helper -->
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="text-sm text-slate-600">
+                    <p class="font-semibold text-slate-700">SMS Character Limits</p>
+                    <p class="mt-1">Standard SMS: 160 characters (1 segment). Longer messages are split into 153-character segments. Variables like <code class="bg-white px-1 rounded-lg border border-slate-200">&#123;first_name&#125;</code> are replaced with actual values before sending.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="btn-v4 btn-v4-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Save Templates
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

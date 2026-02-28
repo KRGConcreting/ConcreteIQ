@@ -1,0 +1,95 @@
+<!-- FILE: quotes/new.html -->
+{% extends "base.html" %}
+
+{% block title %}New Quote — ConcreteIQ{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Hero Banner -->
+    <div class="page-hero animate-in">
+        <div class="flex items-center gap-4 relative">
+            <a href="/quotes" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-200 flex-shrink-0">
+                <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="page-hero-title">New Quote</h1>
+                <p class="page-hero-subtitle">Choose the type of quote to create</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quote Type Options -->
+    <div class="grid gap-4 sm:grid-cols-3">
+
+        <!-- Option 1: Quote Calculator -->
+        <a href="/quotes/new/calculator" class="feature-card card-enter card-enter-1 group block">
+            <div class="flex flex-col items-center text-center sm:items-start sm:text-left">
+                <div class="feature-card-icon bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/20 mb-4">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 justify-center sm:justify-start flex-wrap mb-2">
+                        <h3 class="font-bold text-slate-900 font-display text-lg">Quote Calculator</h3>
+                        <span class="feature-card-badge bg-orange-100 text-orange-700">Most Common</span>
+                    </div>
+                    <p class="text-sm text-slate-500 leading-relaxed">Full calculator with slab area, concrete grade, reinforcement, labour hours, and material costs. For standard concreting jobs.</p>
+                </div>
+                <div class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Get started
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
+        <!-- Option 2: Invoice Labour -->
+        <a href="/quotes/new/labour" class="feature-card card-enter card-enter-2 group block">
+            <div class="flex flex-col items-center text-center sm:items-start sm:text-left">
+                <div class="feature-card-icon bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg shadow-blue-500/20 mb-4">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 font-display text-lg mb-2">Invoice Labour</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">Quick labour invoice for when another concreter works for the day. Auto-calculates gross wages, PAYG, super, and WorkCover.</p>
+                </div>
+                <div class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Get started
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
+        <!-- Option 3: Custom Quote -->
+        <a href="/quotes/new/custom" class="feature-card card-enter card-enter-3 group block">
+            <div class="flex flex-col items-center text-center sm:items-start sm:text-left">
+                <div class="feature-card-icon bg-gradient-to-br from-green-400 to-green-600 shadow-lg shadow-green-500/20 mb-4">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 font-display text-lg mb-2">Custom Quote</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">Freeform quote with custom line items. Set your own descriptions, quantities, and prices — no calculator needed.</p>
+                </div>
+                <div class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Get started
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,495 @@
+{% extends "portal/base.html" %}
+
+{% block title %}My Account{% endblock %}
+
+{% block head %}
+<style>
+    .summary-card {
+        background: white;
+        border-radius: 1rem;
+        border: 1px solid rgba(0,0,0,0.04);
+        box-shadow: 0 2px 10px -3px rgba(0,0,0,0.06);
+        padding: 1.25rem 1.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .summary-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px -5px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.025em;
+        text-transform: capitalize;
+    }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f3f4f6; color: #374151; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+
+    .timeline-line {
+        position: absolute;
+        left: 1.125rem;
+        top: 2.5rem;
+        bottom: 0;
+        width: 2px;
+        background: #e5e7eb;
+    }
+    .timeline-dot {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background: #22c55e;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #dcfce7;
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Customer Greeting -->
+    <div class="animate-fade-in-up">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+            Hi {{ customer.name.split(' ')[0] }}, here's your account overview
+        </h2>
+        <p class="text-slate-500 mt-1.5 text-sm">
+            All your quotes, invoices and payments in one place.
+        </p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in-up delay-1">
+        <!-- Total Quoted -->
+        <div class="summary-card">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quoted</span>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                ${{ '{:,.2f}'.format(total_quoted_cents / 100) }}
+            </p>
+        </div>
+
+        <!-- Total Invoiced -->
+        <div class="summary-card">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                    </svg>
+                </div>
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Invoiced</span>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                ${{ '{:,.2f}'.format(total_invoiced_cents / 100) }}
+            </p>
+        </div>
+
+        <!-- Total Paid -->
+        <div class="summary-card">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Paid</span>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold text-green-600" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                ${{ '{:,.2f}'.format(total_paid_cents / 100) }}
+            </p>
+        </div>
+
+        <!-- Outstanding -->
+        <div class="summary-card {% if outstanding_cents > 0 %}border-l-4{% endif %}" {% if outstanding_cents > 0 %}style="border-left-color: #E87A2E;"{% endif %}>
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg {% if outstanding_cents > 0 %}bg-orange-50{% else %}bg-slate-50{% endif %} flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 {% if outstanding_cents > 0 %}text-orange-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Outstanding</span>
+            </div>
+            <p class="text-xl sm:text-2xl font-bold {% if outstanding_cents > 0 %}text-orange-600{% else %}text-slate-400{% endif %}" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                ${{ '{:,.2f}'.format(outstanding_cents / 100) }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Quotes Section -->
+    {% if quotes %}
+    <div class="portal-card animate-fade-in-up delay-2">
+        <div class="px-6 py-4 sm:px-8 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">Quotes</h3>
+                    <p class="text-xs text-slate-500">{{ quotes|length }} quote{{ 's' if quotes|length != 1 else '' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile: card layout, Desktop: table layout -->
+        <div class="hidden sm:block overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-slate-50/50">
+                        <th class="px-6 py-3 sm:px-8 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Quote</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Job</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 sm:px-8 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for quote in quotes %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 sm:px-8">
+                            <span class="font-semibold text-slate-900 text-sm">{{ quote.quote_number }}</span>
+                        </td>
+                        <td class="px-4 py-4">
+                            <div>
+                                <p class="text-sm text-slate-900">{{ quote.job_name or 'Untitled' }}</p>
+                                {% if quote.job_address %}
+                                <p class="text-xs text-slate-400 mt-0.5 truncate max-w-[200px]">{{ quote.job_address }}</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-slate-500">
+                            {{ quote.quote_date.strftime('%d %b %Y') if quote.quote_date else 'N/A' }}
+                        </td>
+                        <td class="px-4 py-4">
+                            {% if quote.status in ('accepted', 'confirmed', 'completed') %}
+                            <span class="status-badge badge-green">{{ quote.status }}</span>
+                            {% elif quote.status in ('sent', 'viewed') %}
+                            <span class="status-badge badge-orange">{{ quote.status }}</span>
+                            {% elif quote.status in ('expired', 'declined') %}
+                            <span class="status-badge badge-red">{{ quote.status }}</span>
+                            {% elif quote.status == 'pour_stage' %}
+                            <span class="status-badge badge-blue">In Progress</span>
+                            {% else %}
+                            <span class="status-badge badge-gray">{{ quote.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 sm:px-8 text-right">
+                            <span class="font-semibold text-slate-900 text-sm">${{ '{:,.2f}'.format((quote.total_cents or 0) / 100) }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile cards -->
+        <div class="sm:hidden divide-y divide-slate-50">
+            {% for quote in quotes %}
+            <div class="px-5 py-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-slate-900 text-sm">{{ quote.quote_number }}</span>
+                    {% if quote.status in ('accepted', 'confirmed', 'completed') %}
+                    <span class="status-badge badge-green">{{ quote.status }}</span>
+                    {% elif quote.status in ('sent', 'viewed') %}
+                    <span class="status-badge badge-orange">{{ quote.status }}</span>
+                    {% elif quote.status in ('expired', 'declined') %}
+                    <span class="status-badge badge-red">{{ quote.status }}</span>
+                    {% elif quote.status == 'pour_stage' %}
+                    <span class="status-badge badge-blue">In Progress</span>
+                    {% else %}
+                    <span class="status-badge badge-gray">{{ quote.status }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-slate-700">{{ quote.job_name or 'Untitled' }}</p>
+                <div class="flex items-center justify-between mt-2">
+                    <span class="text-xs text-slate-400">{{ quote.quote_date.strftime('%d %b %Y') if quote.quote_date else 'N/A' }}</span>
+                    <span class="font-semibold text-slate-900 text-sm">${{ '{:,.2f}'.format((quote.total_cents or 0) / 100) }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Invoices Section -->
+    {% if invoices %}
+    <div class="portal-card animate-fade-in-up delay-3">
+        <div class="px-6 py-4 sm:px-8 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">Invoices</h3>
+                    <p class="text-xs text-slate-500">{{ invoices|length }} invoice{{ 's' if invoices|length != 1 else '' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop table -->
+        <div class="hidden sm:block overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-slate-50/50">
+                        <th class="px-6 py-3 sm:px-8 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-3 sm:px-8 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for invoice in invoices %}
+                    {% set balance = (invoice.total_cents or 0) - (invoice.paid_cents or 0) %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4 sm:px-8">
+                            <span class="font-semibold text-slate-900 text-sm">{{ invoice.invoice_number }}</span>
+                        </td>
+                        <td class="px-4 py-4">
+                            <p class="text-sm text-slate-700 truncate max-w-[200px]">{{ invoice.description or 'Invoice' }}</p>
+                        </td>
+                        <td class="px-4 py-4 text-sm text-slate-500">
+                            {% if invoice.due_date %}
+                                {% if invoice.status not in ('paid', 'voided') and invoice.due_date < today %}
+                                <span class="text-red-600 font-medium">{{ invoice.due_date.strftime('%d %b %Y') }}</span>
+                                {% else %}
+                                {{ invoice.due_date.strftime('%d %b %Y') }}
+                                {% endif %}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-4">
+                            {% if invoice.status == 'paid' %}
+                            <span class="status-badge badge-green">Paid</span>
+                            {% elif invoice.status == 'partial' %}
+                            <span class="status-badge badge-orange">Partial</span>
+                            {% elif invoice.status == 'voided' %}
+                            <span class="status-badge badge-gray">Voided</span>
+                            {% elif invoice.status == 'overdue' or (invoice.due_date and invoice.due_date < today and invoice.status not in ('paid', 'voided')) %}
+                            <span class="status-badge badge-red">Overdue</span>
+                            {% elif invoice.status in ('sent', 'viewed') %}
+                            <span class="status-badge badge-orange">{{ invoice.status|title }}</span>
+                            {% else %}
+                            <span class="status-badge badge-gray">{{ invoice.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-4 text-right text-sm font-medium text-slate-700">
+                            ${{ '{:,.2f}'.format((invoice.total_cents or 0) / 100) }}
+                        </td>
+                        <td class="px-6 py-4 sm:px-8 text-right">
+                            {% if invoice.status == 'paid' %}
+                            <span class="text-sm font-semibold text-green-600">$0.00</span>
+                            {% elif invoice.status == 'voided' %}
+                            <span class="text-sm text-slate-400">--</span>
+                            {% elif balance > 0 %}
+                            <span class="text-sm font-semibold text-red-600">${{ '{:,.2f}'.format(balance / 100) }}</span>
+                            {% else %}
+                            <span class="text-sm font-semibold text-green-600">$0.00</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile cards -->
+        <div class="sm:hidden divide-y divide-slate-50">
+            {% for invoice in invoices %}
+            {% set balance = (invoice.total_cents or 0) - (invoice.paid_cents or 0) %}
+            <div class="px-5 py-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-slate-900 text-sm">{{ invoice.invoice_number }}</span>
+                    {% if invoice.status == 'paid' %}
+                    <span class="status-badge badge-green">Paid</span>
+                    {% elif invoice.status == 'partial' %}
+                    <span class="status-badge badge-orange">Partial</span>
+                    {% elif invoice.status == 'voided' %}
+                    <span class="status-badge badge-gray">Voided</span>
+                    {% elif invoice.status == 'overdue' or (invoice.due_date and invoice.due_date < today and invoice.status not in ('paid', 'voided')) %}
+                    <span class="status-badge badge-red">Overdue</span>
+                    {% elif invoice.status in ('sent', 'viewed') %}
+                    <span class="status-badge badge-orange">{{ invoice.status|title }}</span>
+                    {% else %}
+                    <span class="status-badge badge-gray">{{ invoice.status|title }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-slate-700 truncate">{{ invoice.description or 'Invoice' }}</p>
+                <div class="flex items-center justify-between mt-2">
+                    <span class="text-xs text-slate-400">
+                        {% if invoice.due_date %}Due {{ invoice.due_date.strftime('%d %b %Y') }}{% else %}No due date{% endif %}
+                    </span>
+                    <div class="text-right">
+                        <span class="text-sm font-semibold text-slate-900">${{ '{:,.2f}'.format((invoice.total_cents or 0) / 100) }}</span>
+                        {% if balance > 0 and invoice.status not in ('paid', 'voided') %}
+                        <span class="block text-xs text-red-600 font-medium">${{ '{:,.2f}'.format(balance / 100) }} owing</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Payment History -->
+    {% if payments %}
+    <div class="portal-card animate-fade-in-up delay-4">
+        <div class="px-6 py-4 sm:px-8 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">Payment History</h3>
+                    <p class="text-xs text-slate-500">{{ payments|length }} payment{{ 's' if payments|length != 1 else '' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 sm:px-8">
+            <div class="relative">
+                {% for payment in payments %}
+                <div class="relative flex gap-4 {% if not loop.last %}pb-6{% endif %}">
+                    <!-- Timeline connector -->
+                    {% if not loop.last %}
+                    <div class="absolute left-[0.3125rem] top-[1.75rem] bottom-0 w-0.5 bg-slate-100"></div>
+                    {% endif %}
+
+                    <!-- Dot -->
+                    <div class="mt-1.5 flex-shrink-0">
+                        <div class="timeline-dot"></div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="font-semibold text-slate-900 text-sm">
+                                    ${{ '{:,.2f}'.format((payment.amount_cents or 0) / 100) }}
+                                </p>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    {{ payment.method|title if payment.method else 'Payment' }}
+                                    {% if payment.invoice_id and invoice_map.get(payment.invoice_id) %}
+                                     &mdash; {{ invoice_map[payment.invoice_id].invoice_number }}
+                                    {% endif %}
+                                    {% if payment.reference %}
+                                     &mdash; {{ payment.reference }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">
+                                {{ payment.payment_date.strftime('%d %b %Y') if payment.payment_date else payment.created_at.strftime('%d %b %Y') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pay Outstanding / Quick Action -->
+    {% if outstanding_cents > 0 %}
+    <div class="portal-card animate-fade-in-up delay-5" style="border-top: 3px solid #E87A2E;">
+        <div class="px-6 py-6 sm:px-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                        Outstanding Balance
+                    </h3>
+                    <p class="text-2xl font-bold text-orange-600 mt-1" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                        ${{ '{:,.2f}'.format(outstanding_cents / 100) }}
+                    </p>
+                    <p class="text-sm text-slate-500 mt-1">
+                        Please check your email for individual invoice payment links, or contact us below.
+                    </p>
+                </div>
+
+                <!-- Bank Transfer Details -->
+                <div class="bg-slate-50/80 rounded-xl p-5 space-y-2.5 sm:min-w-[280px]">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Bank Transfer</p>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Bank</span>
+                        <span class="font-medium text-slate-700">{{ business.bank_name }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Account</span>
+                        <span class="font-medium text-slate-700">{{ business.trading_as }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">BSB</span>
+                        <span class="font-mono font-medium text-slate-700">{{ business.bsb }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Account No.</span>
+                        <span class="font-mono font-medium text-slate-700">{{ business.account }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not quotes and not invoices %}
+    <div class="portal-card animate-fade-in-up delay-1">
+        <div class="px-6 py-12 sm:px-8 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-700" style="font-family: 'Plus Jakarta Sans', sans-serif;">No activity yet</h3>
+            <p class="text-sm text-slate-500 mt-2 max-w-sm mx-auto">
+                Your quotes and invoices will appear here once we begin working together.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contact Card -->
+    <div class="portal-card animate-fade-in-up delay-5">
+        <div class="px-6 py-6 sm:px-8 text-center">
+            <p class="text-slate-500 text-sm">Have questions? Get in touch with us.</p>
+            <div class="mt-3 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
+                <a href="tel:{{ business.phone }}" class="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                    </svg>
+                    {{ business.phone }}
+                </a>
+                <span class="hidden sm:block text-slate-200">|</span>
+                <a href="mailto:{{ business.email }}" class="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors duration-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    {{ business.email }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

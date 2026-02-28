@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with gradient background strip -->
+    <div class="detail-header animate-in" style="background: linear-gradient(135deg, rgba(15,23,42,0.03) 0%, rgba(249,115,22,0.04) 100%); border-radius: 1rem;">
+        <div class="detail-header-left">
+            <a href="/invoices" class="detail-header-back">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 font-display">{{ invoice.invoice_number }}</h1>
+                <p class="text-sm text-slate-500">Created {{ invoice.created_at.strftime('%d %b %Y') if invoice.created_at else 'Unknown' }}</p>
+            </div>
+        </div>
+        <div class="detail-header-actions flex items-center gap-2">
+            {% set status_colors = {
+                'draft': 'bg-slate-50 text-slate-600 border border-slate-200',
+                'sent': 'bg-blue-50 text-blue-700 border border-blue-200',
+                'viewed': 'bg-purple-50 text-purple-700 border border-purple-200',
+                'partial': 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+                'paid': 'bg-green-50 text-green-700 border border-green-200',
+                'overdue': 'bg-red-50 text-red-700 border border-red-200',
+                'voided': 'bg-slate-50 text-slate-400 border border-slate-200',
+            } %}
+            <span class="badge px-3 py-1 text-sm {{ status_colors.get(invoice.status, 'bg-slate-50 text-slate-600 border border-slate-200') }} {{ 'badge-pulse' if invoice.status == 'overdue' else '' }}">
+                {{ invoice.status|title }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-bar animate-in delay-1">
+        <a href="/invoices/api/{{ invoice.id }}/pdf" target="_blank"
+           class="btn-v4 btn-v4-secondary inline-flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Download PDF
+        </a>
+        {% if invoice.status == 'draft' %}
+        <button @click="sendInvoice()"
+                class="btn-v4 btn-v4-primary inline-flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Send to Customer
+        </button>
+        {% endif %}
+        {% if invoice.status not in ['paid', 'voided'] and stripe_enabled %}
+        <button @click="createCheckout()"
+                class="btn-v4 btn-v4-secondary inline-flex items-center" style="--btn-accent: #7c3aed; border-color: #7c3aed33; color: #7c3aed;">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+            </svg>
+            Pay with Stripe
+        </button>
+        {% endif %}
+        {% if invoice.status not in ['paid', 'voided'] %}
+        <button @click="showRecordPayment()"
+                class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 shadow-sm hover:shadow-md transition-all">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Record Payment
+        </button>
+        {% endif %}
+        {% if invoice.status in ['sent', 'viewed', 'partial', 'overdue'] %}
+        <div x-data="{ reminderOpen: false }" class="relative">
+            <button @click="reminderOpen = !reminderOpen"
+                    class="inline-flex items-center px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-semibold hover:bg-amber-600 shadow-sm hover:shadow-md transition-all">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                Send Reminder
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div x-show="reminderOpen" x-cloak @click.away="reminderOpen = false"
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-200 z-20 py-1 overflow-hidden">
+                <button @click="sendReminder('friendly')"
+                        class="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors">
+                    <span class="block text-sm font-medium text-blue-700">Friendly Reminder</span>
+                    <span class="block text-xs text-slate-500 mt-0.5">Polite "just a heads up" tone</span>
+                </button>
+                <button @click="sendReminder('firm')"
+                        class="w-full text-left px-4 py-3 hover:bg-amber-50 transition-colors border-t border-slate-100">
+                    <span class="block text-sm font-medium text-amber-700">Firm Reminder</span>
+                    <span class="block text-xs text-slate-500 mt-0.5">Mentions late fees, firm tone</span>
+                </button>
+                <button @click="sendReminder('final')"
+                        class="w-full text-left px-4 py-3 hover:bg-red-50 transition-colors border-t border-slate-100">
+                    <span class="block text-sm font-medium text-red-700">Final Notice</span>
+                    <span class="block text-xs text-slate-500 mt-0.5">Debt collection warning</span>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        {% if invoice.status not in ['paid', 'voided'] %}
+        <button @click="voidInvoice()"
+                class="btn-v4 btn-v4-danger inline-flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Void Invoice
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Customer Info -->
+            <div class="premium-card p-5 sm:p-6 animate-in delay-2">
+                <div class="card-section-header">
+                    <div class="card-section-icon bg-blue-50 text-blue-600">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-section-title">Customer</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="p-3.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Name</p>
+                        <p class="font-medium text-slate-900">{{ customer.name if customer else 'Not specified' }}</p>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Phone</p>
+                        <p class="font-medium text-slate-900">{{ customer.phone if customer and customer.phone else '-' }}</p>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Email</p>
+                        <p class="font-medium text-slate-900">{{ customer.email if customer and customer.email else '-' }}</p>
+                    </div>
+                    {% if quote %}
+                    <div class="p-3.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Related Quote</p>
+                        <a href="/quotes/{{ quote.id }}" class="font-medium text-brand-600 hover:text-brand-700">
+                            {{ quote.quote_number }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Invoice Details -->
+            <div class="premium-card card-gradient-top p-5 sm:p-6 animate-in delay-3">
+                <div class="card-section-header">
+                    <div class="card-section-icon bg-orange-50 text-orange-600">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-section-title">Invoice Details</h2>
+                </div>
+
+                {% if invoice.description %}
+                <p class="text-slate-600 mb-4">{{ invoice.description }}</p>
+                {% endif %}
+
+                <!-- Line Items -->
+                {% if invoice.line_items %}
+                <div class="overflow-x-auto -mx-5 sm:-mx-6 px-5 sm:px-6">
+                    <table class="table-premium">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Qty</th>
+                                <th class="text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in invoice.line_items %}
+                            <tr>
+                                <td class="text-slate-900">{{ item.description }}</td>
+                                <td class="text-slate-600">{{ item.quantity }} {{ item.unit }}</td>
+                                <td class="text-slate-900 text-right font-medium">${{ '%.2f'|format(item.total_cents / 100) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                <!-- Totals -->
+                <div class="mt-4 border-t border-slate-200 pt-4 space-y-0">
+                    <div class="flex justify-between py-2.5">
+                        <span class="text-sm text-slate-600">Subtotal</span>
+                        <span class="text-sm font-medium text-slate-900">${{ '%.2f'|format(invoice.subtotal_cents / 100) }}</span>
+                    </div>
+                    <div class="flex justify-between py-2.5">
+                        <span class="text-sm text-slate-600">GST (10%)</span>
+                        <span class="text-sm font-medium text-slate-900">${{ '%.2f'|format(invoice.gst_cents / 100) }}</span>
+                    </div>
+                    <div class="flex justify-between py-3 text-lg font-semibold border-t border-slate-200">
+                        <span class="font-display">Total</span>
+                        <span class="font-display">${{ '%.2f'|format(invoice.total_cents / 100) }}</span>
+                    </div>
+                    {% if invoice.paid_cents > 0 %}
+                    <div class="flex justify-between py-2.5 text-green-600">
+                        <span class="text-sm font-medium">Paid</span>
+                        <span class="text-sm font-semibold">-${{ '%.2f'|format(invoice.paid_cents / 100) }}</span>
+                    </div>
+                    {% endif %}
+                    {% if balance_cents > 0 %}
+                    <div class="flex justify-between py-3 text-lg font-semibold text-red-600 bg-red-50/80 -mx-5 sm:-mx-6 px-5 sm:px-6 rounded-xl mt-1">
+                        <span class="font-display">Balance Due</span>
+                        <span class="font-display">${{ '%.2f'|format(balance_cents / 100) }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payments -->
+            {% if payments %}
+            <div class="premium-card p-5 sm:p-6 animate-in delay-4">
+                <div class="card-section-header">
+                    <div class="card-section-icon bg-green-50 text-green-600">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-section-title">Payments</h2>
+                </div>
+                <ul class="divide-y divide-slate-100">
+                    {% for payment in payments %}
+                    <li class="py-3.5 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">${{ '%.2f'|format(payment.amount_cents / 100) }}</p>
+                                <p class="text-xs text-slate-500">
+                                    {{ payment.method|title if payment.method else 'Unknown' }}
+                                    {% if payment.reference %} &mdash; {{ payment.reference }}{% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-400 font-medium">
+                            {{ payment.payment_date.strftime('%d %b %Y') if payment.payment_date else payment.created_at.strftime('%d %b %Y') }}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Activity -->
+            <div class="premium-card p-5 sm:p-6 animate-in delay-5">
+                <div class="card-section-header">
+                    <div class="card-section-icon bg-indigo-50 text-indigo-600">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-section-title">Activity</h2>
+                </div>
+                <div class="relative">
+                    {% for log in activity %}
+                    <div class="flex items-start gap-3 {{ 'pb-4' if not loop.last else '' }} relative">
+                        {% if not loop.last %}
+                        <div class="absolute left-4 top-8 bottom-0 w-px bg-slate-100"></div>
+                        {% endif %}
+                        <div class="flex-shrink-0 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center relative z-10">
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="pt-0.5">
+                            <p class="text-sm font-medium text-slate-900">{{ log.description }}</p>
+                            <p class="text-xs text-slate-400">{{ log.created_at.strftime('%d %b %Y at %H:%M') }}</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-slate-500">No activity recorded.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Summary Card -->
+            <div class="premium-card p-5 sm:p-6 sticky top-20 animate-in delay-3">
+                <div class="card-section-header">
+                    <div class="card-section-icon bg-purple-50 text-purple-600">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-section-title">Summary</h2>
+                </div>
+                <dl class="space-y-3">
+                    <div class="p-3 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Issue Date</dt>
+                        <dd class="font-medium text-slate-900 mt-0.5">{{ invoice.issue_date.strftime('%d %b %Y') if invoice.issue_date else '-' }}</dd>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Due Date</dt>
+                        <dd class="font-medium text-slate-900 mt-0.5">{{ invoice.due_date.strftime('%d %b %Y') if invoice.due_date else '-' }}</dd>
+                    </div>
+                    {% if invoice.stage %}
+                    <div class="p-3 rounded-xl bg-slate-50/80 border border-slate-100">
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stage</dt>
+                        <dd class="font-medium text-slate-900 mt-0.5">{{ invoice.stage|title }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="pt-4 mt-2 border-t border-slate-200">
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total</dt>
+                        <dd class="text-3xl font-bold text-slate-900 font-display mt-1">${{ '%.2f'|format(invoice.total_cents / 100) }}</dd>
+                    </div>
+                    {% if balance_cents > 0 %}
+                    <div class="p-4 rounded-xl bg-red-50/80 border border-red-100 mt-2">
+                        <dt class="text-xs font-semibold text-red-400 uppercase tracking-wider">Balance Due</dt>
+                        <dd class="text-2xl font-bold text-red-600 font-display mt-1">${{ '%.2f'|format(balance_cents / 100) }}</dd>
+                    </div>
+                    {% elif invoice.status == 'paid' %}
+                    <div class="p-4 rounded-xl bg-green-50/80 border border-green-100 mt-2">
+                        <dt class="text-xs font-semibold text-green-500 uppercase tracking-wider">Status</dt>
+                        <dd class="text-lg font-bold text-green-600 font-display mt-1 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Paid in Full
+                        </dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
+
+            {% if invoice.notes %}
+            <!-- Notes -->
+            <div class="premium-card p-5 sm:p-6 animate-in delay-4">
+                <div class="card-section-header">
+                    <div class="card-section-icon bg-amber-50 text-amber-600">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <h2 class="card-section-title">Notes</h2>
+                </div>
+                <p class="text-slate-600 text-sm leading-relaxed">{{ invoice.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div id="paymentModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="hideRecordPayment()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-7 border border-slate-200/50">
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 font-display">Record Payment</h3>
+                    <p class="text-xs text-slate-500">{{ invoice.invoice_number }}</p>
+                </div>
+            </div>
+            <form id="paymentForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Amount</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
+                            <input type="number" name="amount" step="0.01" min="0.01"
+                                   max="{{ balance_cents / 100 }}" value="{{ balance_cents / 100 }}"
+                                   class="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1.5">Balance due: ${{ '%.2f'|format(balance_cents / 100) }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Method</label>
+                        <select name="method" class="w-full py-2.5 px-3.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Reference (optional)</label>
+                        <input type="text" name="reference" placeholder="e.g., Direct deposit ref"
+                               class="w-full py-2.5 px-3.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button type="button" @click="hideRecordPayment()"
+                            class="btn-v4 btn-v4-secondary flex-1">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 shadow-sm hover:shadow-md transition-all">
+                        Record Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const invoiceId = {{ invoice.id }};
+
+// Tiered payment reminder
+async function sendReminder(tier) {
+    const labels = { friendly: 'Friendly Reminder', firm: 'Firm Reminder', final: 'Final Notice' };
+    if (!confirm(`Send a "${labels[tier]}" to the customer?`)) return;
+
+    try {
+        const response = await fetch(`/invoices/api/${invoiceId}/send-reminder?tier=${tier}`, {
+            method: 'POST',
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Failed: ' + (data.message || data.detail || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+async function sendInvoice() {
+    if (!confirm('Send this invoice to the customer?')) return;
+
+    try {
+        const response = await fetch(`/invoices/api/${invoiceId}/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Invoice sent successfully!');
+            window.location.reload();
+        } else {
+            alert(formatErrorDetail(data.detail, 'Failed to send invoice'));
+        }
+    } catch (error) {
+        alert('Error sending invoice');
+    }
+}
+
+async function createCheckout() {
+    try {
+        const response = await fetch(`/payments/api/checkout/${invoiceId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (response.ok && data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            alert(formatErrorDetail(data.detail, 'Failed to create checkout session'));
+        }
+    } catch (error) {
+        alert('Error creating checkout session');
+    }
+}
+
+function showRecordPayment() {
+    document.getElementById('paymentModal').classList.remove('hidden');
+}
+
+function hideRecordPayment() {
+    document.getElementById('paymentModal').classList.add('hidden');
+}
+
+document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const amount = parseFloat(form.amount.value);
+    const method = form.method.value;
+    const reference = form.reference.value;
+
+    try {
+        const response = await fetch('/payments/api/record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                invoice_id: invoiceId,
+                amount_cents: Math.round(amount * 100),
+                method: method,
+                reference: reference || null
+            })
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Payment recorded successfully!');
+            window.location.reload();
+        } else {
+            alert(formatErrorDetail(data.detail, 'Failed to record payment'));
+        }
+    } catch (error) {
+        alert('Error recording payment');
+    }
+});
+
+async function voidInvoice() {
+    if (!confirm('Are you sure you want to void this invoice? This cannot be undone.')) return;
+
+    try {
+        const response = await fetch(`/invoices/api/${invoiceId}/void`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Invoice voided');
+            window.location.reload();
+        } else {
+            alert(formatErrorDetail(data.detail, 'Failed to void invoice'));
+        }
+    } catch (error) {
+        alert('Error voiding invoice');
+    }
+}
+</script>
+{% endblock %}

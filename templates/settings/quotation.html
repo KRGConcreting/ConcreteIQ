@@ -1,0 +1,148 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Quotation Settings - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="quotationSettings()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 font-display">Quotation Settings</h1>
+            <p class="text-slate-500 text-sm mt-1">Configure default settings for new quotes.</p>
+        </div>
+        <button @click="save()"
+                :disabled="isSaving"
+                class="btn-v4 btn-v4-primary">
+            <span x-show="!isSaving">Save Changes</span>
+            <span x-show="isSaving">Saving...</span>
+        </button>
+    </div>
+
+    <!-- Quote Defaults -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-emerald">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Quote Defaults</h2>
+                <p>Default expiry period and markup tier for new quotes</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Default Expiry (days)</label>
+                <input type="number" x-model.number="quotation.default_expiry_days"
+                       min="1" max="90"
+                       class="input-field">
+                <p class="text-xs text-slate-500 mt-1">How many days until quote expires</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Default Markup Tier</label>
+                <select x-model="quotation.default_markup_tier"
+                        class="input-field">
+                    <option value="Economy">Economy</option>
+                    <option value="Standard">Standard</option>
+                    <option value="Premium">Premium</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Options -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Display Options</h2>
+                <p>Control what customers see on their quotes</p>
+            </div>
+        </div>
+        <div class="space-y-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" x-model="quotation.include_gst"
+                       class="w-5 h-5 text-orange-500 border-slate-300 rounded focus:ring-orange-500">
+                <div>
+                    <span class="font-medium text-slate-900">Include GST in totals</span>
+                    <p class="text-sm text-slate-500">Show GST breakdown on quotes</p>
+                </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" x-model="quotation.show_line_items"
+                       class="w-5 h-5 text-orange-500 border-slate-300 rounded focus:ring-orange-500">
+                <div>
+                    <span class="font-medium text-slate-900">Show line items</span>
+                    <p class="text-sm text-slate-500">Display itemized breakdown to customers</p>
+                </div>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" x-model="quotation.show_breakdown"
+                       class="w-5 h-5 text-orange-500 border-slate-300 rounded focus:ring-orange-500">
+                <div>
+                    <span class="font-medium text-slate-900">Show detailed breakdown</span>
+                    <p class="text-sm text-slate-500">Include material quantities and rates (not recommended for most customers)</p>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Terms & Conditions Note -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Terms & Conditions</h2>
+                <p>Automatically attached to all quotes</p>
+            </div>
+        </div>
+        <p class="text-sm text-slate-600">
+            Your Terms & Conditions PDF is managed in
+            <a href="/settings/documents" class="text-orange-600 hover:underline font-medium">Documents & PDFs</a>.
+            It will be automatically attached to all quotes.
+        </p>
+    </div>
+
+</div>
+
+<script>
+function quotationSettings() {
+    return {
+        quotation: {{ quotation | tojson }},
+        isSaving: false,
+
+        async save() {
+            this.isSaving = true;
+            try {
+                const response = await fetch('/settings/api/quotation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.quotation)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    Toast.success('Quotation settings saved successfully!');
+                } else {
+                    Toast.error(formatErrorDetail(data.detail, 'Error saving settings'));
+                }
+            } catch (e) {
+                Toast.error('Network error - please try again');
+            } finally {
+                this.isSaving = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

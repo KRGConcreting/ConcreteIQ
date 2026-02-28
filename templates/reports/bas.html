@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+
+{% block title %}BAS Dashboard{% endblock %}
+{% block page_title %}BAS Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="page-header animate-in">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="/reports"
+                   class="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="page-header-title">BAS Dashboard</h1>
+                    <p class="page-header-subtitle">{{ summary.label }}</p>
+                </div>
+            </div>
+            <a href="/reports/bas/export-csv?fy={{ fy }}&quarter={{ quarter }}"
+               class="btn-v4 btn-v4-secondary flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Export CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Due Date Banner -->
+    {% if due_status.status == 'overdue' %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-1">
+        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-semibold text-red-800">BAS Overdue</p>
+            <p class="text-xs text-red-600">Due {{ due_status.due_date.strftime('%d %b %Y') }} — {{ due_status.label }}</p>
+        </div>
+    </div>
+    {% elif due_status.status == 'due_soon' %}
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-1">
+        <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-semibold text-amber-800">BAS Due Soon</p>
+            <p class="text-xs text-amber-600">Due {{ due_status.due_date.strftime('%d %b %Y') }} — {{ due_status.label }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quarter Navigation -->
+    <div class="flex flex-wrap gap-2 animate-in delay-1">
+        <select onchange="window.location.href='/reports/bas?fy='+this.value+'&quarter={{ quarter }}'"
+                class="input-field text-sm w-auto">
+            {% for y in available_fys %}
+            <option value="{{ y }}" {% if y == fy %}selected{% endif %}>FY{{ y }}</option>
+            {% endfor %}
+        </select>
+        {% for q in all_quarters %}
+        <a href="/reports/bas?fy={{ q.fy }}&quarter={{ q.quarter }}"
+           class="px-4 py-2 rounded-lg text-sm font-medium transition-all
+                  {% if q.is_current %}bg-orange-500 text-white shadow-md{% else %}bg-white text-slate-600 hover:bg-orange-50 hover:text-orange-600 border border-slate-200{% endif %}">
+            Q{{ q.quarter }}
+        </a>
+        {% endfor %}
+
+        <!-- Due date pill -->
+        <div class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                    {% if due_status.status == 'overdue' %}bg-red-100 text-red-700
+                    {% elif due_status.status == 'due_soon' %}bg-amber-100 text-amber-700
+                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Due {{ due_status.due_date.strftime('%d %b %Y') }}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in delay-2">
+        <!-- GST Collected -->
+        <div class="premium-card p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">GST Collected</p>
+                    <p class="text-xs text-slate-400">On sales to customers</p>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-green-600">${{ '{:,.2f}'.format(summary.sales.gst_cents / 100) }}</p>
+            <p class="text-xs text-slate-400 mt-1">From ${{ '{:,.2f}'.format(summary.sales.total_cents / 100) }} total sales</p>
+        </div>
+
+        <!-- GST Paid -->
+        <div class="premium-card p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">GST Paid</p>
+                    <p class="text-xs text-slate-400">On business purchases</p>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-red-600">${{ '{:,.2f}'.format(summary.purchases.gst_cents / 100) }}</p>
+            <p class="text-xs text-slate-400 mt-1">From ${{ '{:,.2f}'.format(summary.purchases.total_cents / 100) }} total purchases</p>
+        </div>
+
+        <!-- Net Position -->
+        <div class="premium-card p-5">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 {{ 'bg-orange-100' if summary.net_gst_cents > 0 else 'bg-blue-100' }} rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 {{ 'text-orange-600' if summary.net_gst_cents > 0 else 'text-blue-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Net GST Position</p>
+                    <p class="text-xs text-slate-400">{{ 'You owe ATO' if summary.net_gst_cents > 0 else 'ATO owes you' }}</p>
+                </div>
+            </div>
+            <p class="text-2xl font-bold {{ 'text-orange-600' if summary.net_gst_cents > 0 else 'text-blue-600' }}">
+                ${{ '{:,.2f}'.format((summary.net_gst_cents if summary.net_gst_cents > 0 else -summary.net_gst_cents) / 100) }}
+            </p>
+            <p class="text-xs {{ 'text-orange-500' if summary.net_gst_cents > 0 else 'text-blue-500' }} mt-1 font-medium">
+                {{ 'Payable to ATO' if summary.net_gst_cents > 0 else 'Refund from ATO' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- BAS Form Fields -->
+        <div class="premium-card p-6 animate-in delay-3">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">BAS Form Fields</h2>
+            <p class="text-sm text-slate-500 mb-4">Reference numbers for your BAS lodgement</p>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                    <div>
+                        <span class="font-mono text-sm font-medium text-slate-700">G1</span>
+                        <span class="text-sm text-slate-500 ml-2">Total sales (inc GST)</span>
+                    </div>
+                    <span class="font-medium text-slate-900">${{ '{:,.2f}'.format(summary.bas_fields.G1 / 100) }}</span>
+                </div>
+
+                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                    <div>
+                        <span class="font-mono text-sm font-medium text-slate-700">G11</span>
+                        <span class="text-sm text-slate-500 ml-2">Non-capital purchases (inc GST)</span>
+                    </div>
+                    <span class="font-medium text-slate-900">${{ '{:,.2f}'.format(summary.bas_fields.G11 / 100) }}</span>
+                </div>
+
+                <div class="flex justify-between items-center py-2 border-b border-slate-100 bg-green-50 -mx-2 px-2 rounded">
+                    <div>
+                        <span class="font-mono text-sm font-bold text-green-700">1A</span>
+                        <span class="text-sm text-green-700 ml-2">GST on sales</span>
+                    </div>
+                    <span class="font-bold text-green-700">${{ '{:,.2f}'.format(summary.bas_fields['1A'] / 100) }}</span>
+                </div>
+
+                <div class="flex justify-between items-center py-2 border-b border-slate-100 bg-red-50 -mx-2 px-2 rounded">
+                    <div>
+                        <span class="font-mono text-sm font-bold text-red-700">1B</span>
+                        <span class="text-sm text-red-700 ml-2">GST on purchases</span>
+                    </div>
+                    <span class="font-bold text-red-700">${{ '{:,.2f}'.format(summary.bas_fields['1B'] / 100) }}</span>
+                </div>
+
+                <div class="flex justify-between items-center py-3 mt-2 bg-slate-50 -mx-2 px-2 rounded-lg">
+                    <div>
+                        <span class="text-sm font-bold text-slate-900">Net Amount</span>
+                        <span class="text-xs text-slate-500 ml-2">(1A minus 1B)</span>
+                    </div>
+                    <span class="text-lg font-bold {{ 'text-orange-600' if summary.net_gst_cents > 0 else 'text-blue-600' }}">
+                        ${{ '{:,.2f}'.format((summary.net_gst_cents if summary.net_gst_cents > 0 else -summary.net_gst_cents) / 100) }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pre-Lodgement Checklist -->
+        <div class="space-y-6">
+            <div class="premium-card p-6 animate-in delay-3">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Pre-Lodgement Checklist</h2>
+
+                <div class="space-y-3">
+                    {% for item in checklist %}
+                    <div class="flex items-center gap-3">
+                        {% if item.ok is true %}
+                        <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        {% elif item.ok is false %}
+                        <div class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                        </div>
+                        {% else %}
+                        <div class="w-6 h-6 border-2 border-slate-300 rounded-full flex-shrink-0"></div>
+                        {% endif %}
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-slate-900">{{ item.label }}</p>
+                            <p class="text-xs {{ 'text-green-600' if item.ok is true else ('text-amber-600' if item.ok is false else 'text-slate-400') }}">{{ item.detail }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Xero Sync Status -->
+            <div class="premium-card p-6 animate-in delay-4">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Xero Sync Status</h2>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600">Customers</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium">{{ sync_status.customers.synced }}/{{ sync_status.customers.total }}</span>
+                            {% if sync_status.customers.unsynced > 0 %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                                {{ sync_status.customers.unsynced }} unsynced
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                All synced
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600">Invoices</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium">{{ sync_status.invoices.synced }}/{{ sync_status.invoices.total }}</span>
+                            {% if sync_status.invoices.unsynced > 0 %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                                {{ sync_status.invoices.unsynced }} unsynced
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                All synced
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600">Payments</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium">{{ sync_status.payments.synced }}/{{ sync_status.payments.total }}</span>
+                            {% if sync_status.payments.unsynced > 0 %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                                {{ sync_status.payments.unsynced }} unsynced
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                All synced
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if not xero_connected %}
+                <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p class="text-sm text-amber-800">
+                        <strong>Xero not connected.</strong> Connect Xero in
+                        <a href="/settings/integrations" class="text-orange-600 underline">Settings &rarr; Integrations</a>
+                        to enable sync.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Missing Receipts Warning -->
+    {% if not receipts.all_good %}
+    <div class="premium-card p-6 animate-in delay-4" x-data="{ showList: false }">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Missing Receipts</h2>
+                    <p class="text-sm text-amber-600">
+                        {{ receipts.missing_count }} of {{ receipts.total_count }} expenses are missing receipts.
+                        ATO requires receipts for 5 years.
+                    </p>
+                </div>
+            </div>
+            <button @click="showList = !showList" class="btn-v4 btn-v4-secondary text-sm">
+                <span x-text="showList ? 'Hide' : 'Show List'"></span>
+            </button>
+        </div>
+
+        <div x-show="showList" x-transition class="mt-4 border-t border-slate-100 pt-4">
+            <div class="space-y-2">
+                {% for exp in receipts.missing_expenses %}
+                <div class="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-mono text-slate-400">{{ exp.expense_number }}</span>
+                        <span class="text-sm text-slate-700">{{ exp.description or exp.category }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-slate-900">${{ '{:,.2f}'.format((exp.amount_cents + exp.gst_cents) / 100) }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if receipts.missing_count > 20 %}
+                <p class="text-xs text-slate-400 text-center mt-2">Showing 20 of {{ receipts.missing_count }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Expense Breakdown by Category -->
+    {% if expense_breakdown %}
+    <div class="premium-card p-6 animate-in delay-5">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Expense Breakdown</h2>
+                <p class="text-sm text-slate-500">GST paid by category this quarter</p>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            {% for cat in expense_breakdown %}
+            <div class="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-slate-50 transition-colors">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <p class="text-sm font-medium text-slate-800">{{ cat.display_name }}</p>
+                        <span class="text-xs text-slate-400">({{ cat.count }})</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-medium text-slate-900">${{ '{:,.2f}'.format(cat.total_cents / 100) }}</p>
+                    {% if cat.gst_cents > 0 %}
+                    <p class="text-xs text-green-600">GST: ${{ '{:,.2f}'.format(cat.gst_cents / 100) }}</p>
+                    {% else %}
+                    <p class="text-xs text-slate-400">GST-free</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Period Details -->
+    <div class="premium-card p-6 animate-in delay-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-slate-900">Period Details</h2>
+            <span class="text-sm text-slate-500">
+                {{ summary.period_start }} to {{ summary.period_end }}
+            </span>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center p-4 bg-slate-50 rounded-xl">
+                <p class="text-2xl font-bold text-slate-900">${{ '{:,.0f}'.format(summary.sales.total_cents / 100) }}</p>
+                <p class="text-xs text-slate-500 mt-1">Total Sales (inc GST)</p>
+            </div>
+            <div class="text-center p-4 bg-slate-50 rounded-xl">
+                <p class="text-2xl font-bold text-slate-900">${{ '{:,.0f}'.format(summary.sales.subtotal_cents / 100) }}</p>
+                <p class="text-xs text-slate-500 mt-1">Sales ex GST</p>
+            </div>
+            <div class="text-center p-4 bg-slate-50 rounded-xl">
+                <p class="text-2xl font-bold text-slate-900">${{ '{:,.0f}'.format(summary.purchases.total_cents / 100) }}</p>
+                <p class="text-xs text-slate-500 mt-1">Total Purchases (inc GST)</p>
+            </div>
+            <div class="text-center p-4 bg-slate-50 rounded-xl">
+                <p class="text-2xl font-bold text-slate-900">${{ '{:,.0f}'.format(summary.purchases.amount_cents / 100) }}</p>
+                <p class="text-xs text-slate-500 mt-1">Purchases ex GST</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- GST Claimable Reference Card -->
+    <div class="premium-card p-6 animate-in delay-6" x-data="{ refOpen: false }">
+        <div class="flex items-center justify-between cursor-pointer" @click="refOpen = !refOpen">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">GST Claims Reference — Concreting</h2>
+                    <p class="text-sm text-slate-500">Quick guide to what you can and can't claim GST on</p>
+                </div>
+            </div>
+            <svg class="w-5 h-5 text-slate-400 transition-transform" :class="refOpen && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </div>
+
+        <div x-show="refOpen" x-transition class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- CAN Claim -->
+            <div>
+                <h3 class="flex items-center gap-2 text-sm font-bold text-green-700 mb-3">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    You CAN Claim GST On
+                </h3>
+                <div class="space-y-2">
+                    {% for item in gst_reference.claimable %}
+                    <div class="flex items-start gap-2 text-sm">
+                        <span class="text-green-500 mt-0.5 flex-shrink-0">&#x2022;</span>
+                        <div>
+                            <span class="text-slate-800">{{ item.item }}</span>
+                            <span class="text-slate-400 text-xs ml-1">— {{ item.note }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- CANNOT Claim -->
+            <div>
+                <h3 class="flex items-center gap-2 text-sm font-bold text-red-700 mb-3">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    You CANNOT Claim GST On
+                </h3>
+                <div class="space-y-2">
+                    {% for item in gst_reference.not_claimable %}
+                    <div class="flex items-start gap-2 text-sm">
+                        <span class="text-red-400 mt-0.5 flex-shrink-0">&#x2022;</span>
+                        <div>
+                            <span class="text-slate-800">{{ item.item }}</span>
+                            <span class="text-slate-400 text-xs ml-1">— {{ item.note }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <p x-show="refOpen" class="mt-4 text-xs text-slate-400 border-t border-slate-100 pt-3">
+            This is a general guide only — not tax advice. Always confirm with your accountant or BAS agent for your specific situation.
+        </p>
+    </div>
+</div>
+{% endblock %}

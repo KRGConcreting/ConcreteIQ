@@ -1,0 +1,1036 @@
+{% extends "base.html" %}
+
+{% block title %}Pour Planner{% endblock %}
+
+{% block content %}
+<div x-data="pourPlanner()" x-init="init()" class="space-y-6">
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- HEADER -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="flex items-center justify-between animate-in">
+        <div>
+            <h1 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Pour Planner</h1>
+            {% if quote %}
+            <p class="text-sm text-slate-500 font-medium mt-0.5">{{ quote.job_name or quote.job_address or quote.quote_number }}</p>
+            {% endif %}
+        </div>
+        <button @click="fetchWeather()"
+                class="btn-v4 btn-v4-secondary flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Refresh
+        </button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- QUICK GLANCE SUMMARY BANNER -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <template x-if="result">
+        <div class="pp-banner animate-in delay-1"
+             :class="{
+                 'pp-banner-good': getOverallStatus() === 'good',
+                 'pp-banner-caution': getOverallStatus() === 'caution',
+                 'pp-banner-warning': getOverallStatus() === 'warning',
+                 'pp-banner-critical': getOverallStatus() === 'critical'
+             }">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                 :class="{
+                     'bg-green-500': getOverallStatus() === 'good',
+                     'bg-yellow-500': getOverallStatus() === 'caution',
+                     'bg-orange-500': getOverallStatus() === 'warning',
+                     'bg-red-500': getOverallStatus() === 'critical'
+                 }">
+                <svg x-show="getOverallStatus() === 'good'" class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <svg x-show="getOverallStatus() !== 'good'" class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+            </div>
+            <span class="font-semibold text-sm md:text-base"
+                  :class="{
+                      'text-green-800': getOverallStatus() === 'good',
+                      'text-yellow-800': getOverallStatus() === 'caution',
+                      'text-orange-800': getOverallStatus() === 'warning',
+                      'text-red-800': getOverallStatus() === 'critical'
+                  }"
+                  x-text="getQuickSummary()"></span>
+        </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- HERO CARDS — The Answer Row -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in delay-2">
+        <!-- TELL THE PLANT -->
+        <div class="pp-hero"
+             :class="{
+                 'pp-hero-green': !result || !result.sika_recommendation || !result.sika_recommendation.recommended,
+                 'pp-hero-orange': result && result.sika_recommendation && result.sika_recommendation.condition === 'hot',
+                 'pp-hero-blue': result && result.sika_recommendation && result.sika_recommendation.condition === 'cold'
+             }">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="pp-section-icon"
+                         :class="{
+                             'bg-green-500': !result || !result.sika_recommendation || !result.sika_recommendation.recommended,
+                             'bg-orange-500': result && result.sika_recommendation && result.sika_recommendation.condition === 'hot',
+                             'bg-blue-500': result && result.sika_recommendation && result.sika_recommendation.condition === 'cold'
+                         }">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                    </div>
+                    <span class="pp-section-label"
+                          :class="{
+                              'text-green-700': !result || !result.sika_recommendation || !result.sika_recommendation.recommended,
+                              'text-orange-700': result && result.sika_recommendation && result.sika_recommendation.condition === 'hot',
+                              'text-blue-700': result && result.sika_recommendation && result.sika_recommendation.condition === 'cold'
+                          }">Tell the Plant</span>
+                </div>
+                <template x-if="result && result.sika_recommendation && result.sika_recommendation.mix_name">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+                          :class="{
+                              'bg-orange-200/80 text-orange-700 border-orange-300': result.sika_recommendation.condition === 'hot',
+                              'bg-blue-200/80 text-blue-700 border-blue-300': result.sika_recommendation.condition === 'cold',
+                              'bg-green-200/80 text-green-700 border-green-300': result.sika_recommendation.condition === 'ideal'
+                          }"
+                          x-text="result.sika_recommendation.mix_name"></span>
+                </template>
+            </div>
+
+            <template x-if="result && result.sika_recommendation && result.sika_recommendation.recommended">
+                <div>
+                    <!-- YOUR ORDER -->
+                    <div class="pp-inner-panel mb-3">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Your Order</p>
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <span class="text-4xl font-display font-black" :class="result.sika_recommendation.condition === 'hot' ? 'text-orange-600' : 'text-blue-600'" x-text="result.sika_recommendation.percentage_display"></span>
+                            <span class="text-xl font-display font-bold text-slate-700" x-text="result.sika_recommendation.condition === 'hot' ? 'Retarder' : 'Accelerator'"></span>
+                        </div>
+                        <p class="text-xs text-slate-500" x-text="result.sika_recommendation.dose_per_100kg + ' mL/100kg = ' + result.sika_recommendation.total_dose_L + 'L for ' + form.volume_m3 + 'm\u00b3'"></p>
+                        <p class="text-xs font-semibold mt-1" :class="result.sika_recommendation.condition === 'hot' ? 'text-orange-600' : 'text-blue-600'" x-text="result.sika_recommendation.effect_description"></p>
+                    </div>
+
+                    <!-- PLANT STANDARD -->
+                    <template x-if="result.sika_recommendation.plant_standard && result.sika_recommendation.plant_standard.length > 0">
+                        <div class="pp-inner-panel-dim mb-3">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Already in Mix</p>
+                            <template x-for="ps in result.sika_recommendation.plant_standard" :key="ps.product">
+                                <div class="flex items-center justify-between py-1">
+                                    <div>
+                                        <span class="text-xs font-semibold text-slate-700" x-text="ps.short_name"></span>
+                                        <span class="text-[10px] text-slate-400 ml-1" x-text="'(' + ps.as1478_class + ')'"></span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500" x-text="ps.effect_description"></span>
+                                </div>
+                            </template>
+                            <template x-if="result.sika_recommendation.air_entrainer">
+                                <div class="flex items-center justify-between py-1">
+                                    <div>
+                                        <span class="text-xs font-semibold text-slate-700">Air LS</span>
+                                        <span class="text-[10px] text-slate-400 ml-1">(AEA)</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500" x-text="result.sika_recommendation.air_entrainer.target_air_percent + '% air \u00b7 No set effect'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- ADDITION ORDER -->
+                    <template x-if="result.sika_recommendation.addition_order_steps && result.sika_recommendation.addition_order_steps.length > 1">
+                        <div class="pp-inner-panel-dim mb-3">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Addition Order</p>
+                            <template x-for="step in result.sika_recommendation.addition_order_steps" :key="step.step">
+                                <div class="flex items-start gap-2 py-0.5">
+                                    <span class="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5" x-text="step.step"></span>
+                                    <span class="text-[11px] text-slate-600" x-text="step.product + ' \u2014 ' + step.instruction"></span>
+                                </div>
+                            </template>
+                            <p class="text-[10px] text-slate-400 mt-1.5">Mix 30-60s between each \u00b7 Total wet mix \u22651 min/m\u00b3</p>
+                        </div>
+                    </template>
+
+                    <!-- DOSAGE WARNINGS -->
+                    <template x-if="result.sika_recommendation.dosage_warnings && result.sika_recommendation.dosage_warnings.length > 0">
+                        <div class="bg-amber-50/80 rounded-xl p-3 mb-3 border border-amber-200/60">
+                            <template x-for="warn in result.sika_recommendation.dosage_warnings" :key="warn">
+                                <p class="text-[11px] text-amber-700 font-medium" x-text="warn"></p>
+                            </template>
+                        </div>
+                    </template>
+
+                    <button @click="copyForPlant()" class="btn-v4 btn-v4-secondary w-full flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        <span x-text="copied ? 'Copied!' : 'Copy for Plant'"></span>
+                    </button>
+                </div>
+            </template>
+            <template x-if="!result || !result.sika_recommendation || !result.sika_recommendation.recommended">
+                <div>
+                    <p class="text-3xl font-display font-black text-green-600 mb-2">No Admixture</p>
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="text-sm font-medium text-green-700">Good to go</span>
+                    </div>
+                    <p class="text-sm text-slate-600" x-text="result && result.sika_recommendation ? result.sika_recommendation.reason : 'Enter details to calculate'"></p>
+                    <p class="text-xs text-slate-400 mt-3" x-show="result && result.weather">Weighted temp <span class="font-display font-semibold text-slate-500" x-text="result.weather.weighted_eff_temp + '\u00b0C'"></span> <span class="text-slate-300">|</span> Air <span x-text="form.air_temp + '\u00b0C'"></span></p>
+
+                    <!-- Plant standard info even in ideal range -->
+                    <template x-if="result && result.sika_recommendation && result.sika_recommendation.plant_standard">
+                        <div class="pp-inner-panel-dim mt-3">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">In Your Mix</p>
+                            <template x-for="ps in result.sika_recommendation.plant_standard" :key="ps.product">
+                                <span class="inline-block text-[11px] text-slate-500 mr-2" x-text="ps.short_name + ' (' + ps.as1478_class + ')'"></span>
+                            </template>
+                            <template x-if="result.sika_recommendation.air_entrainer">
+                                <span class="inline-block text-[11px] text-slate-500">\u00b7 Air LS (AEA)</span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- FINISHING WINDOW -->
+        <div class="pp-hero pp-hero-brand">
+            <div class="flex items-center gap-2.5 mb-4">
+                <div class="pp-section-icon" style="background: var(--brand-secondary);">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <span class="pp-section-label" style="color: var(--brand-secondary);">Finishing Window</span>
+            </div>
+
+            <template x-if="result && result.finishing_window">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-center">
+                            <span class="text-3xl font-display font-black text-slate-900" x-text="result.finishing_window.opens"></span>
+                            <p class="text-xs text-slate-500 mt-1">Start</p>
+                        </div>
+                        <div class="flex-1 mx-4">
+                            <div class="h-2.5 bg-white/60 rounded-full overflow-hidden shadow-inner">
+                                <div class="h-full bg-gradient-to-r from-green-400 via-amber-400 to-orange-500 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <div class="flex justify-between mt-1.5">
+                                <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-3xl font-display font-black text-slate-900" x-text="result.finishing_window.closes"></span>
+                            <p class="text-xs text-slate-500 mt-1">Done by</p>
+                        </div>
+                    </div>
+                    <div class="pp-inner-panel text-center">
+                        <span class="text-lg font-display font-bold" style="color: var(--brand-secondary);" x-text="result.finishing_window.duration_hours + ' hours'"></span>
+                        <span class="text-sm text-slate-600"> to finish</span>
+                    </div>
+                </div>
+            </template>
+            <template x-if="!result || !result.finishing_window">
+                <div class="py-8 text-center">
+                    <svg class="w-10 h-10 text-orange-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <p class="text-slate-400 text-sm">Enter details to calculate</p>
+                </div>
+            </template>
+        </div>
+
+        <!-- EVAPORATION RISK -->
+        <div class="pp-hero"
+             :class="{
+                 'pp-hero-green': result && result.evaporation && result.evaporation.risk_level === 'low',
+                 'pp-hero-orange': result && result.evaporation && (result.evaporation.risk_level === 'moderate' || result.evaporation.risk_level === 'high'),
+                 'pp-hero-red': result && result.evaporation && (result.evaporation.risk_level === 'very_high' || result.evaporation.risk_level === 'critical'),
+                 'pp-hero-neutral': !result || !result.evaporation
+             }">
+            <div class="flex items-center gap-2.5 mb-4">
+                <div class="pp-section-icon"
+                     :class="{
+                         'bg-green-500': result && result.evaporation && result.evaporation.risk_level === 'low',
+                         'bg-yellow-500': result && result.evaporation && result.evaporation.risk_level === 'moderate',
+                         'bg-orange-500': result && result.evaporation && result.evaporation.risk_level === 'high',
+                         'bg-red-500': result && result.evaporation && (result.evaporation.risk_level === 'very_high' || result.evaporation.risk_level === 'critical'),
+                         'bg-slate-300': !result || !result.evaporation
+                     }">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <span class="pp-section-label"
+                      :class="{
+                          'text-green-700': result && result.evaporation && result.evaporation.risk_level === 'low',
+                          'text-yellow-700': result && result.evaporation && result.evaporation.risk_level === 'moderate',
+                          'text-orange-700': result && result.evaporation && result.evaporation.risk_level === 'high',
+                          'text-red-700': result && result.evaporation && (result.evaporation.risk_level === 'very_high' || result.evaporation.risk_level === 'critical'),
+                          'text-slate-400': !result || !result.evaporation
+                      }">Evaporation Risk</span>
+            </div>
+
+            <template x-if="result && result.evaporation">
+                <div>
+                    <div class="flex items-baseline gap-2 mb-3">
+                        <span class="text-4xl font-display font-black" :class="{
+                            'text-green-600': result.evaporation.risk_level === 'low',
+                            'text-yellow-600': result.evaporation.risk_level === 'moderate',
+                            'text-orange-600': result.evaporation.risk_level === 'high',
+                            'text-red-600': result.evaporation.risk_level === 'very_high' || result.evaporation.risk_level === 'critical',
+                        }" x-text="result.evaporation.rate"></span>
+                        <span class="text-sm text-slate-500 font-medium">kg/m&#178;/hr</span>
+                    </div>
+
+                    <!-- Evaporation gauge -->
+                    <div class="mb-3">
+                        <div class="pp-evap-gauge">
+                            <div class="pp-evap-gauge-fill"
+                                 :class="{
+                                     'bg-green-500': result.evaporation.rate < 0.25,
+                                     'bg-yellow-500': result.evaporation.rate >= 0.25 && result.evaporation.rate < 0.5,
+                                     'bg-orange-500': result.evaporation.rate >= 0.5 && result.evaporation.rate < 0.75,
+                                     'bg-red-500': result.evaporation.rate >= 0.75,
+                                 }"
+                                 :style="'width: ' + Math.min(100, (result.evaporation.rate / 1.0) * 100) + '%'"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                            <span>0</span>
+                            <span>0.5</span>
+                            <span>1.0</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border"
+                              :class="{
+                                  'bg-green-200/80 text-green-800 border-green-300': result.evaporation.risk_level === 'low',
+                                  'bg-yellow-200/80 text-yellow-800 border-yellow-300': result.evaporation.risk_level === 'moderate',
+                                  'bg-orange-200/80 text-orange-800 border-orange-300': result.evaporation.risk_level === 'high',
+                                  'bg-red-200/80 text-red-800 border-red-300': result.evaporation.risk_level === 'very_high' || result.evaporation.risk_level === 'critical',
+                              }">
+                            <svg x-show="result.evaporation.risk_level === 'low'" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            <span x-text="result.evaporation.risk_level.replace('_', ' ').toUpperCase()"></span>
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2" x-text="result.evaporation.risk_level === 'low' ? 'Below 0.5 limit' : result.evaporation.risk_level === 'moderate' ? 'At caution threshold' : 'Above safe limit \u2014 take precautions'"></p>
+                </div>
+            </template>
+            <template x-if="!result || !result.evaporation">
+                <div class="py-8 text-center">
+                    <svg class="w-10 h-10 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <p class="text-slate-400 text-sm">-</p>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- MAIN LAYOUT: Sidebar + Content -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+        <!-- LEFT SIDEBAR -->
+        <div class="lg:col-span-1 space-y-3 animate-in delay-3">
+
+            <!-- Pour Schedule Card -->
+            <div class="pp-sidebar-card pp-sidebar-accent-purple">
+                <button @click="showSchedule = !showSchedule" class="pp-sidebar-toggle">
+                    <div class="flex items-center gap-3">
+                        <div class="pp-section-icon pp-sidebar-icon-purple">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <span class="text-sm font-semibold text-slate-900">Pour Schedule</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400 font-medium" x-text="formatDateDisplay(form.date) + ', ' + formatTimeDisplay(form.time)"></span>
+                        <svg class="w-4 h-4 text-slate-300 transition-transform duration-200" :class="showSchedule ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </button>
+                <div x-show="showSchedule" x-collapse class="px-4 pb-4 space-y-3 border-t border-slate-100">
+                    <div class="pt-3">
+                        <label class="field-label">Date</label>
+                        <input type="date" x-model="form.date" @change="fetchWeather()" class="input-field">
+                    </div>
+                    <div>
+                        <label class="field-label">Start Time</label>
+                        <select x-model="form.time" @change="calculate()" class="select-field">
+                            <option value="05:00">5:00 AM</option>
+                            <option value="05:30">5:30 AM</option>
+                            <option value="06:00">6:00 AM</option>
+                            <option value="06:30">6:30 AM</option>
+                            <option value="07:00">7:00 AM</option>
+                            <option value="07:30">7:30 AM</option>
+                            <option value="08:00">8:00 AM</option>
+                            <option value="08:30">8:30 AM</option>
+                            <option value="09:00">9:00 AM</option>
+                            <option value="09:30">9:30 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="10:30">10:30 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="11:30">11:30 AM</option>
+                            <option value="12:00">12:00 PM</option>
+                            <option value="12:30">12:30 PM</option>
+                            <option value="13:00">1:00 PM</option>
+                            <option value="13:30">1:30 PM</option>
+                            <option value="14:00">2:00 PM</option>
+                            <option value="14:30">2:30 PM</option>
+                            <option value="15:00">3:00 PM</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weather Card -->
+            <div class="pp-sidebar-card pp-sidebar-accent-blue">
+                <button @click="showWeather = !showWeather" class="pp-sidebar-toggle">
+                    <div class="flex items-center gap-3">
+                        <div class="pp-section-icon pp-sidebar-icon-blue">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                        </div>
+                        <span class="text-sm font-semibold text-slate-900">Weather</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400 font-medium" x-text="form.air_temp + '\u00b0C, ' + form.humidity + '%, ' + form.wind_speed + 'km/h'"></span>
+                        <svg class="w-4 h-4 text-slate-300 transition-transform duration-200" :class="showWeather ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </button>
+                <div x-show="showWeather" x-collapse class="px-4 pb-4 space-y-3 border-t border-slate-100">
+                    <div class="pt-3">
+                        <label class="field-label">Air Temp (\u00b0C)</label>
+                        <input type="number" x-model.number="form.air_temp" @change="calculate()" step="1" class="input-field">
+                    </div>
+                    <div>
+                        <label class="field-label">Humidity: <span class="text-slate-600" x-text="form.humidity + '%'"></span></label>
+                        <input type="range" x-model.number="form.humidity" @change="calculate()" min="10" max="100" step="5" class="w-full accent-blue-500">
+                    </div>
+                    <div>
+                        <label class="field-label">Wind (km/h)</label>
+                        <input type="number" x-model.number="form.wind_speed" @change="calculate()" step="5" min="0" class="input-field">
+                    </div>
+                    <div>
+                        <label class="field-label">Sun</label>
+                        <select x-model="form.sun_exposure" @change="calculate()" class="select-field">
+                            <option value="shade">Shade</option>
+                            <option value="half">Partial</option>
+                            <option value="full">Full Sun</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concrete Card -->
+            <div class="pp-sidebar-card pp-sidebar-accent-orange">
+                <button @click="showConcrete = !showConcrete" class="pp-sidebar-toggle">
+                    <div class="flex items-center gap-3">
+                        <div class="pp-section-icon pp-sidebar-icon-orange">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        </div>
+                        <span class="text-sm font-semibold text-slate-900">Concrete</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400 font-medium" x-text="form.concrete_grade + ' \u00b7 ' + form.volume_m3 + 'm\u00b3'"></span>
+                        <svg class="w-4 h-4 text-slate-300 transition-transform duration-200" :class="showConcrete ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                </button>
+                <div x-show="showConcrete" x-collapse class="px-4 pb-4 space-y-3 border-t border-slate-100">
+                    <div class="pt-3">
+                        <label class="field-label">Grade</label>
+                        <select x-model="form.concrete_grade" @change="calculate()" class="select-field">
+                            <option value="N25">N25</option>
+                            <option value="N32">N32</option>
+                            <option value="Exposed N25">Exposed N25</option>
+                            <option value="Exposed N32">Exposed N32</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Volume (m\u00b3)</label>
+                        <input type="number" x-model.number="form.volume_m3" @change="calculate()" step="0.5" min="0.5" class="input-field">
+                    </div>
+                    <div class="toggle-pill" :class="form.is_exposed ? 'active' : ''" @click="form.is_exposed = !form.is_exposed; calculate()">
+                        <div class="toggle-switch-sm" :class="form.is_exposed ? 'active' : ''"></div>
+                        <span class="text-sm text-slate-700 font-medium">Exposed Aggregate</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="pp-summary-card">
+                <div class="field-label mb-3">Summary</div>
+                <div class="space-y-1">
+                    <div class="pp-summary-row">
+                        <span class="text-sm text-slate-500">Order Slump</span>
+                        <span class="pp-summary-value" x-text="result ? result.slump.order_display : '-'"></span>
+                    </div>
+                    <div class="border-t border-slate-100"></div>
+                    <div class="pp-summary-row">
+                        <span class="text-sm text-slate-500">Initial Set</span>
+                        <span class="text-sm font-display font-bold text-slate-900" x-text="result && result.enhanced_set_time ? result.enhanced_set_time.adjusted_initial_hours + ' hrs' : '-'"></span>
+                    </div>
+                    <div class="border-t border-slate-100"></div>
+                    <div class="pp-summary-row">
+                        <span class="text-sm text-slate-500">Final Set</span>
+                        <span class="text-sm font-display font-bold text-slate-900" x-text="result && result.enhanced_set_time ? result.enhanced_set_time.adjusted_final_hours + ' hrs' : '-'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- MAIN CONTENT AREA -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <div class="lg:col-span-3 space-y-5">
+
+            <!-- FINISHING TIMELINE -->
+            <div class="pp-content-card p-5 md:p-7 animate-in delay-4">
+                <h2 class="text-sm font-display font-bold text-slate-900 mb-6 flex items-center gap-3">
+                    <div class="pp-section-icon" style="background: var(--brand-secondary);">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    Finishing Timeline
+                </h2>
+                <template x-if="result && result.timeline && result.timeline.milestones">
+                    <div class="relative">
+                        <!-- Timeline vertical line -->
+                        <div class="absolute left-[85px] md:left-[95px] top-0 bottom-0 pp-timeline-line"></div>
+
+                        <div class="space-y-0">
+                            <template x-for="(milestone, idx) in result.timeline.milestones" :key="milestone.name">
+                                <div class="relative">
+                                    <div class="pp-timeline-row"
+                                         :class="{
+                                             'pp-timeline-row-active': milestone.name === 'Ready to Float' || milestone.name === 'Steel Trowel',
+                                             'pp-timeline-row-finish': milestone.name === 'Sponge Finish',
+                                             'pp-timeline-row-danger': milestone.name === 'Initial Set',
+                                             'font-bold': ['Ready to Float', 'Steel Trowel', 'Sponge Finish', 'Initial Set'].includes(milestone.name)
+                                         }">
+                                        <!-- Time Column -->
+                                        <div class="w-[80px] md:w-[90px] text-right pr-4 flex-shrink-0">
+                                            <span class="font-mono text-sm md:text-base font-semibold tabular-nums"
+                                                  :class="{
+                                                      'text-green-700': milestone.name === 'Ready to Float' || milestone.name === 'Steel Trowel',
+                                                      'text-orange-700': milestone.name === 'Sponge Finish',
+                                                      'text-red-700': milestone.name === 'Initial Set',
+                                                      'text-slate-500': !['Ready to Float', 'Steel Trowel', 'Sponge Finish', 'Initial Set'].includes(milestone.name)
+                                                  }"
+                                                  x-text="milestone.time"></span>
+                                        </div>
+
+                                        <!-- Dot/Node -->
+                                        <div class="relative z-20 flex-shrink-0">
+                                            <!-- Filled dot for action items -->
+                                            <div x-show="['Pour & Screed', 'Bullfloat', 'Ready to Float', 'Steel Trowel', 'Sponge Finish'].includes(milestone.name)"
+                                                 class="w-5 h-5 rounded-full ring-3 ring-white shadow-md"
+                                                 :class="{
+                                                     'bg-green-500': milestone.name === 'Ready to Float' || milestone.name === 'Steel Trowel',
+                                                     'bg-orange-500': milestone.name === 'Sponge Finish',
+                                                     'bg-slate-700': milestone.name === 'Pour & Screed' || milestone.name === 'Bullfloat',
+                                                     'pp-node-pulse': milestone.name === 'Ready to Float' || milestone.name === 'Steel Trowel',
+                                                     'pp-node-pulse-orange': milestone.name === 'Sponge Finish'
+                                                 }"></div>
+                                            <!-- Empty dot for info items -->
+                                            <div x-show="!['Pour & Screed', 'Bullfloat', 'Ready to Float', 'Steel Trowel', 'Sponge Finish'].includes(milestone.name)"
+                                                 class="w-4 h-4 rounded-full border-2 bg-white ring-2 ring-white shadow-sm"
+                                                 :class="{
+                                                     'border-red-500': milestone.name === 'Initial Set' || milestone.name === 'Final Set',
+                                                     'border-slate-300': ['Bleed Water Gone', 'Spray Aliphatic Alcohol'].includes(milestone.name)
+                                                 }"></div>
+                                        </div>
+
+                                        <!-- Label Column -->
+                                        <div class="ml-4 flex-1 min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="text-sm md:text-base"
+                                                      :class="{
+                                                          'text-green-800 font-bold': milestone.name === 'Ready to Float' || milestone.name === 'Steel Trowel',
+                                                          'text-orange-800 font-bold': milestone.name === 'Sponge Finish',
+                                                          'text-red-800 font-semibold': milestone.name === 'Initial Set',
+                                                          'text-slate-700': !['Ready to Float', 'Steel Trowel', 'Sponge Finish', 'Initial Set'].includes(milestone.name)
+                                                      }"
+                                                      x-text="milestone.name"></span>
+
+                                                <!-- Action badges -->
+                                                <span x-show="milestone.name === 'Ready to Float'" class="pp-badge-start">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/></svg>
+                                                    START
+                                                </span>
+                                                <span x-show="milestone.name === 'Sponge Finish'" class="pp-badge-finish">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                                    FINISH BY
+                                                </span>
+                                                <span x-show="milestone.name === 'Initial Set'" class="pp-badge-late">too late</span>
+                                            </div>
+                                            <p x-show="milestone.notes && !['Ready to Float', 'Steel Trowel', 'Sponge Finish'].includes(milestone.name)"
+                                               class="text-xs text-slate-400 mt-0.5" x-text="milestone.notes"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="!result || !result.timeline">
+                    <div class="py-16 text-center">
+                        <svg class="w-14 h-14 text-slate-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-slate-400 text-sm">Enter details above to see your finishing timeline</p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- EXPOSED AGGREGATE WASH WINDOW -->
+            <template x-if="form.is_exposed && result && result.exposed_schedule">
+                <div class="pp-content-card p-5 border-l-4 border-l-amber-500 animate-in delay-5">
+                    <h2 class="text-sm font-display font-bold text-slate-900 mb-5 flex items-center gap-3">
+                        <div class="pp-section-icon bg-amber-500">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                        </div>
+                        Exposed Aggregate Wash Window
+                    </h2>
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <div class="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Earliest</p>
+                            <p class="text-xl font-display font-bold text-amber-700" x-text="result.exposed_schedule.times.earliest"></p>
+                        </div>
+                        <div class="text-center p-3 bg-amber-50 rounded-xl border-2 border-amber-400 shadow-sm">
+                            <p class="text-[10px] text-amber-600 uppercase tracking-wider font-bold mb-1">Recommended</p>
+                            <p class="text-xl font-display font-black text-amber-800" x-text="result.exposed_schedule.times.recommended"></p>
+                        </div>
+                        <div class="text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Latest</p>
+                            <p class="text-xl font-display font-bold text-amber-700" x-text="result.exposed_schedule.times.latest"></p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-2.5 border border-amber-200" x-text="result.exposed_schedule.window.tip"></p>
+                </div>
+            </template>
+
+            <!-- HOURLY CONDITIONS -->
+            <div class="pp-content-card overflow-hidden animate-in delay-5">
+                <button @click="showHourly = !showHourly" class="pp-sidebar-toggle">
+                    <div class="flex items-center gap-3">
+                        <div class="pp-section-icon bg-slate-700">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-display font-bold text-slate-900">Hourly Conditions</span>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-300 transition-transform duration-200" :class="showHourly ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+
+                <!-- Compact Heatmap -->
+                <template x-if="hourlyData && hourlyData.length > 0">
+                    <div class="px-5 pb-4">
+                        <div class="flex items-center gap-1.5 overflow-x-auto pb-2">
+                            <template x-for="hour in hourlyData" :key="hour.hour">
+                                <div class="flex flex-col items-center min-w-[42px]">
+                                    <span class="text-[10px] text-slate-400 mb-1.5 font-medium" x-text="hour.hour_display.replace(' AM', '').replace(' PM', 'p')"></span>
+                                    <div class="pp-heatmap-dot"
+                                         :class="{
+                                             'bg-green-500 text-white': hour.evap_risk === 'low',
+                                             'bg-yellow-500 text-white': hour.evap_risk === 'moderate',
+                                             'bg-orange-500 text-white': hour.evap_risk === 'high',
+                                             'bg-red-500 text-white': hour.evap_risk === 'very_high' || hour.evap_risk === 'critical',
+                                         }"
+                                         :title="hour.evap_rate.toFixed(2) + ' kg/m\u00b2/hr'">
+                                        <span x-text="hour.evap_risk === 'low' ? '\u2713' : hour.evap_risk === 'moderate' ? '!' : '!!'"></span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500 mt-1.5 font-mono" x-text="hour.temp + '\u00b0'"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="flex items-center justify-center gap-5 mt-3 pt-3 border-t border-slate-100">
+                            <span class="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-wider font-medium"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> Low</span>
+                            <span class="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-wider font-medium"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span> Moderate</span>
+                            <span class="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-wider font-medium"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> High</span>
+                            <span class="flex items-center gap-1.5 text-[10px] text-slate-400 uppercase tracking-wider font-medium"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Critical</span>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Expanded Table -->
+                <div x-show="showHourly" x-collapse class="px-5 pb-5 border-t border-slate-100">
+                    <template x-if="hourlyData && hourlyData.length > 0">
+                        <div class="overflow-x-auto pt-4">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-left border-b border-slate-200">
+                                        <th class="py-2.5 pr-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Time</th>
+                                        <th class="py-2.5 pr-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Temp</th>
+                                        <th class="py-2.5 pr-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Humid</th>
+                                        <th class="py-2.5 pr-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Wind</th>
+                                        <th class="py-2.5 pr-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Evap Rate</th>
+                                        <th class="py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Risk</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="hour in hourlyData" :key="hour.hour">
+                                        <tr class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+                                            <td class="py-2.5 pr-3 font-medium text-slate-900" x-text="hour.hour_display"></td>
+                                            <td class="py-2.5 pr-3 text-slate-600" x-text="hour.temp + '\u00b0C'"></td>
+                                            <td class="py-2.5 pr-3 text-slate-600" x-text="hour.humidity + '%'"></td>
+                                            <td class="py-2.5 pr-3 text-slate-600" x-text="hour.wind + ' km/h'"></td>
+                                            <td class="py-2.5 pr-3 font-display font-mono tabular-nums text-slate-700" x-text="hour.evap_rate.toFixed(2)"></td>
+                                            <td class="py-2.5">
+                                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border"
+                                                      :class="{
+                                                          'bg-green-100 text-green-700 border-green-200': hour.evap_risk === 'low',
+                                                          'bg-yellow-100 text-yellow-700 border-yellow-200': hour.evap_risk === 'moderate',
+                                                          'bg-orange-100 text-orange-700 border-orange-200': hour.evap_risk === 'high',
+                                                          'bg-red-100 text-red-700 border-red-200': hour.evap_risk === 'very_high' || hour.evap_risk === 'critical',
+                                                      }"
+                                                      x-text="hour.evap_risk.replace('_', ' ')"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                    <template x-if="!hourlyData || hourlyData.length === 0">
+                        <p class="text-slate-400 text-center py-6 text-sm">No hourly data available</p>
+                    </template>
+                </div>
+            </div>
+
+            <!-- WARNINGS -->
+            <template x-if="result && result.warnings && result.warnings.length > 0">
+                <div class="pp-content-card p-5 border-l-4 border-l-red-500 animate-in delay-6">
+                    <h2 class="text-sm font-display font-bold text-slate-900 mb-4 flex items-center gap-3">
+                        <div class="pp-section-icon bg-red-500">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        Warnings
+                    </h2>
+                    <ul class="space-y-2">
+                        <template x-for="warning in result.warnings" :key="warning">
+                            <li class="text-sm text-red-700 flex items-start gap-3 bg-red-50 rounded-xl px-4 py-3 border border-red-100">
+                                <svg class="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                </svg>
+                                <span x-text="warning"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+
+            <!-- LOG RESULT -->
+            {% if quote and pour_plan and not pour_result %}
+            <div class="pp-content-card p-5 border-l-4 border-l-green-500 animate-in delay-7">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-display font-bold text-slate-900">Pour Complete?</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Log results to improve future predictions</p>
+                    </div>
+                    <button @click="showLogResultModal = true"
+                            class="btn-v4 btn-v4-primary">
+                        Log Result
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if pour_result %}
+            <div class="pp-content-card p-5 border-l-4 border-l-green-500 animate-in delay-7">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-display font-bold text-slate-900">Result Logged</p>
+                        <p class="text-sm text-slate-600">Prediction was <span class="font-semibold text-green-700">{{ pour_result.prediction_accuracy.replace('_', ' ') }}</span></p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- LOG RESULT MODAL -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div x-show="showLogResultModal"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" @click="showLogResultModal = false"></div>
+            <div class="relative bg-white rounded-2xl w-full max-w-md p-6 shadow-xl border border-slate-200">
+                <h2 class="text-lg font-display font-bold text-slate-900 mb-5">Log Pour Result</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="field-label">Admixture Used</label>
+                        <select x-model="logForm.actual_admixture_used" class="select-field">
+                            <option value="">None</option>
+                            <option value="Sika Retarder N">Sika Retarder N</option>
+                            <option value="SikaRapid AF">SikaRapid AF</option>
+                            <option value="Sika Plastiment 45">Sika Plastiment 45</option>
+                            <option value="Sikament ECO-3W">Sikament ECO-3W</option>
+                            <option value="Sika Air LS">Sika Air LS</option>
+                            <option value="Plastiment 45 + Retarder N">Plastiment 45 + Retarder N (Summer)</option>
+                            <option value="ECO-3W + Rapid AF">ECO-3W + Rapid AF (Winter)</option>
+                        </select>
+                    </div>
+                    <div x-show="logForm.actual_admixture_used">
+                        <label class="field-label">Dose (mL)</label>
+                        <input type="number" x-model.number="logForm.actual_dose_ml" class="input-field">
+                    </div>
+                    <div>
+                        <label class="field-label">Finish Time</label>
+                        <input type="text" x-model="logForm.actual_finish_time" placeholder="e.g., 11:30 AM" class="input-field">
+                    </div>
+                    <div>
+                        <label class="field-label mb-3">Prediction Accuracy</label>
+                        <div class="flex gap-2">
+                            <button @click="logForm.prediction_accuracy = 'spot_on'" :class="logForm.prediction_accuracy === 'spot_on' ? 'bg-green-600 text-white ring-2 ring-green-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'" class="flex-1 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">Spot On</button>
+                            <button @click="logForm.prediction_accuracy = 'close'" :class="logForm.prediction_accuracy === 'close' ? 'bg-yellow-500 text-white ring-2 ring-yellow-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'" class="flex-1 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">Close</button>
+                            <button @click="logForm.prediction_accuracy = 'way_off'" :class="logForm.prediction_accuracy === 'way_off' ? 'bg-red-600 text-white ring-2 ring-red-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'" class="flex-1 px-3 py-2.5 rounded-xl text-sm font-medium transition-all">Way Off</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="field-label">Notes</label>
+                        <textarea x-model="logForm.actual_conditions_notes" rows="2" placeholder="e.g., Windier than forecast" class="input-field" style="text-align: left;"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button @click="showLogResultModal = false" class="btn-v4 btn-v4-secondary flex-1">Cancel</button>
+                    <button @click="submitLogResult()" :disabled="!logForm.prediction_accuracy" class="btn-v4 btn-v4-primary flex-1 disabled:opacity-50">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function pourPlanner() {
+    return {
+        form: {
+            date: new Date().toISOString().split('T')[0],
+            time: '07:00',
+            air_temp: 25,
+            humidity: 50,
+            wind_speed: 10,
+            sun_exposure: 'half',
+            concrete_grade: {% if quote and quote.calculator_input %}'{{ quote.calculator_input.get("concrete_grade", "N25") }}'{% else %}'N25'{% endif %},
+            volume_m3: {% if quote and quote.calculator_input %}{{ quote.calculator_input.get("total_concrete_m3", 5) }}{% else %}5{% endif %},
+            travel_time_min: 30,
+            is_exposed: {% if quote and quote.calculator_input %}{{ 'true' if quote.calculator_input.get("exposed_aggregate", False) else 'false' }}{% else %}false{% endif %},
+        },
+        result: null,
+        hourlyData: null,
+        copied: false,
+        showSchedule: false,
+        showWeather: false,
+        showConcrete: false,
+        showHourly: false,
+        showLogResultModal: false,
+        logForm: {
+            actual_admixture_used: '',
+            actual_dose_ml: null,
+            actual_finish_time: '',
+            actual_conditions_notes: '',
+            prediction_accuracy: null,
+        },
+
+        getOverallStatus() {
+            if (!this.result) return 'good';
+            const evapRisk = this.result.evaporation?.risk_level;
+            const hasAdmixture = this.result.sika_recommendation?.recommended;
+
+            if (evapRisk === 'critical' || evapRisk === 'very_high') return 'critical';
+            if (evapRisk === 'high') return 'warning';
+            if (evapRisk === 'moderate' || hasAdmixture) return 'caution';
+            return 'good';
+        },
+
+        getQuickSummary() {
+            if (!this.result) return '';
+
+            const status = this.getOverallStatus();
+            const window = this.result.finishing_window;
+            const sika = this.result.sika_recommendation;
+
+            let summary = '';
+
+            const wTemp = this.result.weather?.weighted_eff_temp || this.form.air_temp;
+
+            if (status === 'good') {
+                summary = 'GOOD CONDITIONS';
+            } else if (status === 'caution') {
+                summary = wTemp > 25 ? 'WARM DAY' : 'MODERATE CONDITIONS';
+            } else if (status === 'warning') {
+                summary = wTemp > 30 ? 'HOT DAY' : 'CAUTION';
+            } else {
+                summary = 'EXTREME CONDITIONS';
+            }
+
+            if (sika?.mix_name && sika.mix_name !== 'Standard Mix') {
+                summary += ` (${sika.mix_name})`;
+            }
+
+            summary += ' — ';
+
+            if (window) {
+                summary += `Start finishing ${window.opens}, done by ${window.closes}`;
+            }
+
+            if (sika?.recommended && sika.tell_plant) {
+                summary += `, order ${sika.tell_plant}`;
+            } else {
+                summary += ', no admixture needed';
+            }
+
+            return summary;
+        },
+
+        getWindowHeight() {
+            if (!this.result?.timeline?.milestones) return 120;
+            const milestones = this.result.timeline.milestones;
+            const startIdx = milestones.findIndex(m => m.name === 'Ready to Float');
+            const endIdx = milestones.findIndex(m => m.name === 'Sponge Finish');
+            if (startIdx === -1 || endIdx === -1) return 120;
+            return (endIdx - startIdx + 1) * 48;
+        },
+
+        formatDateDisplay(dateStr) {
+            const date = new Date(dateStr);
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+        },
+
+        formatTimeDisplay(timeStr) {
+            const [hours, mins] = timeStr.split(':').map(Number);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const h = hours % 12 || 12;
+            return `${h}:${mins.toString().padStart(2, '0')} ${ampm}`;
+        },
+
+        async calculate() {
+            try {
+                const response = await fetch('/pour-planner/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.form),
+                });
+                this.result = await response.json();
+            } catch (error) {
+                console.error('Calculate error:', error);
+            }
+        },
+
+        async fetchWeather() {
+            try {
+                const response = await fetch('/pour-planner/api/weather?date=' + this.form.date);
+                const data = await response.json();
+
+                if (data.success && data.data.length > 0) {
+                    const hour = parseInt(this.form.time.split(':')[0]);
+                    const hourData = data.data.find(d => parseInt(d.time.split(':')[0]) === hour) || data.data[7];
+
+                    if (hourData) {
+                        this.form.air_temp = Math.round(hourData.temperature);
+                        this.form.humidity = Math.round(hourData.humidity);
+                        this.form.wind_speed = Math.round(hourData.wind_speed);
+                    }
+
+                    const startHour = parseInt(this.form.time.split(':')[0]);
+                    this.hourlyData = data.data
+                        .filter(d => {
+                            const h = parseInt(d.time.split(':')[0]);
+                            return h >= startHour && h <= startHour + 8;
+                        })
+                        .map(d => ({
+                            hour: d.time,
+                            hour_display: this.formatHour(d.time),
+                            temp: Math.round(d.temperature),
+                            humidity: Math.round(d.humidity),
+                            wind: Math.round(d.wind_speed),
+                            evap_rate: this.calcEvapRate(d.temperature, d.humidity, d.wind_speed),
+                            evap_risk: this.getEvapRisk(this.calcEvapRate(d.temperature, d.humidity, d.wind_speed)),
+                        }));
+
+                    this.calculate();
+                }
+            } catch (error) {
+                console.error('Weather error:', error);
+            }
+        },
+
+        formatHour(timeStr) {
+            const hour = parseInt(timeStr.split(':')[0]);
+            if (hour === 0) return '12 AM';
+            if (hour < 12) return hour + ' AM';
+            if (hour === 12) return '12 PM';
+            return (hour - 12) + ' PM';
+        },
+
+        calcEvapRate(temp, humidity, wind) {
+            const concreteTemp = temp + 8;
+            const r = humidity / 100;
+            return Math.max(0, 5 * (Math.pow(concreteTemp + 18, 2.5) - r * Math.pow(temp + 18, 2.5)) * (wind + 4) * 1e-6);
+        },
+
+        getEvapRisk(rate) {
+            if (rate < 0.25) return 'low';
+            if (rate < 0.5) return 'moderate';
+            if (rate < 0.75) return 'high';
+            if (rate < 1.0) return 'very_high';
+            return 'critical';
+        },
+
+        copyForPlant() {
+            if (!this.result || !this.result.sika_recommendation) return;
+
+            const rec = this.result.sika_recommendation;
+            let text = rec.tell_plant_full || this.form.concrete_grade;
+
+            text += `, ${this.result.slump.order_display} slump`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                this.copied = true;
+                setTimeout(() => this.copied = false, 2000);
+            });
+        },
+
+        async submitLogResult() {
+            {% if quote %}
+            try {
+                const response = await fetch('/pour-planner/api/job/{{ quote.id }}/result', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.logForm),
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.showLogResultModal = false;
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Log error:', error);
+            }
+            {% endif %}
+        },
+
+        init() {
+            this.fetchWeather();
+
+            // Auto-refresh weather every 10 minutes
+            setInterval(() => {
+                this.fetchWeather();
+            }, 10 * 60 * 1000);
+        }
+    };
+}
+</script>
+{% endblock %}

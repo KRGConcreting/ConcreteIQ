@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* Content sources */
+@source "../../templates/**/*.html";
+@source "../../static/js/**/*.js";
+
+/* Custom theme */
+@theme {
+  /* ── Primary / Brand (Orange — KRG identity) ── */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #ffedd5;
+  --color-primary-200: #fed7aa;
+  --color-primary-300: #fdba74;
+  --color-primary-400: #fb923c;
+  --color-primary-500: #f97316;
+  --color-primary-600: #ea580c;
+  --color-primary-700: #c2410c;
+  --color-primary-800: #9a3412;
+  --color-primary-900: #7c2d12;
+
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-200: #fed7aa;
+  --color-brand-300: #fdba74;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+  --color-brand-700: #c2410c;
+  --color-brand-800: #9a3412;
+  --color-brand-900: #7c2d12;
+
+  /* ── Navy palette (dark surfaces, authority) ── */
+  --color-navy-50: #f0f4f8;
+  --color-navy-100: #d9e2ec;
+  --color-navy-200: #bcccdc;
+  --color-navy-300: #9fb3c8;
+  --color-navy-400: #829ab1;
+  --color-navy-500: #627d98;
+  --color-navy-600: #486581;
+  --color-navy-700: #334e68;
+  --color-navy-800: #243b53;
+  --color-navy-900: #102a43;
+  --color-navy-950: #0a1929;
+
+  /* ── Semantic surface tokens ── */
+  --color-surface: #f8fafc;
+  --color-surface-card: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-header: #0f172a;
+  --color-surface-sidebar: #102a43;
+  --color-surface-overlay: rgba(15, 23, 42, 0.6);
+
+  --color-concrete: #4a4a4a;
+
+  /* ── Fonts ── */
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+
+  /* ── Shadows (refined, professional) ── */
+  --shadow-soft: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.03);
+  --shadow-medium: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 10px 25px -5px rgba(0,0,0,0.08), 0 4px 10px -6px rgba(0,0,0,0.03);
+  --shadow-glow: 0 0 20px rgba(249,115,22,0.15);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-card-hover: 0 8px 25px -5px rgba(0,0,0,0.1), 0 4px 10px -6px rgba(0,0,0,0.04);
+
+  /* ── Border radius ── */
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+}

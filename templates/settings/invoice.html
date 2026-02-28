@@ -1,0 +1,206 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Invoice Settings - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="invoiceSettings()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 font-display">Invoice Settings</h1>
+            <p class="text-slate-500 text-sm mt-1">Configure payment terms and invoice defaults.</p>
+        </div>
+        <button @click="save()"
+                :disabled="isSaving"
+                class="btn-v4 btn-v4-primary"
+            <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <svg x-show="isSaving" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span x-text="isSaving ? 'Saving...' : 'Save Changes'"></span>
+        </button>
+    </div>
+
+    <!-- Payment Terms -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Payment Terms</h2>
+                <p>Default payment due dates and late fee settings</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Payment Due (days)</label>
+                <input type="number" x-model.number="invoice.payment_terms_days"
+                       min="1" max="90"
+                       class="input-field">
+                <p class="text-xs text-slate-400 mt-1">Days after issue date until payment is due</p>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Late Fee (%)</label>
+                <input type="number" x-model.number="invoice.late_fee_percent"
+                       min="0" max="10" step="0.5"
+                       class="input-field">
+                <p class="text-xs text-slate-400 mt-1">Monthly late payment fee percentage</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Schedule -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-amber">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Default Payment Schedule</h2>
+                <p>Configure the standard progress payment structure for new quotes</p>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <!-- First Payment -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div class="w-24">
+                    <span class="text-sm font-semibold text-amber-700">1st Payment</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="number" x-model.number="invoice.deposit_percent"
+                           min="0" max="100"
+                           class="w-20 px-3 py-2 border border-slate-300 rounded-xl text-center focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <span class="text-slate-500">%</span>
+                </div>
+                <div class="flex-1">
+                    <select x-model="invoice.deposit_due"
+                            class="input-field">
+                        <option value="on_acceptance">Due on quote acceptance</option>
+                        <option value="7">Due in 7 days</option>
+                        <option value="14">Due in 14 days</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Pre-Pour -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <div class="w-24">
+                    <span class="text-sm font-semibold text-blue-700">Pre-Pour</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="number" x-model.number="invoice.progress_percent"
+                           min="0" max="100"
+                           class="w-20 px-3 py-2 border border-slate-300 rounded-xl text-center focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <span class="text-slate-500">%</span>
+                </div>
+                <div class="flex-1">
+                    <select x-model="invoice.prepour_due"
+                            class="input-field">
+                        <option value="before_pour">Due before concrete delivery</option>
+                        <option value="3">3 days before pour</option>
+                        <option value="7">7 days before pour</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Final -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                <div class="w-24">
+                    <span class="text-sm font-semibold text-purple-700">Final</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="number" x-model.number="invoice.final_percent"
+                           min="0" max="100"
+                           class="w-20 px-3 py-2 border border-slate-300 rounded-xl text-center focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <span class="text-slate-500">%</span>
+                </div>
+                <div class="flex-1">
+                    <select x-model="invoice.final_due"
+                            class="input-field">
+                        <option value="on_completion">Due on job completion</option>
+                        <option value="7">7 days after completion</option>
+                        <option value="14">14 days after completion</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation -->
+        <div class="mt-4 p-3.5 rounded-xl"
+             :class="totalPercent === 100 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+            <p class="text-sm"
+               :class="totalPercent === 100 ? 'text-green-700' : 'text-red-700'">
+                <strong>Total:</strong> <span x-text="totalPercent"></span>%
+                <span x-show="totalPercent !== 100" class="ml-2">Must equal 100%</span>
+                <span x-show="totalPercent === 100" class="ml-2">Valid schedule</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Display Options -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-violet">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Display Options</h2>
+                <p>Control what appears on generated invoices</p>
+            </div>
+        </div>
+        <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" x-model="invoice.show_bank_details"
+                   class="w-5 h-5 text-orange-500 border-slate-300 rounded focus:ring-orange-500">
+            <div>
+                <span class="font-medium text-slate-900">Show bank details on invoices</span>
+                <p class="text-sm text-slate-500">Display BSB and account number for bank transfers</p>
+            </div>
+        </label>
+    </div>
+
+</div>
+
+<script>
+function invoiceSettings() {
+    return {
+        invoice: {{ invoice | tojson }},
+        isSaving: false,
+
+        get totalPercent() {
+            return (this.invoice.deposit_percent || 0) +
+                   (this.invoice.progress_percent || 0) +
+                   (this.invoice.final_percent || 0);
+        },
+
+        async save() {
+            this.isSaving = true;
+            try {
+                const response = await fetch('/settings/api/invoice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.invoice)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    Toast.success('Invoice settings saved successfully!');
+                } else {
+                    Toast.error(formatErrorDetail(data.detail, 'Error saving settings'));
+                }
+            } catch (e) {
+                Toast.error('Network error - please try again');
+            } finally {
+                this.isSaving = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

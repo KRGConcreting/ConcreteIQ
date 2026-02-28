@@ -1,0 +1,1626 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Pricing Schedule - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="pricingSettings()" x-init="init()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 font-display">Pricing Schedule</h1>
+            <p class="text-slate-500 text-sm mt-1">Material costs, labour rates, and markup configuration. All prices ex GST.</p>
+        </div>
+        <div class="flex gap-2">
+            <button @click="resetToDefaults()"
+                    class="btn-v4 btn-v4-secondary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Reset Defaults
+            </button>
+            <button @click="save()"
+                    :disabled="isSaving"
+                    class="btn-v4 btn-v4-primary">
+                <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <svg x-show="isSaving" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span x-text="isSaving ? 'Saving...' : 'Save Changes'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Concrete Supply -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Concrete Supply</h2>
+                <p>$ per m3 ex GST</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">N20</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.concrete_n20" data-cents="concrete_n20"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">N25</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.concrete_n25" data-cents="concrete_n25"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">N32</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.concrete_n32" data-cents="concrete_n32"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Exposed</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.concrete_exposed" data-cents="concrete_exposed"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Free Delivery (km)</label>
+                <input type="number" x-model.number="pricing.concrete_free_km"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Travel Rate ($/km/m3)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.concrete_travel_rate" data-cents="concrete_travel_rate"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Wastage Buffer</label>
+                <div class="relative">
+                    <input type="number" step="0.1" x-model.number="display.concrete_buffer" data-percent="concrete_buffer"
+                           class="input-field pr-8">
+                    <span class="absolute right-3 top-2 text-slate-500">%</span>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Short Load Threshold (m3)</label>
+                <input type="number" step="0.1" x-model.number="pricing.short_load_threshold"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Short Load Fee ($/m3)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.short_load_fee_per_m3" data-cents="short_load_fee_per_m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Concrete Yard</label>
+                <input type="text" x-model="pricing.concrete_yard"
+                       class="input-field" placeholder="e.g. 225 Jude Road, Howlong NSW">
+            </div>
+        </div>
+    </div>
+
+    <!-- Admixture Pricing -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Admixture Pricing</h2>
+                <p>Accelerator is flat $/m3. Retarder is per litre -- cost varies by grade based on cement content.</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Accelerator 1% ($/m3)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.additive_accelerator_1" data-cents="additive_accelerator_1"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Accelerator 2% ($/m3)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.additive_accelerator_2" data-cents="additive_accelerator_2"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Accelerator 3% ($/m3)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.additive_accelerator_3" data-cents="additive_accelerator_3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Retarder ($/litre)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.retarder_cost_per_litre" data-cents="retarder_cost_per_litre"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">N20 Cement (kg/m3)</label>
+                <input type="number" x-model.number="pricing.cement_content_n20"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">N25 Cement (kg/m3)</label>
+                <input type="number" x-model.number="pricing.cement_content_n25"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">N32 Cement (kg/m3)</label>
+                <input type="number" x-model.number="pricing.cement_content_n32"
+                       class="input-field">
+            </div>
+        </div>
+        <div class="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <p class="text-xs text-slate-500">Retarder 1% on N25: 0.34L x $5.00 = $1.70/m3 . Retarder 3% on N32: 1.20L x $5.00 = $6.00/m3</p>
+        </div>
+    </div>
+
+    <!-- Coloured Concrete -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-pink">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Coloured Concrete</h2>
+                <p>$ per m3 surcharge ex GST -- colour oxide surcharge on top of any base grade</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <template x-for="colour in colourList" :key="colour.key">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1.5" x-text="colour.name"></label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-slate-500 text-sm">$</span>
+                        <input type="number" step="0.01"
+                               x-model.number="display[colour.key]"
+                               :data-cents="colour.key"
+                               class="w-full pl-7 pr-3 py-1.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Reinforcement -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-emerald">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v16M8 4v16M12 4v16M16 4v16M20 4v16M4 8h16M4 12h16M4 16h16"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Reinforcement</h2>
+                <p>$ per m2 ex GST -- includes bars/mesh + chairs + ties</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 500mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_gfrp_500mm" data-cents="reo_gfrp_500mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 450mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_gfrp_450mm" data-cents="reo_gfrp_450mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 400mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_gfrp_400mm" data-cents="reo_gfrp_400mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 350mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_gfrp_350mm" data-cents="reo_gfrp_350mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">SL72 Mesh</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_sl72_mesh" data-cents="reo_sl72_mesh"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">SL82 Mesh</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_sl82_mesh" data-cents="reo_sl82_mesh"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">SL92 Mesh</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_sl92_mesh" data-cents="reo_sl92_mesh"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">SL102 Mesh</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.reo_sl102_mesh" data-cents="reo_sl102_mesh"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dowels -->
+    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-amber">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Dowels</h2>
+                <p>$ per lineal metre ex GST</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 350mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.dowel_gfrp_350mm" data-cents="dowel_gfrp_350mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 400mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.dowel_gfrp_400mm" data-cents="dowel_gfrp_400mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 450mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.dowel_gfrp_450mm" data-cents="dowel_gfrp_450mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GFRP 500mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.dowel_gfrp_500mm" data-cents="dowel_gfrp_500mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Steel 400mm</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.dowel_steel_400mm" data-cents="dowel_steel_400mm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Steel Delivery (flat)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.steel_delivery" data-cents="steel_delivery"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Joints -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-cyan">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Control Joints</h2>
+                <p>$ per lm ex GST - inc labour</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Sawcut</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.control_joint_sawcut" data-cents="control_joint_sawcut"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tooled</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.control_joint_tooled" data-cents="control_joint_tooled"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chemicals -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-emerald">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Chemicals</h2>
+                <p>$ per m2 ex GST</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Release Agent</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_release_agent" data-cents="chemical_release_agent"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Evap Retarder</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_evap_retarder" data-cents="chemical_evap_retarder"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Curing Compound</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_curing" data-cents="chemical_curing"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Hardener</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_hardener" data-cents="chemical_hardener"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Surface Retarder</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_surface_retarder" data-cents="chemical_surface_retarder"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Sealer</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_sealer" data-cents="chemical_sealer"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Acid Wash</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_acid_wash" data-cents="chemical_acid_wash"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Equipment (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.chemical_equipment" data-cents="chemical_equipment"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materials -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-orange">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Materials</h2>
+                <p>$ ex GST</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Moisture Barrier (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_moisture_barrier" data-cents="material_moisture_barrier"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Isolation Joint (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_isolation_joint" data-cents="material_isolation_joint"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Fence Sheeting (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_fence_sheeting" data-cents="material_fence_sheeting"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Formwork Depreciation (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_formwork_depreciation" data-cents="material_formwork_depreciation"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Subbase Sand (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_subbase_sand" data-cents="material_subbase_sand"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Subbase Delivery (flat)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_subbase_delivery" data-cents="material_subbase_delivery"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Pump (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_pump_per_sqm" data-cents="material_pump_per_sqm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Step Materials (per step)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_step_materials" data-cents="material_step_materials"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Step Labour (hrs/step)</label>
+                <input type="number" step="0.1" x-model.number="pricing.material_step_hours"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Rebate Formwork (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_rebate_per_lm" data-cents="material_rebate_per_lm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Piers & Edge Beams</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Sono Tube (/pier)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_pier_sono_tube" data-cents="material_pier_sono_tube"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Starter Bar (/bar)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_pier_starter_bar" data-cents="material_pier_starter_bar"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Pier Labour (hrs/pier)</label>
+                <input type="number" step="0.1" x-model.number="pricing.material_pier_labour_hrs"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Edge Beam Reo (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.material_edge_beam_reo" data-cents="material_edge_beam_reo"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plumbing & Drainage -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-sky">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Plumbing & Drainage</h2>
+                <p>$ ex GST -- supply + install + concreted in. All rates include 25% markup on base trade price.</p>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pits (concreted in)</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">300x300 Concreted In (/pit)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_pit_300" data-cents="drain_pit_300"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">450x450 Concreted In (/pit)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_pit_450" data-cents="drain_pit_450"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Centralising Pit Concreted In (/pit)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_centralising_pit" data-cents="drain_centralising_pit"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Grates & Surface Drains (concreted in)</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Standard Grate Concreted In (/grate)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_grate_standard" data-cents="drain_grate_standard"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Heavy Duty Concreted In (/grate)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_grate_heavy" data-cents="drain_grate_heavy"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Surface Drain Concreted In (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_surface_drain_lm" data-cents="drain_surface_drain_lm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Pipe Supply & Install</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">90mm Ag Pipe (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_ag_pipe_90_lm" data-cents="drain_ag_pipe_90_lm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">100mm Stormwater (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_stormwater_100_lm" data-cents="drain_stormwater_100_lm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">150mm Stormwater (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_stormwater_150_lm" data-cents="drain_stormwater_150_lm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Connections, Earthworks & Labour</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">T-Piece / Junction (/ea)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_tpiece_junction" data-cents="drain_tpiece_junction"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Trench Excavation (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_trench_lm" data-cents="drain_trench_lm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Gravel Bedding (/lm)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_gravel_lm" data-cents="drain_gravel_lm"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Relocate Drain (/item)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_relocate" data-cents="drain_relocate"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Labour (/hr)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.drain_labour_hr" data-cents="drain_labour_hr"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excavation -->
+    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-yellow">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Excavation</h2>
+                <p>$ ex GST - flat rates by volume</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Up to 3m3</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_3m3" data-cents="excavation_3m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Up to 4m3</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_4m3" data-cents="excavation_4m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Up to 5m3</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_5m3" data-cents="excavation_5m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Up to 6m3</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_6m3" data-cents="excavation_6m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Up to 7m3</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_7m3" data-cents="excavation_7m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Up to 8m3</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_8m3" data-cents="excavation_8m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Up to 9m3</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_9m3" data-cents="excavation_9m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Over 9m3 Base</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_over_9_base" data-cents="excavation_over_9_base"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Per extra m3 (over 9)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.excavation_per_extra_m3" data-cents="excavation_per_extra_m3"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productivity Rates -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-indigo">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Productivity Rates</h2>
+                <p>Speed rates for labour calculations</p>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Setup & Formwork</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Formwork (lm/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_formwork"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Subbase (m2/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_subbase"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Moisture Barrier (m2/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_moisture_barrier"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Isolation Joint (lm/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_isolation_joint"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Dowels (dowels/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_dowels"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Fence Sheeting (lm/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_fence_sheeting"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Rebates (lm/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_rebates"
+                       class="input-field">
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Control Joints</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Sawcut (lm/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_sawcut"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tooled Joint (lm/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_tooled_joint"
+                       class="input-field">
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Pour Rates</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Summer Pour (m2/hr)</label>
+                <input type="number" x-model.number="pricing.pour_summer_rate"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Summer Min (hrs)</label>
+                <input type="number" step="0.1" x-model.number="pricing.pour_summer_min"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Winter Pour (m2/hr)</label>
+                <input type="number" x-model.number="pricing.pour_winter_rate"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Winter Min (hrs)</label>
+                <input type="number" step="0.1" x-model.number="pricing.pour_winter_min"
+                       class="input-field">
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Finishing & Wash</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Wash Next Day (m2/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_wash_next"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Wash Same Day (m2/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_wash_same"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Acid Wash (m2/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_acid_wash"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Sealer (m2/hr)</label>
+                <input type="number" x-model.number="pricing.productivity_sealer"
+                       class="input-field">
+            </div>
+        </div>
+    </div>
+
+    <!-- Crew Rates -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-teal">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Crew Rates</h2>
+                <p>$ per hour ex GST. Base = gross hourly wage. Loaded = base + super + WorkCover + PAYG. Sell = what you charge.</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-2 text-slate-600 font-medium">Role</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">Base $/hr</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">Loaded $/hr</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">Sell $/hr</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Owner</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_owner_base" data-cents="crew_owner_base" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_owner_loaded" data-cents="crew_owner_loaded" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_owner_sell" data-cents="crew_owner_sell" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Finisher</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_finisher_base" data-cents="crew_finisher_base" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_finisher_loaded" data-cents="crew_finisher_loaded" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_finisher_sell" data-cents="crew_finisher_sell" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Exp Labourer</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_exp_labourer_base" data-cents="crew_exp_labourer_base" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_exp_labourer_loaded" data-cents="crew_exp_labourer_loaded" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_exp_labourer_sell" data-cents="crew_exp_labourer_sell" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-medium">Labourer</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_labourer_base" data-cents="crew_labourer_base" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_labourer_loaded" data-cents="crew_labourer_loaded" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.crew_labourer_sell" data-cents="crew_labourer_sell" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Team Tier Pricing -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-violet">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Team Tier Pricing</h2>
+                <p>Hourly and per-square-metre rates by team tier</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-2 text-slate-600 font-medium">Tier</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">$/hr</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">$/m2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Lean</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.team_lean_hourly" data-cents="team_lean_hourly" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.team_lean_sqm" data-cents="team_lean_sqm" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Standard</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.team_standard_hourly" data-cents="team_standard_hourly" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.team_standard_sqm" data-cents="team_standard_sqm" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-medium">Premium</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.team_premium_hourly" data-cents="team_premium_hourly" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <span class="absolute left-2 top-1 text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" x-model.number="display.team_premium_sqm" data-cents="team_premium_sqm" class="w-28 pl-6 pr-2 py-1 border rounded-xl text-center">
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Markup Tiers -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-rose">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Markup Tiers</h2>
+                <p>Percentage markups on materials and labour by tier</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-2 text-slate-600 font-medium">Tier</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">Materials %</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">Labour %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Economy</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.markup_economy_materials" data-percent="markup_economy_materials" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.markup_economy_labour" data-percent="markup_economy_labour" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Standard</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.markup_standard_materials" data-percent="markup_standard_materials" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.markup_standard_labour" data-percent="markup_standard_labour" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-medium">Premium</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.markup_premium_materials" data-percent="markup_premium_materials" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.markup_premium_labour" data-percent="markup_premium_labour" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Travel -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Travel</h2>
+                <p>Crew travel charge to/from site (separate from concrete delivery travel)</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Free Travel (km)</label>
+                <input type="number" x-model.number="pricing.travel_free_km"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Travel Rate ($/km)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.travel_rate" data-cents="travel_rate"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overhead & Tax -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-red">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Overhead & Tax</h2>
+                <p>Tax rates, payroll, and business overhead costs</p>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Tax & Payroll</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">GST Rate</label>
+                <div class="relative">
+                    <input type="number" step="0.1" x-model.number="display.gst_rate" data-percent="gst_rate"
+                           class="input-field pr-8">
+                    <span class="absolute right-3 top-2 text-slate-500">%</span>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Super Rate</label>
+                <div class="relative">
+                    <input type="number" step="0.1" x-model.number="display.super_rate" data-percent="super_rate"
+                           class="input-field pr-8">
+                    <span class="absolute right-3 top-2 text-slate-500">%</span>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">PAYG Rate</label>
+                <div class="relative">
+                    <input type="number" step="0.1" x-model.number="display.payg_rate" data-percent="payg_rate"
+                           class="input-field pr-8">
+                    <span class="absolute right-3 top-2 text-slate-500">%</span>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">WorkCover Rate</label>
+                <div class="relative">
+                    <input type="number" step="0.1" x-model.number="display.workcover_rate" data-percent="workcover_rate"
+                           class="input-field pr-8">
+                    <span class="absolute right-3 top-2 text-slate-500">%</span>
+                </div>
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Business Overhead ($/m2)</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Insurance (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.overhead_insurance" data-cents="overhead_insurance"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Xero / Accounting (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.overhead_xero" data-cents="overhead_xero"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Software (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.overhead_software" data-cents="overhead_software"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Equipment Depreciation (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.overhead_equipment" data-cents="overhead_equipment"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Accountant (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.overhead_accountant" data-cents="overhead_accountant"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Overhead Base Area (m2)</label>
+                <input type="number" x-model.number="pricing.overhead_base_area"
+                       class="input-field">
+            </div>
+        </div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 mt-4 pt-4 border-t border-slate-100">Minimums</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Min Quote (inc GST)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.minimum_quote" data-cents="minimum_quote"
+                           class="input-field pl-7">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Overhead Minimum (/m2)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2 text-slate-500">$</span>
+                    <input type="number" step="0.01" x-model.number="display.overhead_minimum" data-cents="overhead_minimum"
+                           class="input-field pl-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complexity & Buffers -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-fuchsia">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Complexity Multipliers & Buffers</h2>
+                <p>Labour time multipliers and contingency buffers by job complexity</p>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-2 text-slate-600 font-medium">Complexity</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">Labour Multiplier</th>
+                        <th class="text-center py-2 text-slate-600 font-medium">Time Buffer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Easy</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.01" x-model.number="pricing.complexity_easy" class="w-20 px-2 py-1 border rounded-xl text-center">
+                                <span class="ml-1 text-slate-400 text-xs">x</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.buffer_easy" data-percent="buffer_easy" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Standard</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.01" x-model.number="pricing.complexity_standard" class="w-20 px-2 py-1 border rounded-xl text-center">
+                                <span class="ml-1 text-slate-400 text-xs">x</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.buffer_standard" data-percent="buffer_standard" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-slate-100">
+                        <td class="py-2 font-medium">Complex</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.01" x-model.number="pricing.complexity_complex" class="w-20 px-2 py-1 border rounded-xl text-center">
+                                <span class="ml-1 text-slate-400 text-xs">x</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.buffer_complex" data-percent="buffer_complex" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 font-medium">Very Complex</td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.01" x-model.number="pricing.complexity_very_complex" class="w-20 px-2 py-1 border rounded-xl text-center">
+                                <span class="ml-1 text-slate-400 text-xs">x</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="relative inline-block">
+                                <input type="number" step="0.1" x-model.number="display.buffer_very_complex" data-percent="buffer_very_complex" class="w-20 px-2 py-1 pr-6 border rounded-xl text-center">
+                                <span class="absolute right-2 top-1 text-slate-500 text-sm">%</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Setup Buffer</label>
+                <div class="relative">
+                    <input type="number" step="0.1" x-model.number="display.setup_buffer" data-percent="setup_buffer"
+                           class="input-field pr-8">
+                    <span class="absolute right-3 top-2 text-slate-500">%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function pricingSettings() {
+    // Colour field keys for dynamic rendering
+    const colourFieldList = [
+        { key: 'colour_charcoal', name: 'Charcoal' },
+        { key: 'colour_cinnamon', name: 'Cinnamon' },
+        { key: 'colour_cornstalk', name: 'Cornstalk' },
+        { key: 'colour_daintree', name: 'Daintree' },
+        { key: 'colour_copper', name: 'Copper' },
+        { key: 'colour_bluestone', name: 'Bluestone' },
+        { key: 'colour_earth_brown', name: 'Earth Brown' },
+        { key: 'colour_chardonnay', name: 'Chardonnay' },
+        { key: 'colour_classic_suede', name: 'Classic Suede' },
+        { key: 'colour_billabong', name: 'Billabong' },
+        { key: 'colour_kosciusko', name: 'Kosciusko' },
+        { key: 'colour_butterscotch', name: 'Butterscotch' },
+        { key: 'colour_espresso', name: 'Espresso' },
+        { key: 'colour_brandy_snap', name: 'Brandy Snap' },
+        { key: 'colour_gum_leaf', name: 'Gum Leaf' },
+        { key: 'colour_dynasty', name: 'Dynasty' },
+        { key: 'colour_goanna', name: 'Goanna' },
+        { key: 'colour_hidden_valley', name: 'Hidden Valley' },
+        { key: 'colour_dusty_rose', name: 'Dusty Rose' },
+        { key: 'colour_beach', name: 'Beach' },
+        { key: 'colour_brazil_nut', name: 'Brazil Nut' },
+        { key: 'colour_choc_malt', name: 'Choc Malt' },
+        { key: 'colour_flower_gum', name: 'Flower Gum' },
+        { key: 'colour_colonial_sunset', name: 'Colonial Sunset' },
+        { key: 'colour_black', name: 'Black' },
+        { key: 'colour_desert_beige', name: 'Desert Beige' },
+        { key: 'colour_bronzed_aussie', name: 'Bronzed Aussie' },
+        { key: 'colour_hawkesbury', name: 'Hawkesbury' },
+        { key: 'colour_brick', name: 'Brick' },
+        { key: 'colour_brolga', name: 'Brolga' },
+        { key: 'colour_antique_rose', name: 'Antique Rose' },
+        { key: 'colour_jade_green', name: 'Jade Green' },
+    ];
+    const colourKeys = colourFieldList.map(c => c.key);
+
+    // Fields stored in cents (need /100 for display, *100 for save)
+    const centFields = [
+        // Concrete
+        'concrete_n20', 'concrete_n25', 'concrete_n32', 'concrete_exposed',
+        'concrete_travel_rate', 'short_load_fee_per_m3',
+        // Admixtures
+        'additive_accelerator_1', 'additive_accelerator_2', 'additive_accelerator_3',
+        'retarder_cost_per_litre',
+        // Colours
+        ...colourKeys,
+        // Reinforcement
+        'reo_gfrp_500mm', 'reo_gfrp_450mm', 'reo_gfrp_400mm', 'reo_gfrp_350mm',
+        'reo_sl72_mesh', 'reo_sl82_mesh', 'reo_sl92_mesh', 'reo_sl102_mesh',
+        // Dowels
+        'dowel_gfrp_350mm', 'dowel_gfrp_400mm', 'dowel_gfrp_450mm', 'dowel_gfrp_500mm',
+        'dowel_steel_400mm', 'steel_delivery',
+        // Control Joints
+        'control_joint_sawcut', 'control_joint_tooled',
+        // Chemicals
+        'chemical_release_agent', 'chemical_evap_retarder', 'chemical_curing', 'chemical_hardener',
+        'chemical_surface_retarder', 'chemical_sealer', 'chemical_acid_wash', 'chemical_equipment',
+        // Materials
+        'material_moisture_barrier', 'material_isolation_joint', 'material_fence_sheeting',
+        'material_formwork_depreciation', 'material_subbase_sand', 'material_subbase_delivery',
+        'material_pump_per_sqm', 'material_step_materials', 'material_rebate_per_lm',
+        'material_pier_sono_tube', 'material_pier_starter_bar', 'material_edge_beam_reo',
+        // Drainage
+        'drain_pit_300', 'drain_pit_450', 'drain_centralising_pit',
+        'drain_grate_standard', 'drain_grate_heavy', 'drain_surface_drain_lm',
+        'drain_ag_pipe_90_lm', 'drain_stormwater_100_lm', 'drain_stormwater_150_lm',
+        'drain_tpiece_junction', 'drain_trench_lm', 'drain_gravel_lm', 'drain_relocate', 'drain_labour_hr',
+        // Excavation
+        'excavation_3m3', 'excavation_4m3', 'excavation_5m3', 'excavation_6m3',
+        'excavation_7m3', 'excavation_8m3', 'excavation_9m3', 'excavation_over_9_base',
+        'excavation_per_extra_m3',
+        // Crew rates
+        'crew_owner_base', 'crew_owner_loaded', 'crew_owner_sell',
+        'crew_finisher_base', 'crew_finisher_loaded', 'crew_finisher_sell',
+        'crew_exp_labourer_base', 'crew_exp_labourer_loaded', 'crew_exp_labourer_sell',
+        'crew_labourer_base', 'crew_labourer_loaded', 'crew_labourer_sell',
+        // Team tiers
+        'team_lean_hourly', 'team_lean_sqm',
+        'team_standard_hourly', 'team_standard_sqm',
+        'team_premium_hourly', 'team_premium_sqm',
+        // Travel
+        'travel_rate',
+        // Overhead
+        'overhead_insurance', 'overhead_xero', 'overhead_software',
+        'overhead_equipment', 'overhead_accountant', 'overhead_minimum',
+        'minimum_quote'
+    ];
+
+    // Fields stored as decimals (need *100 for display %, /100 for save)
+    const percentFields = [
+        'concrete_buffer', 'gst_rate', 'super_rate', 'payg_rate', 'workcover_rate',
+        'markup_economy_materials', 'markup_economy_labour',
+        'markup_standard_materials', 'markup_standard_labour',
+        'markup_premium_materials', 'markup_premium_labour',
+        'buffer_easy', 'buffer_standard', 'buffer_complex', 'buffer_very_complex',
+        'setup_buffer'
+    ];
+
+    const rawPricing = {{ pricing | tojson }};
+
+    // Create display values (converted for user-friendly display)
+    const display = {};
+    centFields.forEach(field => {
+        display[field] = rawPricing[field] != null ? parseFloat((rawPricing[field] / 100).toFixed(2)) : 0;
+    });
+    percentFields.forEach(field => {
+        display[field] = rawPricing[field] != null ? parseFloat((rawPricing[field] * 100).toFixed(1)) : 0;
+    });
+
+    return {
+        pricing: rawPricing,
+        display: display,
+        colourList: colourFieldList,
+        isSaving: false,
+
+        init() {
+            // Watch display values and sync back to pricing (converted)
+            centFields.forEach(field => {
+                this.$watch(`display.${field}`, (value) => {
+                    this.pricing[field] = Math.round(parseFloat(value || 0) * 100);
+                });
+            });
+            percentFields.forEach(field => {
+                this.$watch(`display.${field}`, (value) => {
+                    this.pricing[field] = parseFloat(value || 0) / 100;
+                });
+            });
+        },
+
+        async save() {
+            this.isSaving = true;
+            try {
+                const response = await fetch('/settings/api/pricing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.pricing)
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    Toast.success('Pricing settings saved successfully!');
+                } else {
+                    Toast.error(formatErrorDetail(data.detail, 'Error saving settings'));
+                }
+            } catch (e) {
+                Toast.error('Network error - please try again');
+            } finally {
+                this.isSaving = false;
+            }
+        },
+
+        async resetToDefaults() {
+            if (!confirm('Reset all pricing settings to defaults? This cannot be undone.')) {
+                return;
+            }
+            try {
+                const response = await fetch('/settings/api/reset/pricing', {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    window.location.reload();
+                }
+            } catch (e) {
+                alert('Error resetting settings');
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if is_edit else 'New' }} Supplier — ConcreteIQ{% endblock %}
+{% block page_title %}{{ 'Edit' if is_edit else 'New' }} Supplier{% endblock %}
+{% block mobile_title %}{{ 'Edit' if is_edit else 'New' }} Supplier{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl space-y-6">
+
+    <!-- Hero Header -->
+    <div class="page-hero animate-in">
+        <div class="flex items-center justify-between">
+            <div class="relative">
+                <p class="page-hero-subtitle">Supplier Contact Book</p>
+                <h1 class="page-hero-title">{{ 'Edit' if is_edit else 'Add New' }} Supplier</h1>
+            </div>
+            <a href="{{ '/suppliers/' ~ supplier.id if is_edit else '/suppliers' }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" action="{{ '/suppliers/' ~ supplier.id if is_edit else '/suppliers' }}" class="space-y-5">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <!-- Business Details -->
+        <div class="form-section-card form-section-accent-blue animate-in delay-1">
+            <h3 class="form-section-title">Business Details</h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label-v4">Business Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" value="{{ supplier.name if supplier else '' }}" required
+                           class="form-input-v4 w-full" placeholder="e.g. Boral Concrete Blacktown">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label-v4">Category</label>
+                        <select name="category" class="form-select-v4 w-full">
+                            {% for key, label in categories %}
+                            <option value="{{ key }}" {% if supplier and supplier.category == key %}selected{% elif not supplier and key == 'other' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label-v4">ABN</label>
+                        <input type="text" name="abn" value="{{ supplier.abn if supplier and supplier.abn else '' }}"
+                               class="form-input-v4 w-full" placeholder="XX XXX XXX XXX">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label-v4">Your Account Number</label>
+                    <input type="text" name="account_number" value="{{ supplier.account_number if supplier and supplier.account_number else '' }}"
+                           class="form-input-v4 w-full" placeholder="Your account # with this supplier">
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="form-section-card form-section-accent-green animate-in delay-2">
+            <h3 class="form-section-title">Contact Details</h3>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label-v4">Contact Person</label>
+                    <input type="text" name="contact_person" value="{{ supplier.contact_person if supplier and supplier.contact_person else '' }}"
+                           class="form-input-v4 w-full" placeholder="Main contact name">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label-v4">Phone</label>
+                        <input type="tel" name="phone" value="{{ supplier.phone if supplier and supplier.phone else '' }}"
+                               class="form-input-v4 w-full" placeholder="04XX XXX XXX">
+                    </div>
+                    <div>
+                        <label class="form-label-v4">Email</label>
+                        <input type="email" name="email" value="{{ supplier.email if supplier and supplier.email else '' }}"
+                               class="form-input-v4 w-full" placeholder="orders@supplier.com.au">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label-v4">Website</label>
+                    <input type="url" name="website" value="{{ supplier.website if supplier and supplier.website else '' }}"
+                           class="form-input-v4 w-full" placeholder="https://www.supplier.com.au">
+                </div>
+
+                <div>
+                    <label class="form-label-v4">Address</label>
+                    <textarea name="address" rows="2" class="form-textarea-v4 w-full" placeholder="Street address, suburb, postcode">{{ supplier.address if supplier and supplier.address else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-section-card form-section-accent-purple animate-in delay-3">
+            <h3 class="form-section-title">Notes</h3>
+            <textarea name="notes" rows="3" class="form-textarea-v4 w-full" placeholder="Delivery days, special instructions, pricing notes...">{{ supplier.notes if supplier and supplier.notes else '' }}</textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between pt-2 animate-in delay-4">
+            <a href="{{ '/suppliers/' ~ supplier.id if is_edit else '/suppliers' }}" class="btn-v4 btn-v4-secondary">Cancel</a>
+            <button type="submit" class="btn-v4 btn-v4-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {{ 'Update Supplier' if is_edit else 'Add Supplier' }}
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

@@ -1,0 +1,1212 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Documents & Templates - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div x-data="documentsSettings()" class="space-y-6">
+
+    <!-- Page Header -->
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900 font-display">Documents & Templates</h1>
+        <p class="text-slate-500 text-sm mt-1">Manage your branding, terms, document library, and templates.</p>
+    </div>
+
+    <!-- Company Logo -->
+    <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Company Logo</h2>
+                <p>Your brand identity on quotes, invoices, and emails</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="w-32 h-20 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center overflow-hidden">
+                <img :src="logoUrl + '?t=' + logoTimestamp" alt="Company Logo" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="flex-1">
+                <p class="text-sm text-slate-600 mb-3">Your logo appears on quotes, invoices, and emails.</p>
+                <div class="flex items-center gap-3">
+                    <input type="file" id="logo-upload" accept=".png,.jpg,.jpeg,.svg" class="hidden"
+                           @change="uploadLogo($event)">
+                    <button @click="document.getElementById('logo-upload').click()"
+                            :disabled="uploading"
+                            class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span x-show="!uploading">Upload New Logo</span>
+                        <span x-show="uploading">Uploading...</span>
+                    </button>
+                    <span class="text-xs text-slate-500">PNG, JPG or SVG. Max 2MB.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms & Conditions -->
+    <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-red">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Terms & Conditions</h2>
+                <p>PDF attached to quotes and linked in the customer portal</p>
+            </div>
+        </div>
+
+        <!-- Current T&C status -->
+        <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zm-3 9h4v2h-4v-2zm0 4h4v2h-4v-2zm-2-4h1v6H8v-6z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-medium text-slate-900">Terms and Conditions</p>
+                    <p class="text-sm text-slate-500" x-text="termsPdfPath ? 'Current version uploaded' : 'Not configured'"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <template x-if="termsPdfPath">
+                    <a :href="termsPdfPath" target="_blank"
+                       class="px-3 py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900">
+                        View PDF
+                    </a>
+                </template>
+                <input type="file" id="terms-upload" accept=".pdf" class="hidden"
+                       @change="uploadTermsPdf($event)">
+                <button @click="document.getElementById('terms-upload').click()"
+                        :disabled="uploading"
+                        class="inline-flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                    </svg>
+                    Upload PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- T&C Generator -->
+        <div class="border border-slate-200 rounded-xl">
+            <button @click="tcGeneratorOpen = !tcGeneratorOpen"
+                    class="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors rounded-xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-medium text-slate-900">T&C PDF Generator</p>
+                        <p class="text-sm text-slate-500">Type or paste your terms and generate a professional PDF</p>
+                    </div>
+                </div>
+                <svg class="w-5 h-5 text-slate-400 transition-transform" :class="tcGeneratorOpen && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+
+            <div x-show="tcGeneratorOpen" x-collapse>
+                <div class="p-4 pt-0 space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Terms & Conditions Text</label>
+                        <textarea x-model="tcText"
+                                  class="input-field h-64 font-mono text-sm"
+                                  placeholder="Paste or type your Terms & Conditions here...
+
+Example format:
+
+1. SCOPE OF WORK
+The Contractor agrees to perform concreting works as described in the accepted quotation.
+
+2. PRICING & PAYMENT
+All prices quoted are valid for 30 days from the date of issue. A deposit of 30% is required before work commences.
+
+3. VARIATIONS
+Any changes to the scope of work must be agreed in writing. Variations may result in additional charges."></textarea>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Separate clauses with blank lines. Lines starting with a number and period (e.g. "1. TITLE") become section headings.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button @click="previewTcPdf()"
+                                :disabled="tcGenerating || !tcText.trim()"
+                                class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Preview PDF
+                        </button>
+                        <button @click="generateTcPdf(false)"
+                                :disabled="tcGenerating || !tcText.trim()"
+                                class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download PDF
+                        </button>
+                        <button @click="generateTcPdf(true)"
+                                :disabled="tcGenerating || !tcText.trim()"
+                                class="btn-v4 btn-v4-primary">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span x-show="!tcGenerating">Generate & Set as Active T&C</span>
+                            <span x-show="tcGenerating">Generating...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Library -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3">
+        <div class="flex items-center justify-between mb-4">
+            <div class="settings-section-header mb-0">
+                <div class="settings-section-header-icon icon-bg-emerald">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Document Library</h2>
+                    <p>Insurance certificates, datasheets, SWMS templates, and more</p>
+                </div>
+            </div>
+            <button @click="uploadModalOpen = true"
+                    class="btn-v4 btn-v4-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Upload Document
+            </button>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="flex flex-wrap gap-2 mb-4 border-b border-slate-200 pb-3">
+            <button @click="docFilter = null; loadDocuments()"
+                    :class="docFilter === null ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors">
+                All
+                <span class="ml-1 text-xs opacity-70" x-text="'(' + documents.length + ')'"></span>
+            </button>
+            <template x-for="[key, label] in Object.entries(categoryLabels)" :key="key">
+                <button @click="docFilter = key; loadDocuments()"
+                        :class="docFilter === key ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'"
+                        class="px-3 py-1.5 text-xs font-medium rounded-full border transition-colors">
+                    <span x-text="label"></span>
+                    <span class="ml-1 text-xs opacity-70"
+                          x-text="'(' + documents.filter(d => d.category === key).length + ')'"></span>
+                </button>
+            </template>
+        </div>
+
+        <!-- Document List -->
+        <div x-show="!docsLoading && filteredDocuments.length > 0" class="space-y-2">
+            <template x-for="doc in filteredDocuments" :key="doc.filename + doc.category">
+                <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors group">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                             :class="getFileIconClass(doc.extension)">
+                            <span class="text-xs font-bold uppercase" x-text="doc.extension"></span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-medium text-slate-900 truncate text-sm" x-text="doc.filename"></p>
+                            <div class="flex items-center gap-2 text-xs text-slate-500">
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-lg bg-slate-200 text-slate-600 text-xs"
+                                      x-text="doc.category_label"></span>
+                                <span x-text="doc.size_mb + ' MB'"></span>
+                                <span>&middot;</span>
+                                <span x-text="doc.uploaded_at"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <a :href="doc.download_url" target="_blank"
+                           class="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-white transition-colors"
+                           title="Download">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                        </a>
+                        <button @click="confirmDelete(doc)"
+                                class="p-2 text-slate-400 hover:text-red-600 rounded-xl hover:bg-white transition-colors"
+                                title="Delete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Empty State -->
+        <div x-show="!docsLoading && filteredDocuments.length === 0" class="text-center py-12">
+            <div class="empty-state-v4">
+                <div class="empty-state-v4-icon">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                    </svg>
+                </div>
+                <p class="empty-state-v4-title" x-text="docFilter ? 'No documents in this category' : 'No documents uploaded yet'"></p>
+                <p class="empty-state-v4-text">Upload your first document to get started.</p>
+                <button @click="uploadModalOpen = true" class="text-orange-600 hover:text-orange-700 text-sm font-medium mt-2">
+                    Upload your first document
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div x-show="docsLoading" class="text-center py-12">
+            <div class="inline-block w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-slate-500 text-sm mt-2">Loading documents...</p>
+        </div>
+    </div>
+
+    <!-- PDF Templates -->
+    <!-- PDF Templates (5) -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-indigo">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>PDF Templates</h2>
+                <p>HTML templates used to generate PDFs for quotes, invoices, and receipts</p>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            <!-- Quote PDF -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Quote PDF</p>
+                        <p class="text-xs text-slate-500">Generated when sending quotes to customers</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/pdf/quote" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('quote_pdf')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <!-- Invoice PDF -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Invoice PDF</p>
+                        <p class="text-xs text-slate-500">Generated when sending invoices</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/pdf/invoice" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('invoice_pdf')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <!-- Receipt PDF -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Payment Receipt PDF</p>
+                        <p class="text-xs text-slate-500">Generated after payments are received</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/pdf/receipt" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('receipt_pdf')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+            <p class="text-sm text-amber-800">
+                <strong>Note:</strong> Templates use Jinja2 syntax. A backup is created automatically before each save.
+            </p>
+        </div>
+    </div>
+
+    <!-- Email Templates -->
+    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-emerald">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Email Templates</h2>
+                <p>All automated emails sent during the customer journey</p>
+            </div>
+        </div>
+
+        <!-- Customer Journey (8 templates) -->
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Customer Journey</h3>
+        <div class="space-y-2 mb-6">
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Quote Sent</p>
+                        <p class="text-xs text-slate-500">When you send a quote to a customer</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/quote_sent" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('quote_sent')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Amendment Sent</p>
+                        <p class="text-xs text-slate-500">When you send a quote amendment/variation</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/amendment_sent" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('amendment_sent')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Booking Confirmed</p>
+                        <p class="text-xs text-slate-500">When you confirm the job start date</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/booking_confirmed" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('booking_confirmed')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Invoice Sent</p>
+                        <p class="text-xs text-slate-500">When an invoice is sent (deposit/progress/final)</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/invoice_sent" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('invoice_sent')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Payment Receipt</p>
+                        <p class="text-xs text-slate-500">After a payment is received via Stripe or manual</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_receipt" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('payment_receipt')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Job Reminder</p>
+                        <p class="text-xs text-slate-500">Automated reminder the day before a job</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/job_reminder" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('job_reminder')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Job Complete</p>
+                        <p class="text-xs text-slate-500">When you mark a job as finished</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/job_complete" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('job_complete')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Progress Update</p>
+                        <p class="text-xs text-slate-500">Status update during the job</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/progress_update" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('progress_update')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Follow-ups & Reminders (7 templates) -->
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Follow-ups & Reminders</h3>
+        <div class="space-y-2 mb-4">
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Quote Follow-up</p>
+                        <p class="text-xs text-slate-500">Follow-up on viewed but unaccepted quotes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/quote_followup" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('quote_followup')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Quote Expiry Warning</p>
+                        <p class="text-xs text-slate-500">Quote about to expire notification</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/quote_expiry_warning" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('quote_expiry_warning')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Payment Reminder</p>
+                        <p class="text-xs text-slate-500">First gentle payment reminder</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('payment_reminder')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Friendly Reminder</p>
+                        <p class="text-xs text-slate-500">Second friendly nudge</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder_friendly" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('payment_reminder_friendly')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Firm Reminder</p>
+                        <p class="text-xs text-slate-500">Third firmer reminder</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder_firm" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('payment_reminder_firm')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Final Notice</p>
+                        <p class="text-xs text-slate-500">Last warning before action</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder_final" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('payment_reminder_final')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Review Request</p>
+                        <p class="text-xs text-slate-500">Asks customer to leave a Google review</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/review_request" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('review_request')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+            <p class="text-sm text-amber-800">
+                <strong>Note:</strong> Email templates use Jinja2 syntax and inline CSS for email client compatibility. A backup is created automatically before each save.
+            </p>
+        </div>
+
+        <!-- Template Variables Reference -->
+        <details class="mt-3">
+            <summary class="cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900">
+                View available template variables
+            </summary>
+            <div class="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm font-mono text-slate-600">
+                    <span>{{ "{{" }} customer_name {{ "}}" }}</span>
+                    <span>{{ "{{" }} quote_number {{ "}}" }}</span>
+                    <span>{{ "{{" }} quote_total_formatted {{ "}}" }}</span>
+                    <span>{{ "{{" }} invoice_number {{ "}}" }}</span>
+                    <span>{{ "{{" }} invoice_total_formatted {{ "}}" }}</span>
+                    <span>{{ "{{" }} job_address {{ "}}" }}</span>
+                    <span>{{ "{{" }} business_name {{ "}}" }}</span>
+                    <span>{{ "{{" }} business_phone {{ "}}" }}</span>
+                    <span>{{ "{{" }} quote_url {{ "}}" }}</span>
+                    <span>{{ "{{" }} due_date {{ "}}" }}</span>
+                    <span>{{ "{{" }} payment_url {{ "}}" }}</span>
+                    <span>{{ "{{" }} amount_paid_formatted {{ "}}" }}</span>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <!-- Upload Document Modal -->
+    <div x-show="uploadModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-slate-500 bg-opacity-75" @click="uploadModalOpen = false"></div>
+
+            <div class="relative inline-block w-full max-w-md p-6 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-slate-900 font-display">Upload Document</h3>
+                    <button @click="uploadModalOpen = false" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <form @submit.prevent="uploadDocument()">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Category</label>
+                        <select x-model="uploadCategory" class="input-field">
+                            <option value="tcs">T&Cs</option>
+                            <option value="insurance">Insurance</option>
+                            <option value="datasheets">Datasheets</option>
+                            <option value="swms">SWMS Templates</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">File</label>
+                        <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-orange-400 transition-colors cursor-pointer"
+                             @click="$refs.docFileInput.click()"
+                             @dragover.prevent="$event.currentTarget.classList.add('border-orange-400', 'bg-orange-50')"
+                             @dragleave="$event.currentTarget.classList.remove('border-orange-400', 'bg-orange-50')"
+                             @drop.prevent="handleFileDrop($event)">
+                            <input type="file" x-ref="docFileInput" class="hidden"
+                                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.csv"
+                                   @change="uploadFile = $event.target.files[0]">
+                            <svg class="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <p class="text-sm text-slate-600" x-show="!uploadFile">
+                                Click or drag a file here
+                            </p>
+                            <p class="text-sm text-orange-600 font-medium" x-show="uploadFile" x-text="uploadFile ? uploadFile.name : ''"></p>
+                            <p class="text-xs text-slate-500 mt-1">PDF, DOCX, XLSX, JPG, PNG. Max 20MB.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="button" @click="uploadModalOpen = false"
+                                class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Cancel</button>
+                        <button type="submit"
+                                :disabled="!uploadFile || docUploading"
+                                class="btn-v4 btn-v4-primary">
+                            <span x-show="!docUploading">Upload</span>
+                            <span x-show="docUploading">Uploading...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div x-show="deleteModalOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-slate-500 bg-opacity-75" @click="deleteModalOpen = false"></div>
+
+            <div class="relative inline-block w-full max-w-sm p-6 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">Delete Document</h3>
+                        <p class="text-sm text-slate-500">This cannot be undone.</p>
+                    </div>
+                </div>
+
+                <p class="text-sm text-slate-700 mb-6">
+                    Are you sure you want to delete <strong x-text="deleteTarget ? deleteTarget.filename : ''"></strong>?
+                </p>
+
+                <div class="flex justify-end gap-3">
+                    <button @click="deleteModalOpen = false"
+                            class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Cancel</button>
+                    <button @click="doDelete()" :disabled="deleting"
+                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors">
+                        <span x-show="!deleting">Delete</span>
+                        <span x-show="deleting">Deleting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Editor Modal -->
+    <div x-show="editorOpen" x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-slate-500 bg-opacity-75" @click="closeEditor()"></div>
+
+            <div class="relative inline-block w-full max-w-5xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900 font-display">
+                            Edit Template: <span x-text="templateDisplayName"></span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5" x-text="editorFilePath"></p>
+                    </div>
+                    <button @click="closeEditor()" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <textarea x-model="editorContent"
+                              class="input-field font-mono text-sm leading-relaxed"
+                              style="height: 65vh; resize: vertical; tab-size: 4;"
+                              placeholder="Loading template..." spellcheck="false"></textarea>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <p class="text-xs text-slate-500">A backup will be created automatically before saving.</p>
+                    <div class="flex gap-3">
+                        <button @click="closeEditor()"
+                                class="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
+                            Cancel
+                        </button>
+                        <button @click="saveTemplate()"
+                                :disabled="saving"
+                                class="btn-v4 btn-v4-primary">
+                            <span x-show="!saving">Save Changes</span>
+                            <span x-show="saving">Saving...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function documentsSettings() {
+    return {
+        uploading: false,
+        logoUrl: '/static/images/KyleRGyoles_Concreting_Logo.png',
+        logoTimestamp: Date.now(),
+        termsPdfPath: {{ (quotation.terms_pdf_path or '') | tojson }},
+
+        // Template editor
+        editorOpen: false,
+        editingTemplate: '',
+        editorContent: '',
+        editorFilePath: '',
+        templateDisplayName: '',
+        templateNames: {
+            'quote_pdf': 'Quote PDF',
+            'invoice_pdf': 'Invoice PDF',
+            'receipt_pdf': 'Payment Receipt PDF',
+            'quote_sent': 'Quote Sent',
+            'amendment_sent': 'Amendment Sent',
+            'booking_confirmed': 'Booking Confirmed',
+            'invoice_sent': 'Invoice Sent',
+            'payment_receipt': 'Payment Receipt',
+            'job_reminder': 'Job Reminder',
+            'job_complete': 'Job Complete',
+            'progress_update': 'Progress Update',
+            'quote_followup': 'Quote Follow-up',
+            'quote_expiry_warning': 'Quote Expiry Warning',
+            'payment_reminder': 'Payment Reminder',
+            'payment_reminder_friendly': 'Friendly Reminder',
+            'payment_reminder_firm': 'Firm Reminder',
+            'payment_reminder_final': 'Final Notice',
+            'review_request': 'Review Request',
+        },
+        saving: false,
+
+        // T&C Generator
+        tcGeneratorOpen: false,
+        tcText: '',
+        tcGenerating: false,
+
+        // Document library
+        documents: [],
+        docsLoading: true,
+        docFilter: null,
+        categoryLabels: {
+            tcs: "T&Cs",
+            insurance: "Insurance",
+            datasheets: "Datasheets",
+            swms: "SWMS Templates",
+            other: "Other",
+        },
+
+        // Upload modal
+        uploadModalOpen: false,
+        uploadCategory: 'other',
+        uploadFile: null,
+        docUploading: false,
+
+        // Delete modal
+        deleteModalOpen: false,
+        deleteTarget: null,
+        deleting: false,
+
+        get filteredDocuments() {
+            if (!this.docFilter) return this.documents;
+            return this.documents.filter(d => d.category === this.docFilter);
+        },
+
+        async init() {
+            await this.loadDocuments();
+        },
+
+        showMessage(msg, type = 'success') {
+            if (type === 'error') { Toast.error(msg); }
+            else { Toast.success(msg); }
+        },
+
+        // ---- Document Library ----
+
+        async loadDocuments() {
+            this.docsLoading = true;
+            try {
+                const response = await fetch('/documents/api/list');
+                const data = await response.json();
+                if (data.success) {
+                    this.documents = data.documents;
+                }
+            } catch (e) {
+                console.error('Failed to load documents:', e);
+            } finally {
+                this.docsLoading = false;
+            }
+        },
+
+        getFileIconClass(ext) {
+            const map = {
+                pdf: 'bg-red-100 text-red-600',
+                doc: 'bg-blue-100 text-blue-600',
+                docx: 'bg-blue-100 text-blue-600',
+                xls: 'bg-green-100 text-green-600',
+                xlsx: 'bg-green-100 text-green-600',
+                csv: 'bg-green-100 text-green-600',
+                jpg: 'bg-purple-100 text-purple-600',
+                jpeg: 'bg-purple-100 text-purple-600',
+                png: 'bg-purple-100 text-purple-600',
+                gif: 'bg-purple-100 text-purple-600',
+                txt: 'bg-slate-100 text-slate-600',
+            };
+            return map[ext] || 'bg-slate-100 text-slate-600';
+        },
+
+        handleFileDrop(event) {
+            event.currentTarget.classList.remove('border-orange-400', 'bg-orange-50');
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                this.uploadFile = files[0];
+            }
+        },
+
+        async uploadDocument() {
+            if (!this.uploadFile) return;
+            this.docUploading = true;
+
+            const formData = new FormData();
+            formData.append('file', this.uploadFile);
+            formData.append('category', this.uploadCategory);
+
+            try {
+                const response = await fetch('/documents/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    this.showMessage(data.message || 'Document uploaded');
+                    this.uploadModalOpen = false;
+                    this.uploadFile = null;
+                    this.uploadCategory = 'other';
+                    await this.loadDocuments();
+                } else {
+                    this.showMessage(formatErrorDetail(data.detail, 'Upload failed'), 'error');
+                }
+            } catch (e) {
+                this.showMessage('Network error — please try again', 'error');
+            } finally {
+                this.docUploading = false;
+            }
+        },
+
+        confirmDelete(doc) {
+            this.deleteTarget = doc;
+            this.deleteModalOpen = true;
+        },
+
+        async doDelete() {
+            if (!this.deleteTarget) return;
+            this.deleting = true;
+
+            try {
+                const response = await fetch(
+                    `/documents/${this.deleteTarget.category}/${encodeURIComponent(this.deleteTarget.filename)}`,
+                    { method: 'DELETE' }
+                );
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    this.showMessage(data.message || 'Document deleted');
+                    this.deleteModalOpen = false;
+                    this.deleteTarget = null;
+                    await this.loadDocuments();
+                } else {
+                    this.showMessage(formatErrorDetail(data.detail, 'Delete failed'), 'error');
+                }
+            } catch (e) {
+                this.showMessage('Network error — please try again', 'error');
+            } finally {
+                this.deleting = false;
+            }
+        },
+
+        // ---- T&C PDF Generator ----
+
+        async previewTcPdf() {
+            if (!this.tcText.trim()) return;
+            this.tcGenerating = true;
+
+            try {
+                const response = await fetch('/documents/generate-tc-pdf/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text_content: this.tcText }),
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                } else {
+                    const data = await response.json();
+                    this.showMessage(formatErrorDetail(data.detail, 'Preview failed'), 'error');
+                }
+            } catch (e) {
+                this.showMessage('Network error — please try again', 'error');
+            } finally {
+                this.tcGenerating = false;
+            }
+        },
+
+        async generateTcPdf(saveAsActive) {
+            if (!this.tcText.trim()) return;
+            this.tcGenerating = true;
+
+            try {
+                const response = await fetch('/documents/generate-tc-pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text_content: this.tcText,
+                        save_as_active: saveAsActive,
+                    }),
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+
+                    // Trigger download
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Terms_and_Conditions.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    if (saveAsActive) {
+                        const savedPath = response.headers.get('X-TC-Saved-Path');
+                        if (savedPath) {
+                            this.termsPdfPath = savedPath;
+                        }
+                        this.showMessage('T&C PDF generated and set as active!');
+                        await this.loadDocuments();
+                    } else {
+                        this.showMessage('T&C PDF downloaded');
+                    }
+                } else {
+                    const data = await response.json();
+                    this.showMessage(formatErrorDetail(data.detail, 'Generation failed'), 'error');
+                }
+            } catch (e) {
+                this.showMessage('Network error — please try again', 'error');
+            } finally {
+                this.tcGenerating = false;
+            }
+        },
+
+        // ---- Logo Upload ----
+
+        async uploadLogo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                this.showMessage('Invalid file type. Please upload PNG, JPG, or SVG.', 'error');
+                return;
+            }
+
+            if (file.size > 2 * 1024 * 1024) {
+                this.showMessage('File too large. Maximum size is 2MB.', 'error');
+                return;
+            }
+
+            this.uploading = true;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/settings/api/upload/logo', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.showMessage('Logo uploaded successfully!');
+                    this.logoTimestamp = Date.now();
+                } else {
+                    this.showMessage(formatErrorDetail(data.detail, 'Error uploading logo'), 'error');
+                }
+            } catch (e) {
+                this.showMessage('Network error - please try again', 'error');
+            } finally {
+                this.uploading = false;
+                event.target.value = '';
+            }
+        },
+
+        // ---- T&C PDF Upload ----
+
+        async uploadTermsPdf(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/pdf') {
+                this.showMessage('Invalid file type. Please upload a PDF file.', 'error');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                this.showMessage('File too large. Maximum size is 10MB.', 'error');
+                return;
+            }
+
+            this.uploading = true;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/settings/api/upload/terms-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.showMessage('Terms & Conditions PDF uploaded successfully!');
+                    this.termsPdfPath = data.path;
+                } else {
+                    this.showMessage(formatErrorDetail(data.detail, 'Error uploading PDF'), 'error');
+                }
+            } catch (e) {
+                this.showMessage('Network error - please try again', 'error');
+            } finally {
+                this.uploading = false;
+                event.target.value = '';
+            }
+        },
+
+        // ---- Template Editor ----
+
+        async openEditor(templateType) {
+            this.editingTemplate = templateType;
+            this.templateDisplayName = this.templateNames[templateType] || templateType.replace(/_/g, ' ');
+            this.editorContent = 'Loading...';
+            this.editorFilePath = '';
+            this.editorOpen = true;
+
+            try {
+                const response = await fetch(`/settings/api/template/${templateType}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.editorContent = data.content;
+                    this.editorFilePath = data.path || '';
+                } else {
+                    this.editorContent = `Error: ${formatErrorDetail(data.detail, 'Unknown error')}`;
+                }
+            } catch (e) {
+                this.editorContent = 'Error loading template';
+            }
+        },
+
+        closeEditor() {
+            this.editorOpen = false;
+            this.editingTemplate = '';
+            this.editorContent = '';
+            this.editorFilePath = '';
+            this.templateDisplayName = '';
+        },
+
+        async saveTemplate() {
+            this.saving = true;
+            try {
+                const response = await fetch(`/settings/api/template/${this.editingTemplate}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: this.editorContent })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.showMessage('Template saved successfully!');
+                    this.closeEditor();
+                } else {
+                    this.showMessage(formatErrorDetail(data.detail, 'Error saving template'), 'error');
+                }
+            } catch (e) {
+                this.showMessage('Network error - please try again', 'error');
+            } finally {
+                this.saving = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

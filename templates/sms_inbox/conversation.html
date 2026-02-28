@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}SMS - {{ customer.name if customer else phone }} — ConcreteIQ{% endblock %}
+
+{% block content %}
+<div class="space-y-4" x-data="smsConversation()">
+    <!-- Hero Header -->
+    <div class="page-hero">
+        <div class="flex items-center gap-4">
+            <a href="/sms-inbox" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="page-hero-title">
+                    {{ customer.name if customer else phone }}
+                </h1>
+                <p class="page-hero-subtitle">{{ phone }}
+                    {% if customer %}
+                    · <a href="/customers/{{ customer.id }}" class="text-orange-300 hover:text-orange-200 transition-colors">View Customer</a>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="premium-card card-gradient-top overflow-hidden rounded-xl card-enter card-enter-1">
+        <div class="p-4 sm:p-6 space-y-4 max-h-[60vh] overflow-y-auto" id="messagesContainer">
+            {% for msg in messages %}
+            <div class="flex {% if msg.direction == 'outbound' %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-[75%] {% if msg.direction == 'outbound' %}bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-l-xl rounded-tr-xl shadow-lg shadow-orange-500/15{% else %}bg-slate-100 text-slate-900 rounded-r-xl rounded-tl-xl{% endif %} px-4 py-3">
+                    <p class="text-sm whitespace-pre-wrap">{{ msg.body }}</p>
+                    <div class="flex items-center gap-2 mt-1.5 {% if msg.direction == 'outbound' %}justify-end{% endif %}">
+                        <span class="text-xs {% if msg.direction == 'outbound' %}text-orange-100{% else %}text-slate-400{% endif %}">
+                            {{ msg.created_at.strftime('%d %b %H:%M') if msg.created_at else '' }}
+                        </span>
+                        {% if msg.direction == 'outbound' %}
+                        <span class="text-xs {% if msg.status == 'delivered' %}text-green-200{% elif msg.status == 'failed' %}text-red-200{% else %}text-orange-200{% endif %}">
+                            {{ msg.status }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Reply Box -->
+        <div class="border-t border-slate-200 p-4">
+            <form @submit.prevent="sendReply()" class="flex items-end gap-3">
+                <div class="flex-1">
+                    <textarea x-model="replyText"
+                              @keydown.enter.meta.prevent="sendReply()"
+                              @keydown.enter.ctrl.prevent="sendReply()"
+                              rows="2"
+                              class="w-full rounded-xl border-slate-300 focus:border-brand-500 focus:ring-brand-500 text-sm resize-none"
+                              placeholder="Type your reply..."
+                              :disabled="sending"
+                              maxlength="500"></textarea>
+                    <p class="text-xs text-slate-400 mt-1">
+                        <span x-text="replyText.length"></span>/500 chars
+                        · Ctrl+Enter to send
+                    </p>
+                </div>
+                <button type="submit"
+                        :disabled="!replyText.trim() || sending"
+                        class="flex-shrink-0 btn-v4 btn-v4-primary">
+                    <span x-show="!sending">Send</span>
+                    <span x-show="sending">Sending...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function smsConversation() {
+    return {
+        replyText: '',
+        sending: false,
+
+        init() {
+            // Scroll to bottom of messages
+            const container = document.getElementById('messagesContainer');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        },
+
+        async sendReply() {
+            if (!this.replyText.trim() || this.sending) return;
+
+            this.sending = true;
+            try {
+                const response = await fetch('/sms-inbox/reply/{{ phone }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': getCsrfToken(),
+                    },
+                    body: JSON.stringify({ message: this.replyText.trim() }),
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    Toast.success('SMS sent!');
+                    this.replyText = '';
+                    // Reload to show the new message
+                    setTimeout(() => window.location.reload(), 500);
+                } else {
+                    Toast.error(data.error || 'Failed to send SMS');
+                }
+            } catch (err) {
+                Toast.error('Network error. Please try again.');
+            } finally {
+                this.sending = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

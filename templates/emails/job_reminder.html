@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Job Reminder - {{ job_date_formatted }}</title>
+    <!--[if mso]>
+    <style type="text/css">
+        body, table, td { font-family: 'Segoe UI', Arial, sans-serif !important; }
+    </style>
+    <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #374151; -webkit-text-size-adjust: 100%; -moz-osx-font-smoothing: grayscale;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" align="center" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07); border-top: none;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #1B2B4B 0%, #243b53 100%); padding: 28px 40px; text-align: center;">
+                            <p style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; line-height: 1.3;">{{ business_name }}</p>
+                        </td>
+                    </tr>
+                    <!-- Orange accent line -->
+                    <tr>
+                        <td style="height: 3px; background: linear-gradient(to right, #E87A2E, #d4691f); font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 32px 40px;">
+                            <!-- Title -->
+                            <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 800; color: #1B2B4B; text-align: center;">Job Reminder</h1>
+                            <!-- Time Badge -->
+                            <p style="text-align: center; margin: 0 0 28px 0;">
+                                <span style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">{{ time_description }}</span>
+                            </p>
+                            <!-- Greeting -->
+                            <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151;">Hi {{ customer.name }},</p>
+                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151;">This is a friendly reminder that your concreting job is scheduled for <strong style="color: #1B2B4B;">{{ time_description }}</strong>.</p>
+                            <!-- Date Highlight Box -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
+                                <tr>
+                                    <td style="background-color: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 18px; text-align: center;">
+                                        <p style="margin: 0 0 4px 0; font-size: 12px; color: #9a3412; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Scheduled Date</p>
+                                        <p style="margin: 0; font-size: 22px; font-weight: 800; color: #c2410c;">{{ job_date_formatted }}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Job Details Box -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
+                                <tr>
+                                    <td style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 24px;">
+                                        <p style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Job Details</p>
+                                        <!-- Quote Reference -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 14px;">
+                                            <tr>
+                                                <td>
+                                                    <p style="margin: 0 0 2px 0; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 1px;">Quote Reference</p>
+                                                    <p style="margin: 0; font-size: 15px; font-weight: 600; color: #1B2B4B;">{{ quote.quote_number }}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        {% if quote.job_address %}
+                                        <!-- Location -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 14px;">
+                                            <tr>
+                                                <td>
+                                                    <p style="margin: 0 0 2px 0; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 1px;">Location</p>
+                                                    <p style="margin: 0; font-size: 15px; font-weight: 600; color: #1B2B4B;">{{ quote.job_address }}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        {% endif %}
+                                        {% if quote.job_name %}
+                                        <!-- Job Description -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <tr>
+                                                <td>
+                                                    <p style="margin: 0 0 2px 0; font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 1px;">Job Description</p>
+                                                    <p style="margin: 0; font-size: 15px; font-weight: 600; color: #1B2B4B;">{{ quote.job_name }}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Checklist Section -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
+                                <tr>
+                                    <td style="background-color: #f9fafb; border-radius: 12px; padding: 24px;">
+                                        <p style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Before We Arrive</p>
+                                        <!-- Item 1 -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 12px;">
+                                            <tr>
+                                                <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
+                                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
+                                                </td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Ensure the work area is clear of obstacles, vehicles, and personal items</td>
+                                            </tr>
+                                        </table>
+                                        <!-- Item 2 -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 12px;">
+                                            <tr>
+                                                <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
+                                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
+                                                </td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Provide clear access for our truck and equipment</td>
+                                            </tr>
+                                        </table>
+                                        <!-- Item 3 -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 12px;">
+                                            <tr>
+                                                <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
+                                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
+                                                </td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Keep pets and children away from the work area</td>
+                                            </tr>
+                                        </table>
+                                        <!-- Item 4 -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <tr>
+                                                <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
+                                                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
+                                                </td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Mark any underground services (gas, water, electrical) if applicable</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Note Box -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
+                                <tr>
+                                    <td style="background-color: #fff7ed; border-left: 4px solid #E87A2E; border-radius: 0 8px 8px 0; padding: 14px 18px; font-size: 13px; color: #9a3412;">
+                                        <strong>Need to reschedule?</strong> Please contact us as soon as possible on <a href="tel:{{ business_phone }}" style="color: #E87A2E; font-weight: 700; text-decoration: none;">{{ business_phone }}</a> so we can adjust our schedule and avoid any cancellation fees.
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Contact Box -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
+                                <tr>
+                                    <td style="background-color: #eff6ff; border-radius: 12px; padding: 20px; text-align: center;">
+                                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #1e40af;">Questions or need to reschedule?</p>
+                                        <a href="tel:{{ business_phone }}" style="font-size: 20px; font-weight: 800; color: #1e40af; text-decoration: none;">{{ business_phone }}</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- Closing -->
+                            <p style="margin: 0; font-size: 15px; color: #374151;">We look forward to completing your job and delivering great results!</p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #1B2B4B 0%, #243b53 100%); padding: 28px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #ffffff;">{{ business_name }}</p>
+                            <p style="margin: 0 0 4px 0; font-size: 13px; color: rgba(255,255,255,0.7);">
+                                {% if business_phone %}<a href="tel:{{ business_phone }}" style="color: #E87A2E; text-decoration: none;">{{ business_phone }}</a>{% endif %}
+                                {% if business_phone and business_email %}<span style="color: rgba(255,255,255,0.3); padding: 0 8px;">|</span>{% endif %}
+                                {% if business_email %}<a href="mailto:{{ business_email }}" style="color: #E87A2E; text-decoration: none;">{{ business_email }}</a>{% endif %}
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">ABN: {{ business_abn }} | Licence: {{ business_licence }}</p>
+                            <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
+                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

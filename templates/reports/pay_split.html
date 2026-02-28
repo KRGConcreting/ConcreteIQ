@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+
+{% block title %}Pay Distribution — ConcreteIQ{% endblock %}
+{% block page_title %}Pay Distribution{% endblock %}
+{% block mobile_title %}Pay Split{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="payDistribution()">
+
+    <!-- Hero Header -->
+    <div class="page-hero animate-in">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+            <div class="flex items-center gap-4">
+                <a href="/reports" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </a>
+                <div>
+                    <p class="page-hero-subtitle">Proprietor's Income</p>
+                    <h1 class="page-hero-title">Pay Distribution</h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button @click="showFormula = !showFormula"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span x-text="showFormula ? 'Hide Formula' : 'Show Formula'"></span>
+                </button>
+                <a href="/reports" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white text-sm font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formula Info (collapsible) -->
+    <div x-show="showFormula" x-transition class="premium-card card-gradient-top p-6 animate-in delay-1">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">Distribution Formula</h3>
+        </div>
+        <div class="text-sm text-slate-600 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <p class="font-display font-bold text-slate-800 mb-2">Base Allocation ($1,543/wk)</p>
+                    <div class="space-y-1 text-xs">
+                        <div class="flex justify-between"><span>Daily Account</span><span class="font-bold">$257</span></div>
+                        <div class="flex justify-between"><span>PAYG Tax</span><span class="font-bold">$322</span></div>
+                        <div class="flex justify-between"><span>Vehicle</span><span class="font-bold">$278</span></div>
+                        <div class="flex justify-between"><span>Health</span><span class="font-bold">$86</span></div>
+                        <div class="flex justify-between"><span>Fun Card</span><span class="font-bold">$212</span></div>
+                        <div class="flex justify-between"><span>Savings</span><span class="font-bold">$330</span></div>
+                        <div class="flex justify-between"><span>Subscriptions</span><span class="font-bold">$58</span></div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <p class="font-display font-bold text-slate-800 mb-2">Excess Split (over $1,543)</p>
+                    <div class="space-y-1 text-xs">
+                        <div class="flex justify-between"><span>Trustee Account</span><span class="font-bold text-emerald-600">50%</span></div>
+                        <div class="flex justify-between"><span>→ Extra PAYG Tax</span><span class="font-bold text-blue-600">22%</span></div>
+                        <div class="flex justify-between"><span>→ Daily Account</span><span class="font-bold text-orange-600">9.0%</span></div>
+                        <div class="flex justify-between"><span>→ Fun Card</span><span class="font-bold text-pink-600">7.4%</span></div>
+                        <div class="flex justify-between"><span>→ Savings</span><span class="font-bold text-emerald-500">11.6%</span></div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-3">Extra tax merges into PAYG. The remaining 28% disperses across Daily, Fun Card &amp; Savings proportionally.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Card -->
+    <div class="premium-card p-6 animate-in delay-2">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div>
+                <h3 class="font-display font-bold text-slate-900">Weekly Earnings</h3>
+                <p class="text-sm text-slate-500">Enter your proprietor's take-home for the week</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+            <div class="flex-1 w-full sm:max-w-xs">
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Amount ($)</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-display font-bold text-lg">$</span>
+                    <input type="number"
+                           x-model.number="earnings"
+                           @input="calculate()"
+                           placeholder="0.00"
+                           step="0.01"
+                           min="0"
+                           class="input-field pl-9 text-lg font-display font-bold !py-3">
+                </div>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button @click="earnings = 1200; calculate()" class="btn-v4 btn-v4-secondary text-xs !py-2 !px-3">$1,200</button>
+                <button @click="earnings = 1543; calculate()" class="btn-v4 btn-v4-secondary text-xs !py-2 !px-3">$1,543</button>
+                <button @click="earnings = 2000; calculate()" class="btn-v4 btn-v4-secondary text-xs !py-2 !px-3">$2,000</button>
+                <button @click="earnings = 2500; calculate()" class="btn-v4 btn-v4-secondary text-xs !py-2 !px-3">$2,500</button>
+                <button @click="earnings = 3000; calculate()" class="btn-v4 btn-v4-secondary text-xs !py-2 !px-3">$3,000</button>
+                <button @click="earnings = 5000; calculate()" class="btn-v4 btn-v4-secondary text-xs !py-2 !px-3">$5,000</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <template x-if="earnings > 0 && earnings <= threshold">
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-display font-bold text-amber-800">Under Threshold</p>
+                <p class="text-sm text-amber-600">Earnings are below $1,543 — all accounts are pro-rated proportionally (<span x-text="((earnings/threshold)*100).toFixed(0)"></span>% of standard).</p>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="earnings > threshold">
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3 animate-in delay-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-display font-bold text-emerald-800">Above Threshold</p>
+                <p class="text-sm text-emerald-600">$<span x-text="fmt(excess)"></span> excess above $1,543 — 50% to Trustee, 22% to PAYG Tax, 28% across Daily/Fun/Savings.</p>
+            </div>
+        </div>
+    </template>
+
+    <!-- Results Table -->
+    <template x-if="earnings > 0">
+        <div class="premium-card overflow-hidden animate-in delay-4">
+            <div class="p-5 border-b border-slate-100">
+                <h3 class="font-display font-bold text-slate-900">Distribution Breakdown</h3>
+                <p class="text-sm text-slate-500 mt-1">Where your $<span x-text="fmt(earnings)"></span> goes this week.</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200">
+                            <th class="text-left py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Account</th>
+                            <th class="text-right py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Standard</th>
+                            <th class="text-right py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider" x-show="excess > 0">From Excess</th>
+                            <th class="text-right py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Transfer</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <!-- Standard Accounts -->
+                        <template x-for="(acct, idx) in standardAccounts" :key="acct.name">
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-3 px-5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :class="acct.iconBg">
+                                            <svg class="w-4 h-4" :class="acct.iconColor" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="acct.icon"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-900 text-sm" x-text="acct.name"></p>
+                                            <p class="text-xs text-slate-400" x-text="'$' + acct.base + '/wk standard'"></p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-5 text-right text-sm text-slate-500">$<span x-text="fmt(acct.allocated)"></span></td>
+                                <td class="py-3 px-5 text-right text-sm text-slate-400" x-show="excess > 0">—</td>
+                                <td class="py-3 px-5 text-right font-display font-bold text-slate-900 text-sm">$<span x-text="fmt(acct.allocated)"></span></td>
+                            </tr>
+                        </template>
+
+                        <!-- Excess Accounts (only when over threshold) -->
+                        <template x-if="excess > 0">
+                            <tr class="bg-emerald-50/50 hover:bg-emerald-50 transition-colors">
+                                <td class="py-3 px-5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-emerald-800 text-sm">Trustee Account</p>
+                                            <p class="text-xs text-emerald-500">50% of excess</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-5 text-right text-sm text-slate-400">—</td>
+                                <td class="py-3 px-5 text-right text-sm text-emerald-600">$<span x-text="fmt(trusteeAmount)"></span></td>
+                                <td class="py-3 px-5 text-right font-display font-bold text-emerald-700 text-sm">$<span x-text="fmt(trusteeAmount)"></span></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-slate-50 border-t-2 border-slate-200">
+                            <td class="py-3 px-5 font-display font-bold text-slate-900">Total</td>
+                            <td class="py-3 px-5 text-right font-bold text-slate-600 text-sm">$<span x-text="fmt(Math.min(earnings, threshold))"></span></td>
+                            <td class="py-3 px-5 text-right font-bold text-slate-600 text-sm" x-show="excess > 0">$<span x-text="fmt(excess)"></span></td>
+                            <td class="py-3 px-5 text-right font-display font-bold text-slate-900">$<span x-text="fmt(grandTotal)"></span></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </template>
+
+    <!-- Visual Breakdown Chart -->
+    <template x-if="earnings > 0">
+        <div class="premium-card p-6 animate-in delay-5">
+            <h3 class="font-display font-bold text-slate-900 mb-4">Visual Breakdown</h3>
+
+            <!-- Stacked bar -->
+            <div class="space-y-3">
+                <template x-for="(item, idx) in allItems" :key="item.name">
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="font-medium text-slate-700" x-text="item.name"></span>
+                            <span class="font-display font-bold text-slate-900">$<span x-text="fmt(item.amount)"></span>
+                                <span class="text-xs text-slate-400 ml-1" x-text="'(' + ((item.amount / earnings) * 100).toFixed(1) + '%)'"></span>
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500 ease-out"
+                                 :class="item.barColor"
+                                 :style="'width: ' + ((item.amount / earnings) * 100) + '%'"></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Tax Summary -->
+            <div class="mt-6 pt-5 border-t border-slate-100">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div class="bg-blue-50 rounded-xl p-4 text-center">
+                        <p class="text-2xl font-display font-bold text-blue-700">$<span x-text="fmt(totalTax)"></span></p>
+                        <p class="text-xs text-blue-500 font-medium mt-1">Total PAYG Tax</p>
+                        <p class="text-xs text-blue-400" x-text="((totalTax / earnings) * 100).toFixed(1) + '% of earnings'"></p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-xl p-4 text-center" x-show="excess > 0">
+                        <p class="text-2xl font-display font-bold text-emerald-700">$<span x-text="fmt(trusteeAmount)"></span></p>
+                        <p class="text-xs text-emerald-500 font-medium mt-1">Trustee Account</p>
+                        <p class="text-xs text-emerald-400" x-text="((trusteeAmount / earnings) * 100).toFixed(1) + '% of earnings'"></p>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl p-4 text-center">
+                        <p class="text-2xl font-display font-bold text-orange-700">$<span x-text="fmt(spendableMoney)"></span></p>
+                        <p class="text-xs text-orange-500 font-medium mt-1">Spendable Money</p>
+                        <p class="text-xs text-orange-400">Daily + Fun Card</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Empty State -->
+    <template x-if="!earnings || earnings <= 0">
+        <div class="premium-card overflow-hidden animate-in delay-3">
+            <div class="empty-state-v4">
+                <div class="empty-state-v4-icon">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="empty-state-v4-title">Enter your weekly earnings</h3>
+                <p class="empty-state-v4-text">Type an amount above or tap a quick-fill button to see how your income splits across accounts.</p>
+            </div>
+        </div>
+    </template>
+
+    <!-- Quick Reference Examples -->
+    <div class="premium-card card-gradient-top p-6 animate-in delay-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+            </div>
+            <h3 class="font-display font-bold text-slate-900">Quick Reference</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left py-2 px-3 text-xs font-bold text-slate-500 uppercase">Earnings</th>
+                        <th class="text-right py-2 px-3 text-xs font-bold text-slate-500 uppercase">Standard</th>
+                        <th class="text-right py-2 px-3 text-xs font-bold text-slate-500 uppercase">Trustee</th>
+                        <th class="text-right py-2 px-3 text-xs font-bold text-slate-500 uppercase">Excess</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <template x-for="ex in examples" :key="ex.earnings">
+                        <tr class="hover:bg-slate-50 cursor-pointer transition-colors" @click="earnings = ex.earnings; calculate()">
+                            <td class="py-2 px-3 font-display font-bold text-slate-900">$<span x-text="ex.earnings.toLocaleString()"></span></td>
+                            <td class="py-2 px-3 text-right text-slate-600">$<span x-text="fmt(ex.standard)"></span></td>
+                            <td class="py-2 px-3 text-right text-emerald-600" x-text="ex.trustee > 0 ? '$' + fmt(ex.trustee) : '—'"></td>
+                            <td class="py-2 px-3 text-right text-blue-600" x-text="ex.excess > 0 ? '$' + fmt(ex.excess) : '—'"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Click any row to load that amount into the calculator.</p>
+    </div>
+
+</div>
+
+<script>
+function payDistribution() {
+    const THRESHOLD = 1543;
+    const BASE_ACCOUNTS = [
+        { name: 'Daily Account', base: 257, icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z', iconBg: 'bg-orange-100', iconColor: 'text-orange-600', barColor: 'bg-orange-400', keySplit: true },
+        { name: 'PAYG Tax', base: 322, icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', barColor: 'bg-blue-400', taxSplit: true },
+        { name: 'Vehicle', base: 278, icon: 'M8 7h8l4 5v5a1 1 0 01-1 1h-1a2 2 0 11-4 0H9a2 2 0 11-4 0H4a1 1 0 01-1-1v-5l4-5z', iconBg: 'bg-slate-100', iconColor: 'text-slate-600', barColor: 'bg-slate-400' },
+        { name: 'Health', base: 86, icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z', iconBg: 'bg-red-100', iconColor: 'text-red-600', barColor: 'bg-red-400' },
+        { name: 'Fun Card', base: 212, icon: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z', iconBg: 'bg-pink-100', iconColor: 'text-pink-600', barColor: 'bg-pink-400', keySplit: true },
+        { name: 'Savings', base: 330, icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', barColor: 'bg-emerald-400', keySplit: true },
+        { name: 'Subscriptions', base: 58, icon: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z', iconBg: 'bg-violet-100', iconColor: 'text-violet-600', barColor: 'bg-violet-400' },
+    ];
+    // "Keep" dispersal weights (proportional to base amounts of Daily, Fun Card, Savings)
+    const KEEP_ACCOUNTS = BASE_ACCOUNTS.filter(a => a.keySplit);
+    const KEEP_TOTAL_BASE = KEEP_ACCOUNTS.reduce((s, a) => s + a.base, 0); // 257+212+330 = 799
+
+    // Pre-calculate examples
+    function calcExample(amount) {
+        const standard = Math.min(amount, THRESHOLD);
+        const ex = Math.max(0, amount - THRESHOLD);
+        return {
+            earnings: amount,
+            standard: standard,
+            trustee: Math.round(ex * 0.50 * 100) / 100,
+            excess: Math.round(ex * 100) / 100,
+        };
+    }
+
+    return {
+        earnings: 0,
+        threshold: THRESHOLD,
+        showFormula: false,
+
+        // Computed
+        excess: 0,
+        trusteeAmount: 0,
+        grandTotal: 0,
+        totalTax: 0,
+        spendableMoney: 0,
+        standardAccounts: [],
+        allItems: [],
+
+        examples: [
+            calcExample(1000),
+            calcExample(1200),
+            calcExample(1543),
+            calcExample(2000),
+            calcExample(2500),
+            calcExample(3000),
+            calcExample(4000),
+            calcExample(5000),
+        ],
+
+        fmt(val) {
+            if (val === 0 || val === undefined || isNaN(val)) return '0.00';
+            return val.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        calculate() {
+            const e = this.earnings || 0;
+            if (e <= 0) {
+                this.standardAccounts = [];
+                this.allItems = [];
+                return;
+            }
+
+            // Calculate ratio for pro-rating under threshold
+            const ratio = Math.min(e / THRESHOLD, 1);
+            this.excess = Math.max(0, e - THRESHOLD);
+
+            // Excess splits
+            this.trusteeAmount = Math.round(this.excess * 0.50 * 100) / 100;
+            const extraTax = Math.round(this.excess * 0.22 * 100) / 100;
+            const keepPool = Math.round(this.excess * 0.28 * 100) / 100;
+
+            // Standard account allocations with excess merged in
+            this.standardAccounts = BASE_ACCOUNTS.map(a => {
+                let allocated = Math.round(a.base * ratio * 100) / 100;
+                // Merge Extra Tax into PAYG Tax
+                if (a.taxSplit) allocated += extraTax;
+                // Disperse Keep proportionally into Daily, Fun Card, Savings
+                if (a.keySplit) allocated += Math.round(keepPool * (a.base / KEEP_TOTAL_BASE) * 100) / 100;
+                return { ...a, allocated };
+            });
+
+            // Grand total
+            const standardTotal = this.standardAccounts.reduce((sum, a) => sum + a.allocated, 0);
+            this.grandTotal = standardTotal + this.trusteeAmount;
+
+            // Summary figures
+            const payg = this.standardAccounts.find(a => a.name === 'PAYG Tax');
+            this.totalTax = payg ? payg.allocated : 0;
+
+            const daily = this.standardAccounts.find(a => a.name === 'Daily Account');
+            const fun = this.standardAccounts.find(a => a.name === 'Fun Card');
+            this.spendableMoney = (daily ? daily.allocated : 0) + (fun ? fun.allocated : 0);
+
+            // Build visual items list (all allocations for bar chart)
+            this.allItems = this.standardAccounts.map(a => ({
+                name: a.name,
+                amount: a.allocated,
+                barColor: a.barColor,
+            }));
+            if (this.trusteeAmount > 0) {
+                this.allItems.push({ name: 'Trustee Account', amount: this.trusteeAmount, barColor: 'bg-emerald-500' });
+            }
+        },
+
+        init() {
+            // Start empty — user enters amount
+        }
+    };
+}
+</script>
+{% endblock %}

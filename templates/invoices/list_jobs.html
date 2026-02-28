@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Invoices by Job{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+{% block mobile_title %}Invoices{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-bold text-slate-900">Invoices</h1>
+        <a href="/invoices/new"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 shadow-lg shadow-orange-500/30 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Invoice
+        </a>
+    </div>
+
+    <!-- Summary Stats -->
+    {% if stats %}
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <div class="bg-gradient-to-br from-red-500 to-orange-500 rounded-xl p-4 text-white">
+            <p class="text-red-100 text-xs uppercase tracking-wide">Outstanding</p>
+            <p class="text-2xl font-bold mt-1">${{ '{:,.0f}'.format(stats.outstanding_total_cents / 100) }}</p>
+        </div>
+        <a href="?view=list&status=awaiting_deposit" class="bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition-colors">
+            <p class="text-amber-600 text-xs uppercase tracking-wide">Awaiting 1st Payment</p>
+            <p class="text-2xl font-bold text-amber-700 mt-1">{{ stats.awaiting_deposit_count }}</p>
+        </a>
+        <a href="?view=list&status=awaiting_prepour" class="bg-blue-50 border border-blue-200 rounded-xl p-4 hover:bg-blue-100 transition-colors">
+            <p class="text-blue-600 text-xs uppercase tracking-wide">Awaiting Pre-Pour</p>
+            <p class="text-2xl font-bold text-blue-700 mt-1">{{ stats.awaiting_prepour_count }}</p>
+        </a>
+        <a href="?view=list&status=awaiting_final" class="bg-purple-50 border border-purple-200 rounded-xl p-4 hover:bg-purple-100 transition-colors">
+            <p class="text-purple-600 text-xs uppercase tracking-wide">Awaiting Final</p>
+            <p class="text-2xl font-bold text-purple-700 mt-1">{{ stats.awaiting_final_count }}</p>
+        </a>
+        <a href="?view=list&status=overdue" class="bg-red-50 border border-red-200 rounded-xl p-4 hover:bg-red-100 transition-colors">
+            <p class="text-red-600 text-xs uppercase tracking-wide">Overdue</p>
+            <p class="text-2xl font-bold text-red-700 mt-1">{{ stats.overdue_count }}</p>
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- View Toggle -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+            <a href="?view=list{% if status_filter %}&status={{ status_filter }}{% endif %}"
+               class="px-3 py-1.5 text-sm rounded-md transition-colors {{ 'bg-white shadow text-slate-900' if view == 'list' else 'text-slate-600 hover:text-slate-900' }}">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                List
+            </a>
+            <a href="?view=jobs{% if status_filter %}&status={{ status_filter }}{% endif %}"
+               class="px-3 py-1.5 text-sm rounded-md transition-colors {{ 'bg-white shadow text-slate-900' if view == 'jobs' else 'text-slate-600 hover:text-slate-900' }}">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                By Job
+            </a>
+        </div>
+        <p class="text-sm text-slate-600">
+            {{ total }} job{{ 's' if total != 1 else '' }} with invoices
+        </p>
+    </div>
+
+    <!-- Jobs with Invoices -->
+    <div class="space-y-4">
+        {% if jobs %}
+        {% for job in jobs %}
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+            <!-- Job Header -->
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <a href="/quotes/{{ job.quote.id }}" class="font-semibold text-slate-900 hover:text-brand-600">
+                        {{ job.customer.name if job.customer else 'Unknown Customer' }}
+                    </a>
+                    <p class="text-sm text-slate-500">{{ job.quote.job_address or 'No address' }}</p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        <a href="/quotes/{{ job.quote.id }}" class="hover:text-brand-600">{{ job.quote.quote_number }}</a>
+                    </p>
+                </div>
+                <div class="text-right">
+                    <p class="text-lg font-bold text-slate-900">${{ '{:,.2f}'.format(job.quote.total_cents / 100) }}</p>
+                    <p class="text-sm text-slate-500">
+                        Paid: ${{ '{:,.2f}'.format(job.total_paid_cents / 100) }}
+                        ({{ job.payment_progress_percent }}%)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Overall Progress Bar -->
+            <div class="mb-4">
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all"
+                         style="width: {{ job.payment_progress_percent }}%"></div>
+                </div>
+            </div>
+
+            <!-- Payment Stages -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {% for invoice in job.invoices %}
+                <div class="relative p-4 rounded-lg border-2
+                            {% if invoice.status == 'paid' %}
+                                border-green-200 bg-green-50
+                            {% elif invoice.status == 'overdue' %}
+                                border-red-200 bg-red-50
+                            {% elif invoice.status in ['sent', 'viewed'] %}
+                                border-amber-200 bg-amber-50
+                            {% else %}
+                                border-slate-200 bg-slate-50
+                            {% endif %}">
+
+                    <!-- Stage indicator -->
+                    <div class="flex items-center gap-2 mb-2">
+                        {% if invoice.status == 'paid' %}
+                        <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        {% elif invoice.status == 'overdue' %}
+                        <div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        {% elif invoice.status in ['sent', 'viewed'] %}
+                        <div class="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        {% else %}
+                        <div class="w-6 h-6 rounded-full bg-slate-300 flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">-</span>
+                        </div>
+                        {% endif %}
+
+                        <span class="text-sm font-medium
+                               {% if invoice.status == 'paid' %}text-green-700
+                               {% elif invoice.status == 'overdue' %}text-red-700
+                               {% elif invoice.status in ['sent', 'viewed'] %}text-amber-700
+                               {% else %}text-slate-500{% endif %}">
+                            {% if invoice.stage_percent %}{{ invoice.stage_percent }}% {% endif %}{{ invoice.stage|replace('_', ' ')|title }}
+                        </span>
+                    </div>
+
+                    <!-- Amount -->
+                    <p class="text-lg font-bold text-slate-900">
+                        ${{ '{:,.2f}'.format(invoice.total_cents / 100) }}
+                    </p>
+
+                    <!-- Status / Due date -->
+                    {% if invoice.status == 'paid' %}
+                    <p class="text-xs text-green-600 mt-2">
+                        Paid {% if invoice.paid_date %}{{ invoice.paid_date.strftime('%d %b') }}{% endif %}
+                    </p>
+                    {% elif invoice.status == 'overdue' %}
+                    <p class="text-xs text-red-600 mt-2">
+                        Overdue
+                    </p>
+                    {% elif invoice.status in ['sent', 'viewed'] %}
+                    <p class="text-xs text-amber-600 mt-2">
+                        Due {% if invoice.due_date %}{{ invoice.due_date.strftime('%d %b') }}{% endif %}
+                    </p>
+                    {% else %}
+                    <p class="text-xs text-slate-400 mt-2">
+                        Not yet sent
+                    </p>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="mt-3 flex gap-2">
+                        {% if invoice.status == 'draft' %}
+                        <button @click="sendInvoice({{ invoice.id }})"
+                                class="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
+                            Send
+                        </button>
+                        {% elif invoice.status in ['sent', 'viewed', 'overdue'] %}
+                        <button @click="showPaymentModal({{ invoice.id }}, {{ invoice.total_cents - invoice.paid_cents }})"
+                                class="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                            Record Payment
+                        </button>
+                        <button @click="sendReminder({{ invoice.id }})"
+                                class="text-xs px-2 py-1 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors">
+                            Remind
+                        </button>
+                        {% endif %}
+                        <a href="/invoices/{{ invoice.id }}"
+                           class="text-xs px-2 py-1 text-slate-600 hover:text-slate-900 transition-colors">
+                            View
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if pages > 1 %}
+        <div class="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <div class="text-sm text-slate-700">
+                Showing {{ (page - 1) * page_size + 1 }} to {{ [(page * page_size), total]|min }} of {{ total }}
+            </div>
+            <div class="flex gap-2">
+                {% if page > 1 %}
+                <a href="?view=jobs&page={{ page - 1 }}"
+                   class="px-3 py-1 text-sm border border-slate-300 rounded-lg hover:bg-slate-100">
+                    Previous
+                </a>
+                {% endif %}
+                {% if page < pages %}
+                <a href="?view=jobs&page={{ page + 1 }}"
+                   class="px-3 py-1 text-sm border border-slate-300 rounded-lg hover:bg-slate-100">
+                    Next
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="bg-white rounded-xl border border-slate-200 px-4 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-slate-900">No jobs with invoices</h3>
+            <p class="mt-1 text-sm text-slate-500">
+                Invoices are created when quotes are accepted.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="fixed inset-0 bg-slate-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-900">Record Payment</h3>
+        </div>
+        <form id="paymentForm" onsubmit="submitPayment(event)">
+            <div class="px-6 py-4 space-y-4">
+                <input type="hidden" id="paymentInvoiceId" name="invoice_id">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-slate-500">$</span>
+                        <input type="number" step="0.01" id="paymentAmount" name="amount"
+                               class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                               required>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Balance: $<span id="paymentBalance">0.00</span></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+                    <select id="paymentMethod" name="method"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Reference (optional)</label>
+                    <input type="text" id="paymentReference" name="reference"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                           placeholder="Transaction ID, cheque number, etc.">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                <button type="button" @click="hidePaymentModal()"
+                        class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="paymentSubmitBtn"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    Record Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function sendInvoice(invoiceId) {
+    if (!confirm('Send this invoice to the customer?')) return;
+
+    fetch(`/invoices/api/${invoiceId}/send`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.portal_url) {
+                alert('Invoice sent successfully!');
+                window.location.reload();
+            } else {
+                alert('Failed to send: ' + formatErrorDetail(data.detail, 'Unknown error'));
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+}
+
+function sendReminder(invoiceId) {
+    if (!confirm('Send payment reminder to the customer?')) return;
+
+    fetch(`/invoices/api/${invoiceId}/send-reminder`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Reminder sent!');
+            } else {
+                alert('Failed: ' + formatErrorDetail(data.message || data.detail, 'Unknown error'));
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+}
+
+function showPaymentModal(invoiceId, balanceCents) {
+    document.getElementById('paymentInvoiceId').value = invoiceId;
+    document.getElementById('paymentBalance').textContent = (balanceCents / 100).toFixed(2);
+    document.getElementById('paymentAmount').value = (balanceCents / 100).toFixed(2);
+    document.getElementById('paymentAmount').max = (balanceCents / 100).toFixed(2);
+    document.getElementById('paymentModal').classList.remove('hidden');
+    document.getElementById('paymentModal').classList.add('flex');
+}
+
+function hidePaymentModal() {
+    document.getElementById('paymentModal').classList.add('hidden');
+    document.getElementById('paymentModal').classList.remove('flex');
+    document.getElementById('paymentForm').reset();
+}
+
+function submitPayment(event) {
+    event.preventDefault();
+
+    const invoiceId = document.getElementById('paymentInvoiceId').value;
+    const amount = parseFloat(document.getElementById('paymentAmount').value);
+    const method = document.getElementById('paymentMethod').value;
+    const reference = document.getElementById('paymentReference').value;
+
+    const btn = document.getElementById('paymentSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    fetch(`/invoices/api/${invoiceId}/record-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            amount_cents: Math.round(amount * 100),
+            method: method,
+            reference: reference || null,
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Payment recorded!');
+            window.location.reload();
+        } else {
+            alert('Failed: ' + formatErrorDetail(data.detail, 'Unknown error'));
+            btn.disabled = false;
+            btn.textContent = 'Record Payment';
+        }
+    })
+    .catch(err => {
+        alert('Error: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Record Payment';
+    });
+}
+
+// Close modal when clicking outside
+document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) hidePaymentModal();
+});
+</script>
+{% endblock %}

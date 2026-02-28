@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Quote Conversion Report — ConcreteIQ{% endblock %}
+{% block page_title %}Quote Conversion Report{% endblock %}
+{% block mobile_title %}Quotes Report{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Header -->
+<div class="page-hero animate-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+        <div class="flex items-center gap-4">
+            <a href="/reports" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <p class="page-hero-subtitle">Reports</p>
+                <h1 class="page-hero-title">Quote Conversion</h1>
+            </div>
+        </div>
+        <!-- Period selector -->
+        <div class="flex flex-wrap gap-2">
+            <a href="?period=week" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'week' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Week</a>
+            <a href="?period=month" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'month' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Month</a>
+            <a href="?period=quarter" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'quarter' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Quarter</a>
+            <a href="?period=year" class="px-3 py-1.5 text-sm rounded-xl {{ 'bg-white text-slate-900 font-semibold' if period == 'year' else 'bg-white/10 text-white hover:bg-white/20 border border-white/10' }} transition-all">This Year</a>
+        </div>
+    </div>
+    <p class="text-blue-200 text-sm mt-3 ml-14">{{ start_date.strftime('%d %b %Y') }} - {{ end_date.strftime('%d %b %Y') }}</p>
+</div>
+
+<div class="max-w-6xl mx-auto">
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="metric-card card-enter card-enter-1" style="--metric-accent: #64748b;">
+            <p class="metric-card-label">Total Sent</p>
+            <p class="metric-card-value">{{ stats.total_sent }}</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-2" style="--metric-accent: #22c55e;">
+            <p class="metric-card-label">Accepted</p>
+            <p class="metric-card-value text-green-600">{{ stats.total_accepted }}</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-3" style="--metric-accent: #3b82f6;">
+            <p class="metric-card-label">Conversion Rate</p>
+            <p class="metric-card-value text-blue-600">{{ stats.conversion_rate }}%</p>
+        </div>
+
+        <div class="metric-card card-enter card-enter-4" style="--metric-accent: #E87A2E;">
+            <p class="metric-card-label">Avg. Time to Accept</p>
+            <p class="metric-card-value">{{ stats.avg_time_to_accept_days }} days</p>
+        </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Funnel chart -->
+        <div class="premium-card card-gradient-top p-6 card-enter card-enter-5">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-blue">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Quote Funnel</h3></div>
+            </div>
+            <div class="space-y-3 mt-4">
+                {% set max_count = stats.funnel.draft.count + stats.funnel.sent.count + stats.funnel.viewed.count %}
+                {% set max_val = [stats.funnel.draft.count, stats.funnel.sent.count, stats.funnel.viewed.count, stats.funnel.accepted.count, stats.funnel.declined.count] | max %}
+                {% if max_val == 0 %}{% set max_val = 1 %}{% endif %}
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Draft</span>
+                        <span class="font-display font-medium">{{ stats.funnel.draft.count }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-6">
+                        <div class="bg-slate-400 h-6 rounded-full flex items-center justify-end pr-2"
+                             style="width: {{ (stats.funnel.draft.count / max_val * 100) | int }}%; min-width: 20px">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Sent</span>
+                        <span class="font-display font-medium">{{ stats.funnel.sent.count + stats.funnel.viewed.count + stats.funnel.accepted.count + stats.funnel.declined.count + stats.funnel.expired.count + stats.funnel.confirmed.count + stats.funnel.completed.count }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-6">
+                        <div class="bg-blue-500 h-6 rounded-full"
+                             style="width: {{ ((stats.funnel.sent.count + stats.funnel.viewed.count + stats.funnel.accepted.count + stats.funnel.declined.count + stats.funnel.expired.count + stats.funnel.confirmed.count + stats.funnel.completed.count) / max_val * 100) | int }}%; min-width: 20px">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Viewed</span>
+                        <span class="font-display font-medium">{{ stats.funnel.viewed.count + stats.funnel.accepted.count + stats.funnel.declined.count + stats.funnel.confirmed.count + stats.funnel.completed.count }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-6">
+                        <div class="bg-yellow-500 h-6 rounded-full"
+                             style="width: {{ ((stats.funnel.viewed.count + stats.funnel.accepted.count + stats.funnel.declined.count + stats.funnel.confirmed.count + stats.funnel.completed.count) / max_val * 100) | int }}%; min-width: 20px">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Accepted</span>
+                        <span class="font-display font-medium">{{ stats.total_accepted }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-6">
+                        <div class="bg-green-500 h-6 rounded-full"
+                             style="width: {{ (stats.total_accepted / max_val * 100) | int }}%; min-width: 20px">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="text-slate-600">Declined</span>
+                        <span class="font-display font-medium">{{ stats.funnel.declined.count }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-6">
+                        <div class="bg-red-500 h-6 rounded-full"
+                             style="width: {{ (stats.funnel.declined.count / max_val * 100) | int }}%; min-width: 20px">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Decline reasons -->
+        <div class="premium-card p-6 card-enter card-enter-6">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-red">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Decline Reasons</h3></div>
+            </div>
+            {% if stats.decline_reasons %}
+                <div class="space-y-3 mt-4">
+                    {% for item in stats.decline_reasons %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 text-sm truncate flex-1 mr-4">{{ item.reason }}</span>
+                        <span class="text-slate-900 font-display font-medium whitespace-nowrap">{{ item.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state-v4 text-center py-8">
+                    <p class="text-slate-500">No declined quotes in this period</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Monthly trend chart -->
+    {% if stats.by_month %}
+    <div class="premium-card p-6 mb-8 card-enter card-enter-7">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-green">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div><h3 class="font-display font-semibold text-slate-900">Monthly Conversion Trend</h3></div>
+        </div>
+        <div class="h-64 mt-4">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- By suburb table -->
+    <div class="premium-card overflow-hidden card-enter card-enter-8">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-purple">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <div><h3 class="font-display font-semibold text-slate-900">Quotes by Suburb</h3></div>
+            </div>
+        </div>
+        {% if stats.by_suburb %}
+            <div class="overflow-x-auto">
+                <table class="table-premium w-full">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Suburb</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Count</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for item in stats.by_suburb %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-slate-900">{{ item.suburb }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-900 text-right font-display">{{ item.count }}</td>
+                            <td class="px-6 py-4 text-sm text-slate-900 text-right font-display">{{ item.value_cents | money }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-v4 text-center py-8">
+                <p class="text-slate-500">No quotes in this period</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Export link -->
+    <div class="mt-6 text-center card-enter card-enter-9">
+        <a href="/reports/api/export/quotes?start={{ start_date }}&end={{ end_date }}"
+           class="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all inline-flex items-center gap-2 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Export as CSV
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if stats.by_month %}
+const ctx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ stats.by_month | map(attribute='month') | list | tojson }},
+        datasets: [
+            {
+                label: 'Sent',
+                data: {{ stats.by_month | map(attribute='sent') | list | tojson }},
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.3,
+                fill: false,
+            },
+            {
+                label: 'Accepted',
+                data: {{ stats.by_month | map(attribute='accepted') | list | tojson }},
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                tension: 0.3,
+                fill: false,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

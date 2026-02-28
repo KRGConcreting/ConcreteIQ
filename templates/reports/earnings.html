@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Proprietor's Earnings - ConcreteIQ{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<div class="page-hero animate-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+        <div class="flex items-center gap-4">
+            <a href="/reports" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <p class="page-hero-subtitle">Reports</p>
+                <h1 class="page-hero-title">Proprietor's Earnings</h1>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <select onchange="window.location.href='?year=' + this.value"
+                    class="select-field px-4 py-2 bg-white/10 border-white/20 text-white rounded-xl text-sm">
+                {% for y in available_years %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            <a href="/settings/business#goals" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-xl transition-all border border-white/10">
+                Edit Goal
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-6xl mx-auto">
+
+    <!-- Year Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="metric-card card-enter card-enter-1" style="--metric-accent: #22c55e;">
+            <p class="metric-card-label">Year Total</p>
+            <p class="metric-card-value">${{ '{:,.0f}'.format(yearly_total_cents / 100) }}</p>
+            {% if yoy_change is not none %}
+            <p class="metric-card-meta">
+                {% if yoy_change >= 0 %}
+                <span class="inline-flex items-center gap-1 text-green-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    {{ '{:.1f}'.format(yoy_change) }}% vs {{ year - 1 }}
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 text-red-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                    {{ '{:.1f}'.format(yoy_change | abs) }}% vs {{ year - 1 }}
+                </span>
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+        <div class="metric-card card-enter card-enter-2" style="--metric-accent: #3b82f6;">
+            <p class="metric-card-label">Monthly Average</p>
+            <p class="metric-card-value">${{ '{:,.0f}'.format(avg_monthly_cents / 100) }}</p>
+        </div>
+        <div class="metric-card card-enter card-enter-3" style="--metric-accent: #E87A2E;">
+            <p class="metric-card-label">Total Revenue</p>
+            <p class="metric-card-value">${{ '{:,.0f}'.format(yearly_revenue_cents / 100) }}</p>
+        </div>
+        <div class="metric-card card-enter card-enter-4" style="--metric-accent: #8b5cf6;">
+            <p class="metric-card-label">Jobs Completed</p>
+            <p class="metric-card-value">{{ yearly_jobs }}</p>
+        </div>
+    </div>
+
+    <!-- Projection Card (only for current year) -->
+    {% if year == current_year and projection and projection.confidence != 'none' %}
+    <div class="premium-card card-gradient-top p-6 mb-8 bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg card-enter card-enter-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                    <p class="text-slate-400 text-sm font-medium">Projected Full Year</p>
+                </div>
+                <p class="text-4xl font-display font-bold">${{ '{:,.0f}'.format(projection.projected_annual_cents / 100) }}</p>
+                <p class="text-slate-400 text-sm mt-1">
+                    {% if projection.confidence == 'high' %}
+                    Reliable projection ({{ projection.months_data }} months data)
+                    {% elif projection.confidence == 'medium' %}
+                    Based on {{ projection.months_data }} months
+                    {% else %}
+                    Limited data - projection will improve
+                    {% endif %}
+                    | {{ projection.months_remaining }} months remaining
+                </p>
+            </div>
+            <div class="text-right">
+                <p class="text-slate-400 text-sm">To reach projection</p>
+                <p class="text-2xl font-display font-semibold text-amber-400">
+                    ${{ '{:,.0f}'.format(projection.projected_remaining_cents / 100) }}
+                </p>
+                {% if projection.months_remaining > 0 %}
+                <p class="text-slate-500 text-sm">
+                    ~${{ '{:,.0f}'.format(projection.projected_remaining_cents / 100 / projection.months_remaining) }}/month
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Projection progress bar -->
+        {% if projection.projected_annual_cents > 0 %}
+        <div class="mt-4">
+            <div class="flex justify-between text-sm text-slate-400 mb-1">
+                <span>Progress</span>
+                <span>{{ ((projection.ytd_total_cents / projection.projected_annual_cents) * 100)|round|int }}%</span>
+            </div>
+            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
+                     style="width: {{ ((projection.ytd_total_cents / projection.projected_annual_cents) * 100)|round }}%"></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Best/Worst Months -->
+    {% if best_month and worst_month %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div class="premium-card p-5 hover:shadow-md transition-shadow card-enter card-enter-6">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 icon-bg-green rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Best Month</p>
+                    <p class="font-semibold text-slate-900">
+                        {{ best_month.month_name }} - <span class="font-display">${{ '{:,.0f}'.format(best_month.take_home_cents / 100) }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="premium-card p-5 hover:shadow-md transition-shadow card-enter card-enter-7">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 icon-bg-amber rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-500">Slowest Month</p>
+                    <p class="font-semibold text-slate-900">
+                        {{ worst_month.month_name }} - <span class="font-display">${{ '{:,.0f}'.format(worst_month.take_home_cents / 100) }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Current Goal Progress -->
+    {% if goal and goal.goal_amount_cents > 0 %}
+    <div class="premium-card p-6 mb-8 card-enter card-enter-8">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-orange">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="font-display font-semibold text-slate-900">Current {{ goal.goal_type | capitalize }} Progress</h2>
+                <p class="text-sm text-slate-500">{{ goal.period_start.strftime('%d %b') }} - {{ goal.period_end.strftime('%d %b %Y') }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-end gap-2 mb-3 mt-4">
+            <span class="text-2xl font-display font-bold {% if goal.current_cents < 0 %}text-red-600{% else %}text-slate-900{% endif %}">
+                {% if goal.current_cents < 0 %}-{% endif %}${{ '{:,.0f}'.format((goal.current_cents if goal.current_cents >= 0 else -goal.current_cents) / 100) }}
+            </span>
+            <span class="text-slate-500 mb-0.5">of <span class="font-display">${{ '{:,.0f}'.format(goal.goal_amount_cents / 100) }}</span></span>
+        </div>
+
+        <div class="relative h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
+            {% if goal.status == 'achieved' %}
+            <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+                 style="width: 100%"></div>
+            {% elif goal.current_cents < 0 %}
+            <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-red-600 to-red-400 rounded-full"
+                 style="width: 5%"></div>
+            {% else %}
+            <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"
+                 style="width: {{ goal.percentage }}%"></div>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center justify-between text-sm">
+            <span class="{% if goal.status == 'achieved' %}text-green-600{% elif goal.status == 'on_track' %}text-green-600{% else %}text-amber-600{% endif %}">
+                {% if goal.status == 'achieved' %}Goal reached!{% elif goal.status == 'on_track' %}On track{% else %}Behind pace{% endif %}
+            </span>
+            <span class="text-slate-500">{{ goal.days_remaining }} days remaining</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Monthly Chart -->
+    <div class="premium-card p-6 mb-8 card-enter card-enter-9">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-blue">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <div><h2 class="font-display font-semibold text-slate-900">Monthly Proprietor's Earnings</h2></div>
+        </div>
+
+        {% set max_value = months_data | map(attribute='take_home_cents') | max or 1 %}
+        <div class="flex items-end justify-between gap-2 h-64 mt-6">
+            {% for month in months_data %}
+            <div class="flex-1 flex flex-col items-center group">
+                <!-- Bar -->
+                <div class="w-full flex flex-col justify-end h-48 relative">
+                    {% if month.take_home_cents > 0 %}
+                    <div class="w-full bg-gradient-to-t from-orange-500 to-amber-400 rounded-t-lg transition-all hover:from-orange-600 hover:to-amber-500 cursor-pointer"
+                         style="height: {{ (month.take_home_cents / max_value * 100) | round }}%">
+                        <!-- Tooltip -->
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                            <p class="font-display font-semibold">${{ '{:,.0f}'.format(month.take_home_cents / 100) }}</p>
+                            <p class="text-slate-400 text-xs">{{ month.jobs }} jobs | Rev: ${{ '{:,.0f}'.format(month.revenue_cents / 100) }}</p>
+                        </div>
+                    </div>
+                    {% elif month.take_home_cents < 0 %}
+                    <div class="w-full bg-gradient-to-t from-red-600 to-red-400 rounded-t-lg cursor-pointer"
+                         style="height: 10%">
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                            <p class="font-display font-semibold text-red-400">-${{ '{:,.0f}'.format(-month.take_home_cents / 100) }}</p>
+                            <p class="text-slate-400 text-xs">{{ month.jobs }} jobs | Loss</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="w-full bg-slate-200 rounded-t-lg" style="height: 4px"></div>
+                    {% endif %}
+                </div>
+
+                <!-- Label -->
+                <p class="mt-2 text-sm font-medium {% if month.month == current_month %}text-orange-600{% else %}text-slate-600{% endif %}">
+                    {{ month.month_name }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not months_data | selectattr('has_data') | list %}
+        <div class="empty-state-v4 text-center py-8">
+            <p class="text-slate-500">No earnings data yet for {{ year }}.</p>
+            <p class="text-sm mt-1 text-slate-400">Data is recorded automatically at the start of each month.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Monthly Breakdown Table -->
+    <div class="premium-card overflow-hidden card-enter card-enter-10">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-purple">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div><h2 class="font-display font-semibold text-slate-900">Monthly Breakdown</h2></div>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table-premium w-full">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-slate-500">Month</th>
+                        <th class="px-6 py-3 text-right text-sm font-medium text-slate-500">Revenue</th>
+                        <th class="px-6 py-3 text-right text-sm font-medium text-slate-500">Materials</th>
+                        <th class="px-6 py-3 text-right text-sm font-medium text-slate-500">Labour</th>
+                        <th class="px-6 py-3 text-right text-sm font-medium text-slate-500">Expenses</th>
+                        <th class="px-6 py-3 text-right text-sm font-medium text-slate-500">Earnings</th>
+                        <th class="px-6 py-3 text-right text-sm font-medium text-slate-500">Jobs</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for month in months_data %}
+                    <tr class="{% if not month.has_data %}text-slate-400{% endif %} hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 font-medium">{{ month.month_name }}</td>
+                        <td class="px-6 py-4 text-right font-display">${{ '{:,.0f}'.format(month.revenue_cents / 100) }}</td>
+                        <td class="px-6 py-4 text-right text-red-600 font-display">
+                            {% if month.materials_cents > 0 %}-{% endif %}${{ '{:,.0f}'.format(month.materials_cents / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-red-600 font-display">
+                            {% if month.labour_cents > 0 %}-{% endif %}${{ '{:,.0f}'.format(month.labour_cents / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-red-600 font-display">
+                            {% if month.expenses_cents > 0 %}-{% endif %}${{ '{:,.0f}'.format(month.expenses_cents / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-display font-semibold {% if month.take_home_cents >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if month.take_home_cents < 0 %}-{% endif %}${{ '{:,.0f}'.format((month.take_home_cents if month.take_home_cents >= 0 else -month.take_home_cents) / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-display">{{ month.jobs }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-slate-50 font-semibold">
+                    <tr>
+                        <td class="px-6 py-4">Total</td>
+                        <td class="px-6 py-4 text-right font-display">${{ '{:,.0f}'.format(yearly_revenue_cents / 100) }}</td>
+                        <td class="px-6 py-4 text-right text-red-600 font-display">
+                            -${{ '{:,.0f}'.format(months_data | map(attribute='materials_cents') | sum / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-red-600 font-display">
+                            -${{ '{:,.0f}'.format(months_data | map(attribute='labour_cents') | sum / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-red-600 font-display">
+                            -${{ '{:,.0f}'.format(months_data | map(attribute='expenses_cents') | sum / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-display {% if yearly_total_cents >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if yearly_total_cents < 0 %}-{% endif %}${{ '{:,.0f}'.format((yearly_total_cents if yearly_total_cents >= 0 else -yearly_total_cents) / 100) }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-display">{{ yearly_jobs }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- How It Works Note -->
+    <div class="mt-8 premium-card p-5 card-enter card-enter-11">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-slate">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div><h3 class="font-display font-medium text-slate-900">How Proprietor's Earnings is Calculated</h3></div>
+        </div>
+        <div class="mt-3">
+            <p class="text-sm text-slate-600">
+                <strong>Proprietor's Earnings = Revenue (ex GST) - Materials (at cost) - Labour (wages + super + PAYG) - Expenses</strong>
+            </p>
+            <ul class="text-sm text-slate-600 mt-2 space-y-1">
+                <li><strong>Revenue (ex GST):</strong> Payments received &divide; 1.1 (GST goes to ATO, not you)</li>
+                <li><strong>Materials:</strong> Your actual cost, not markup price. The markup profit stays in your draw.</li>
+                <li><strong>Labour:</strong> Worker wages + super (11.5%) + PAYG withheld. Owner labour is NOT deducted.</li>
+                <li><strong>Expenses:</strong> General business expenses not linked to specific jobs</li>
+            </ul>
+            <p class="text-sm text-slate-500 mt-3">
+                Data is recorded automatically at the start of each month. Use the backfill task to populate historical data.
+            </p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+.env
+*.egg-info
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+htmlcov
+.coverage
+
+# Docs
+*.md
+LICENSE
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.db
+*.sqlite3
+
+# Dev scripts & tools
+run_local.bat
+stop_local.bat
+tailwindcss-windows-x64.exe
+scripts/
+backups/
+
+# Claude / dev files
+.claude

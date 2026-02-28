@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications — ConcreteIQ{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block mobile_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Hero Header -->
+    <div class="page-hero animate-in">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative">
+            <div>
+                <p class="page-hero-subtitle">Stay Updated</p>
+                <h1 class="page-hero-title">Notifications</h1>
+                <p class="text-white/50 text-sm mt-1">
+                    {% if unread_count > 0 %}
+                        {{ unread_count }} unread notification{{ 's' if unread_count != 1 else '' }}
+                    {% else %}
+                        All caught up!
+                    {% endif %}
+                </p>
+            </div>
+            {% if unread_count > 0 %}
+            <button @click="markAllRead()"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-semibold transition-all border border-white/10">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Mark all as read
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="max-w-4xl premium-card overflow-hidden card-enter card-enter-1">
+        {% if notifications %}
+        <!-- List Header -->
+        <div class="px-6 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-700 font-display">All Notifications</span>
+            {% if unread_count > 0 %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200">
+                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                {{ unread_count }} new
+            </span>
+            {% endif %}
+        </div>
+
+        <ul class="divide-y divide-slate-100">
+            {% for notif in notifications %}
+            <li class="list-item-premium {% if not notif.is_read %}bg-orange-50/40{% endif %}">
+                <a href="/notifications/{{ notif.id }}"
+                   class="block px-6 py-4 transition-colors group">
+                    <div class="flex items-start gap-4">
+                        <!-- Icon based on type -->
+                        <div class="flex-shrink-0 mt-0.5">
+                            {% if 'quote_accepted' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-sm shadow-green-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            {% elif 'quote_declined' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center shadow-sm shadow-red-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </div>
+                            {% elif 'quote_viewed' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-sm shadow-blue-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </div>
+                            {% elif 'payment' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-sm shadow-green-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            {% elif 'overdue' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-red-500 flex items-center justify-center shadow-sm shadow-red-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            {% elif 'job_tomorrow' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-sm shadow-orange-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            {% elif 'job_scheduled' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm shadow-blue-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            {% elif 'invoice_sent' in notif.type or 'deposit_invoice' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center shadow-sm shadow-purple-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                            </div>
+                            {% elif 'customer' in notif.type %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-500 flex items-center justify-center shadow-sm shadow-indigo-500/20">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                            </div>
+                            {% else %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center shadow-sm">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm font-display font-bold text-slate-900">
+                                    {{ notif.title }}
+                                </p>
+                                {% if notif.priority == 'high' or notif.priority == 'critical' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 flex-shrink-0">
+                                    {{ notif.priority | title }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-slate-500 mt-0.5 line-clamp-1">{{ notif.message }}</p>
+                            <p class="text-xs text-slate-400 mt-1.5 font-medium">
+                                {{ notif.created_at.strftime('%d %b %Y at %H:%M') if notif.created_at else '' }}
+                            </p>
+                        </div>
+
+                        <!-- Unread indicator + chevron -->
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            {% if not notif.is_read %}
+                            <span class="w-2.5 h-2.5 bg-orange-500 rounded-full block badge-dot-live shadow-sm shadow-orange-500/30"></span>
+                            {% endif %}
+                            <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Pagination -->
+        {% if pages > 1 %}
+        <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-center gap-3">
+            {% if page > 1 %}
+            <a href="?page={{ page - 1 }}"
+               class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-full hover:border-orange-300 hover:text-orange-600 transition-all shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Previous
+            </a>
+            {% endif %}
+            <span class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-orange-600 bg-orange-50 border border-orange-100 rounded-full">
+                {{ page }} / {{ pages }}
+            </span>
+            {% if page < pages %}
+            <a href="?page={{ page + 1 }}"
+               class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-full hover:border-orange-300 hover:text-orange-600 transition-all shadow-sm">
+                Next
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state-v4">
+            <div class="empty-state-v4-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <h3 class="empty-state-v4-title">All caught up!</h3>
+            <p class="empty-state-v4-text">You'll see updates here when quotes are viewed, accepted, or payments come in.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+async function markAllRead() {
+    try {
+        const response = await fetch('/notifications/api/mark-all-read', { method: 'POST' });
+        if (response.ok) {
+            window.location.reload();
+        }
+    } catch (e) {
+        console.error('Error marking all as read:', e);
+    }
+}
+</script>
+{% endblock %}
