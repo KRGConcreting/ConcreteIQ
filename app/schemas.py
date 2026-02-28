@@ -708,6 +708,8 @@ class WorkerCreate(BaseModel):
     phone: Optional[str] = Field(None, max_length=50)
     email: Optional[EmailStr] = None
     notes: Optional[str] = None
+    claims_tax_free_threshold: bool = True
+    pay_frequency: str = Field(default="weekly", pattern="^(weekly|fortnightly|monthly)$")
 
 
 class WorkerUpdate(BaseModel):
@@ -720,6 +722,8 @@ class WorkerUpdate(BaseModel):
     email: Optional[str] = Field(None, max_length=255)
     notes: Optional[str] = None
     active: Optional[bool] = None
+    claims_tax_free_threshold: Optional[bool] = None
+    pay_frequency: Optional[str] = Field(None, pattern="^(weekly|fortnightly|monthly)$")
 
 
 class WorkerResponse(BaseSchema):
@@ -733,6 +737,8 @@ class WorkerResponse(BaseSchema):
     email: Optional[str]
     notes: Optional[str]
     active: bool
+    claims_tax_free_threshold: bool
+    pay_frequency: str
     created_at: datetime
     updated_at: datetime
 

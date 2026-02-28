@@ -193,7 +193,7 @@
                         <div class="border-t border-slate-100 pt-2 space-y-1">
                             <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Worker Take-Home</p>
                             <div class="flex justify-between text-slate-500">
-                                <span>PAYG Withheld (17%)</span>
+                                <span x-text="'PAYG Withheld (' + paygPct + '%)'">PAYG Withheld</span>
                                 <span x-text="'-$' + (paygCents / 100).toFixed(2)"></span>
                             </div>
                             <div class="flex justify-between text-green-700 font-medium">
@@ -225,6 +225,28 @@
 </div>
 
 <script>
+// ATO 2025-26 PAYG bracket calculator
+function calculatePaygWithholdingLabour(weeklyGrossCents) {
+    if (weeklyGrossCents <= 0) return 0;
+    const annualIncome = weeklyGrossCents * 52 / 100;
+    const brackets = [
+        { min: 0, max: 18200, rate: 0, base: 0 },
+        { min: 18201, max: 45000, rate: 0.19, base: 0 },
+        { min: 45001, max: 135000, rate: 0.30, base: 5092 },
+        { min: 135001, max: 190000, rate: 0.37, base: 32092 },
+        { min: 190001, max: Infinity, rate: 0.45, base: 52442 },
+    ];
+    let annualTax = 0;
+    for (const b of brackets) {
+        if (annualIncome >= b.min && annualIncome <= b.max) {
+            annualTax = b.base + (annualIncome - b.min) * b.rate;
+            break;
+        }
+    }
+    const medicare = annualIncome * 0.02;
+    return Math.round((annualTax + medicare) / 52 * 100);
+}
+
 function labourQuote() {
     const existing = {{ ((quote.calculator_input | tojson) if quote and quote.calculator_input else 'null') | safe }};
     const TEAM_RATES = {{ team_rates | tojson | safe }};
@@ -253,7 +275,17 @@ function labourQuote() {
             return tier.hourly;
         },
         get grossCents() { return Math.round(this.hourlyRate * (this.form.hours || 0)); },
-        get paygCents() { return Math.round(this.grossCents * 0.17); },
+        get paygCents() {
+            // Use ATO bracket calc: estimate weekly pay from hourly rate * 38hrs
+            const weeklyGross = this.hourlyRate * 38;
+            if (weeklyGross <= 0) return Math.round(this.grossCents * 0.17);
+            const weeklyPayg = calculatePaygWithholdingLabour(weeklyGross);
+            const effectiveRate = weeklyPayg / weeklyGross;
+            return Math.round(this.grossCents * effectiveRate);
+        },
+        get paygPct() {
+            return this.grossCents > 0 ? Math.round(this.paygCents / this.grossCents * 100) : 17;
+        },
         get superCents() { return Math.round(this.grossCents * 0.12); },
         get workcoverCents() { return Math.round(this.grossCents * 0.03); },
         get subtotalCents() { return this.grossCents + this.superCents + this.workcoverCents; },

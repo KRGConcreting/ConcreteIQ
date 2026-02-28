@@ -985,6 +985,41 @@
 </div>
 
 <script>
+// ATO 2025-26 PAYG bracket calculator
+function calculatePaygWithholding(weeklyBaseWageCents) {
+    if (weeklyBaseWageCents <= 0) return 0;
+    const annualIncome = weeklyBaseWageCents * 52 / 100;
+    const brackets = [
+        { min: 0, max: 18200, rate: 0, base: 0 },
+        { min: 18201, max: 45000, rate: 0.19, base: 0 },
+        { min: 45001, max: 135000, rate: 0.30, base: 5092 },
+        { min: 135001, max: 190000, rate: 0.37, base: 32092 },
+        { min: 190001, max: Infinity, rate: 0.45, base: 52442 },
+    ];
+    let annualTax = 0;
+    for (const b of brackets) {
+        if (annualIncome >= b.min && annualIncome <= b.max) {
+            annualTax = b.base + (annualIncome - b.min) * b.rate;
+            break;
+        }
+    }
+    const medicare = annualIncome * 0.02;
+    return Math.round((annualTax + medicare) / 52 * 100);
+}
+
+// Get PAYG as fraction of LOADED cost (cost_rate includes super + workcover)
+function getPaygFractionOfLoaded(hourlyLoadedCostCents, standardHoursPerWeek = 38) {
+    if (hourlyLoadedCostCents <= 0) return 0.17;
+    // Derive base wage: loaded = base * (1 + super + workcover)
+    const ON_COST_MULTIPLIER = 1 + 0.12 + 0.03; // 1.15
+    const hourlyBaseCents = hourlyLoadedCostCents / ON_COST_MULTIPLIER;
+    const weeklyBase = hourlyBaseCents * standardHoursPerWeek;
+    const weeklyPayg = calculatePaygWithholding(weeklyBase);
+    // Express as fraction of loaded cost (since buckets decompose loaded cost)
+    const weeklyLoaded = hourlyLoadedCostCents * standardHoursPerWeek;
+    return weeklyPayg / weeklyLoaded;
+}
+
 function quoteCalculator() {
     return {
         // Form state
@@ -1392,13 +1427,35 @@ function quoteCalculator() {
             const pro4xTotalCents = Math.round(pro4xReturnKm * pro4xPerKm); // in cents
 
             // === 7-BUCKET ACCOUNT ALLOCATION ===
-            const PAYG_RATE = 0.17;      // 17% PAYG withholding
-            const SUPER_RATE = 0.12;     // 12% super guarantee
-            const WORKCOVER_RATE = 0.03; // 3% workcover
+            // Rates as fraction of LOADED cost (loaded = base * 1.155)
+            const ON_COST_MULT = 1 + 0.12 + 0.03; // 1.15
+            const SUPER_RATE = 0.12 / ON_COST_MULT;        // ~10.43% of loaded
+            const WORKCOVER_RATE = 0.03 / ON_COST_MULT;    // ~2.60% of loaded
+
+            // Calculate effective PAYG rate from selected workers' loaded cost rates
+            const allSelectedWorkerIds = [
+                ...new Set([
+                    ...(this.form.setup_day_workers || []),
+                    ...(this.form.pour_day_workers || []),
+                ])
+            ];
+            let effectivePaygRate = 0.17; // Fallback
+            if (allSelectedWorkerIds.length > 0 && this.availableWorkers.length > 0) {
+                let totalRate = 0;
+                let workerCount = 0;
+                for (const id of allSelectedWorkerIds) {
+                    const worker = this.availableWorkers.find(w => w.id === parseInt(id));
+                    if (worker && worker.cost_rate_cents > 0) {
+                        totalRate += getPaygFractionOfLoaded(worker.cost_rate_cents);
+                        workerCount++;
+                    }
+                }
+                if (workerCount > 0) effectivePaygRate = totalRate / workerCount;
+            }
 
             // Korbain's gross wages = labour_cost_cents (actual cost from calculator)
             const grossWagesCents = r.labour_cost_cents || 0;
-            const paygWithheld = Math.round(grossWagesCents * PAYG_RATE);
+            const paygWithheld = Math.round(grossWagesCents * effectivePaygRate);
             const superAmount = Math.round(grossWagesCents * SUPER_RATE);
             const workcover = Math.round(grossWagesCents * WORKCOVER_RATE);
             const netWages = grossWagesCents - paygWithheld;
@@ -1555,9 +1612,10 @@ function quoteCalculator() {
                     workcover: bucketWorkcover,
                     pro4x: bucketPro4x,
                     profit_draw: bucketProfitDraw,
-                    payg_rate: PAYG_RATE,
+                    payg_rate: effectivePaygRate,
                     super_rate: SUPER_RATE,
                     workcover_rate: WORKCOVER_RATE,
+                    payg_rate_base: Math.round(effectivePaygRate * ON_COST_MULT * 10000) / 100, // % of base wage for display
                     discount: discountCents,
                     // Per-payment-stage allocation breakdown
                     per_payment: (() => {

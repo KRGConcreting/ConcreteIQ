@@ -109,8 +109,43 @@
             </div>
         </div>
 
-        <!-- Notes -->
+        <!-- PAYG / Tax Settings -->
         <div class="premium-card p-6 card-enter card-enter-2">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-green">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900">PAYG Tax Settings</h2>
+                    <p class="text-sm text-slate-500">Tax withholding configuration for payroll</p>
+                </div>
+            </div>
+            <div class="space-y-4 mt-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" x-model="form.claims_tax_free_threshold"
+                           class="rounded-xl border-slate-300 text-orange-600 focus:ring-orange-500">
+                    <div>
+                        <span class="text-sm font-medium text-slate-700">Claims tax-free threshold</span>
+                        <p class="text-xs text-slate-500">Workers can only claim this from one employer. If unchecked, tax is withheld at 34% from the first dollar.</p>
+                    </div>
+                </label>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Pay Frequency</label>
+                    <select x-model="form.pay_frequency"
+                            class="input-field w-full">
+                        <option value="weekly">Weekly</option>
+                        <option value="fortnightly">Fortnightly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500">How often this worker is paid (affects PAYG withholding calculation)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="premium-card p-6 card-enter card-enter-3">
             <div class="settings-section-header">
                 <div class="settings-section-header-icon icon-bg-amber">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,7 +164,7 @@
 
         <!-- Status for existing workers -->
         {% if worker %}
-        <div class="premium-card p-6 card-enter card-enter-3">
+        <div class="premium-card p-6 card-enter card-enter-4">
             <div class="settings-section-header">
                 <div class="settings-section-header-icon icon-bg-green">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +187,7 @@
 
     <!-- Delete button for existing workers -->
     {% if worker %}
-    <div class="mt-6 pt-6 border-t border-slate-200 card-enter card-enter-4">
+    <div class="mt-6 pt-6 border-t border-slate-200 card-enter card-enter-5">
         <button @click="deleteWorker()"
                 :disabled="deleting"
                 class="text-red-600 hover:text-red-700 text-sm font-medium">
@@ -173,6 +208,8 @@ function workerForm() {
             cost_rate_cents: {{ worker.cost_rate_cents if worker else 0 }},
             notes: {{ (worker.notes or '') | tojson }},
             active: {{ 'true' if (worker and worker.active) or not worker else 'false' }},
+            claims_tax_free_threshold: {{ 'true' if (not worker or worker.claims_tax_free_threshold) else 'false' }},
+            pay_frequency: {{ (worker.pay_frequency or 'weekly') | tojson }},
         },
         hourlyRateDollars: {{ (worker.hourly_rate_cents / 100) if worker else 0 }},
         costRateDollars: {{ (worker.cost_rate_cents / 100) if worker else 0 }},

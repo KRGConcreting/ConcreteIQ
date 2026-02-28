@@ -91,6 +91,9 @@ async def _run_safe_migrations():
         # Part B-C: Expense model upgrades for Xero/BAS
         ("expenses", "gst_free", "BOOLEAN DEFAULT 0"),
         ("expenses", "xero_sync_error", "TEXT"),
+        # PAYG withholding fields for workers
+        ("workers", "claims_tax_free_threshold", "BOOLEAN DEFAULT 1"),
+        ("workers", "pay_frequency", "VARCHAR(20) DEFAULT 'weekly'"),
     ]
 
     async with engine.begin() as conn:

@@ -6,7 +6,7 @@ Proprietor's Earnings = Revenue (ex GST) - Materials (actual cost) - Worker Labo
 Key points:
 - GST collected is NOT yours - it goes to the ATO
 - Materials are tracked at YOUR actual cost, so markup profit is automatically included
-- Worker costs include wages + super (12.5%) + PAYG withheld
+- Worker costs include wages + super (12%) + PAYG withheld
 - Owner's own labour is NOT deducted - that's part of what they take home
 """
 
@@ -20,11 +20,11 @@ from sqlalchemy.orm import Session
 
 from app.models import Invoice, Payment, Expense, TimeEntry, Worker, Quote
 from app.core.dates import sydney_today
+from app.workers.payroll import calculate_payg_for_period_wages
 
 
 # Default rates for Australian payroll
-DEFAULT_SUPER_RATE = 0.125  # 12.5% as of 2025-26 (SG rate effective 1 Jul 2025)
-DEFAULT_PAYG_RATE = 0.17    # PAYG withholding rate
+DEFAULT_SUPER_RATE = 0.12  # 12% super guarantee
 
 
 async def get_period_dates(period_type: str, reference_date: date = None) -> tuple[date, date]:
@@ -70,7 +70,7 @@ async def calculate_take_home(
     Owner's Draw = Revenue (ex GST) - Materials - Labour (total) - Expenses
 
     GST collected is NOT included in take-home as it belongs to the ATO.
-    Labour includes: wages + super (12.5%) + PAYG withheld.
+    Labour includes: wages + super (12%) + PAYG withheld.
     Materials are tracked at actual cost (markup profit is automatically in take-home).
 
     Returns:
@@ -142,7 +142,7 @@ async def calculate_take_home(
     general_expenses_cents = general_expenses_result.scalar() or 0
 
     # Labour: Worker hours for these jobs (not the owner)
-    # Includes wages + super (12.5%) + PAYG withholding
+    # Includes wages + super (12%) + PAYG withholding
     labour_wages_cents = 0
     labour_super_cents = 0
     labour_payg_cents = 0
@@ -168,13 +168,16 @@ async def calculate_take_home(
                 wages = int(float(time_entry.hours) * rate)
                 labour_wages_cents += wages
 
-                # Super contribution (12.5% employer contribution to their super fund)
+                # Super contribution (12% employer contribution to their super fund)
                 super_amount = int(wages * DEFAULT_SUPER_RATE)
                 labour_super_cents += super_amount
 
-                # PAYG withholding (tax you withhold and pay to ATO on their behalf)
-                # This is an estimate - actual depends on worker's tax declaration
-                payg_amount = int(wages * DEFAULT_PAYG_RATE)
+                # PAYG withholding using ATO bracket-based calculation
+                pay_freq = getattr(worker, 'pay_frequency', 'weekly') or 'weekly'
+                claims_tft = getattr(worker, 'claims_tax_free_threshold', True)
+                payg_amount = calculate_payg_for_period_wages(
+                    wages, pay_freq, claims_tft
+                )
                 labour_payg_cents += payg_amount
 
     # PAYG is withheld FROM gross wages, not an additional cost. Only super is extra.
@@ -476,7 +479,12 @@ def calculate_take_home_sync(
                 wages = int(float(time_entry.hours) * rate)
                 labour_wages_cents += wages
                 labour_super_cents += int(wages * DEFAULT_SUPER_RATE)
-                labour_payg_cents += int(wages * DEFAULT_PAYG_RATE)
+                # PAYG withholding using ATO bracket-based calculation
+                pay_freq = getattr(worker, 'pay_frequency', 'weekly') or 'weekly'
+                claims_tft = getattr(worker, 'claims_tax_free_threshold', True)
+                labour_payg_cents += calculate_payg_for_period_wages(
+                    wages, pay_freq, claims_tft
+                )
 
     # PAYG is withheld FROM gross wages, not an additional cost. Only super is extra.
     labour_total_cents = labour_wages_cents + labour_super_cents

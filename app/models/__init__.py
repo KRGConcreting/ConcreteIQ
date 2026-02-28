@@ -615,6 +615,10 @@ class Worker(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    # PAYG / payroll fields
+    claims_tax_free_threshold: Mapped[bool] = mapped_column(Boolean, default=True)
+    pay_frequency: Mapped[str] = mapped_column(String(20), default="weekly")  # weekly, fortnightly, monthly
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=sydney_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=sydney_now, onupdate=sydney_now)
 

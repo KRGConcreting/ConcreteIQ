@@ -217,7 +217,7 @@ async def create_labour_quote(
     from app.quotes.pricing import TEAM_RATES, GST_RATE
 
     PAYG_RATE = 0.17
-    SUPER_RATE = 0.125
+    SUPER_RATE = 0.12
     WORKCOVER_RATE = 0.03
 
     customer = await db.get(Customer, data.customer_id)

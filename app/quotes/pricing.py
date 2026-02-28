@@ -425,7 +425,7 @@ TRAVEL = {
 # GST & PAYROLL
 # ==============================================================================
 GST_RATE = 0.10
-SUPER_RATE = 0.125  # 12.5% SG rate effective 1 Jul 2025
+SUPER_RATE = 0.12  # 12% super guarantee
 PAYG_RATE = 0.17
 WORKCOVER_RATE = 0.03
 
