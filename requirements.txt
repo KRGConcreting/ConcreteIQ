@@ -68,3 +68,4 @@ tzdata
 
 # Development
 ruff==0.1.13
+psycopg2-binary
