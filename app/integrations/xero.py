@@ -186,13 +186,18 @@ def _decrypt_token(encrypted: str) -> str:
 # OAUTH FLOW
 # =============================================================================
 
-def get_authorization_url(state: Optional[str] = None, client_id: Optional[str] = None) -> str:
+def get_authorization_url(
+    state: Optional[str] = None,
+    client_id: Optional[str] = None,
+    redirect_uri: Optional[str] = None,
+) -> str:
     """
     Generate Xero OAuth authorization URL.
 
     Args:
         state: Optional state parameter for CSRF protection
         client_id: Xero client ID (if None, reads from env var)
+        redirect_uri: OAuth callback URL (if None, built from settings)
 
     Returns:
         Full authorization URL to redirect user to
@@ -204,24 +209,32 @@ def get_authorization_url(state: Optional[str] = None, client_id: Optional[str] 
     if state is None:
         state = secrets.token_urlsafe(32)
 
+    callback_uri = redirect_uri or settings.xero_redirect_uri or f"{settings.app_url}/integrations/xero/callback"
+
     params = {
         "response_type": "code",
         "client_id": xero_client_id,
-        "redirect_uri": settings.xero_redirect_uri or f"{settings.app_url}/integrations/xero/callback",
+        "redirect_uri": callback_uri,
         "scope": settings.xero_scopes,
         "state": state,
     }
 
+    logger.info(f"Xero OAuth redirect_uri: {callback_uri}")
     return f"{XERO_AUTH_URL}?{urlencode(params)}"
 
 
-async def exchange_code_for_tokens(code: str, db: Optional[AsyncSession] = None) -> dict:
+async def exchange_code_for_tokens(
+    code: str,
+    db: Optional[AsyncSession] = None,
+    redirect_uri: Optional[str] = None,
+) -> dict:
     """
     Exchange authorization code for access and refresh tokens.
 
     Args:
         code: Authorization code from OAuth callback
         db: Optional database session for reading credentials from DB
+        redirect_uri: Must match the redirect_uri used in the authorization request
 
     Returns:
         Dict with access_token, refresh_token, expires_in
@@ -233,7 +246,7 @@ async def exchange_code_for_tokens(code: str, db: Optional[AsyncSession] = None)
     if not client_id or not client_secret:
         raise ValueError("Xero credentials not configured")
 
-    redirect_uri = settings.xero_redirect_uri or f"{settings.app_url}/integrations/xero/callback"
+    callback_uri = redirect_uri or settings.xero_redirect_uri or f"{settings.app_url}/integrations/xero/callback"
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -241,7 +254,7 @@ async def exchange_code_for_tokens(code: str, db: Optional[AsyncSession] = None)
             data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": redirect_uri,
+                "redirect_uri": callback_uri,
             },
             auth=(client_id, client_secret),
             headers={"Content-Type": "application/x-www-form-urlencoded"},

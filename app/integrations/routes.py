@@ -50,6 +50,19 @@ router = APIRouter(dependencies=[Depends(require_login), Depends(verify_csrf)])
 # XERO OAUTH FLOW
 # =============================================================================
 
+def _build_redirect_uri(request: Request) -> str:
+    """
+    Build the Xero OAuth redirect URI from the current request.
+
+    Uses X-Forwarded-Proto/Host headers if behind a reverse proxy (Railway, etc).
+    This ensures the redirect_uri always matches the actual domain.
+    """
+    # Prefer X-Forwarded headers (set by reverse proxies like Railway)
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    return f"{proto}://{host}/integrations/xero/callback"
+
+
 @router.get("/xero/connect", name="integrations:xero_connect")
 async def xero_connect(request: Request, db: AsyncSession = Depends(get_db)):
     """
@@ -61,11 +74,16 @@ async def xero_connect(request: Request, db: AsyncSession = Depends(get_db)):
     state = secrets.token_urlsafe(32)
     request.session["xero_oauth_state"] = state
 
+    # Build redirect URI from the actual request URL (handles proxies correctly)
+    redirect_uri = _build_redirect_uri(request)
+    # Store in session so callback uses the exact same URI for token exchange
+    request.session["xero_redirect_uri"] = redirect_uri
+
     try:
         # Read Xero client ID from DB first, then env var
         from app.integrations.xero import _get_xero_credentials
         client_id, _ = await _get_xero_credentials(db)
-        auth_url = get_authorization_url(state, client_id=client_id)
+        auth_url = get_authorization_url(state, client_id=client_id, redirect_uri=redirect_uri)
         return RedirectResponse(url=auth_url, status_code=302)
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -100,19 +118,27 @@ async def xero_callback(
     # Clear state from session
     request.session.pop("xero_oauth_state", None)
 
+    # Get redirect_uri from session (must match what was sent to Xero)
+    redirect_uri = request.session.pop("xero_redirect_uri", None) or _build_redirect_uri(request)
+
     try:
         # Exchange code for tokens (reads credentials from DB first)
-        tokens = await exchange_code_for_tokens(code, db=db)
+        tokens = await exchange_code_for_tokens(code, db=db, redirect_uri=redirect_uri)
 
         # Get tenant ID
         tenant_id = await get_tenant_id(tokens["access_token"])
 
-        # Save tokens
+        # Save tokens (refresh_token may be absent if user chose "30 minutes" access)
+        refresh_token = tokens.get("refresh_token", "")
+        if not refresh_token:
+            import logging
+            logging.getLogger(__name__).warning("Xero: No refresh_token received — token will expire and require re-auth")
+
         await save_xero_tokens(
             db,
             tokens["access_token"],
-            tokens["refresh_token"],
-            tokens["expires_in"],
+            refresh_token,
+            tokens.get("expires_in", 1800),
             tenant_id,
         )
 

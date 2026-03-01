@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     xero_client_id: str | None = None
     xero_client_secret: str | None = None
     xero_redirect_uri: str = ""  # e.g., https://app.krgconcreting.au/integrations/xero/callback
-    xero_scopes: str = "openid profile email accounting.transactions accounting.contacts accounting.settings"
+    xero_scopes: str = "offline_access openid profile email accounting.transactions accounting.contacts accounting.settings"
     xero_bank_account_code: str = "090"  # Xero bank account code for Spend Money transactions
     google_client_id: str | None = None
     google_client_secret: str | None = None
