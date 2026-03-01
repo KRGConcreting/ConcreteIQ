@@ -1171,14 +1171,9 @@ async def preview_pdf_template(
         notes=None,
     )
 
-    # Logo URIs for PDF rendering (file:// paths for WeasyPrint, /static for browser preview)
-    from app.quotes.pdf import _logo_uri, _concreteiq_logo_uri
-    try:
-        logo_uri = _logo_uri()
-        ciq_logo_uri = _concreteiq_logo_uri()
-    except Exception:
-        logo_uri = "/static/images/KyleRGyoles_Concreting_Logo.png"
-        ciq_logo_uri = "/static/images/ConcreteIQ_Logo_Nav.png"
+    # Logo URIs — browser preview uses /static/ web paths (file:// URIs are blocked by browsers)
+    logo_uri = "/static/images/KyleRGyoles_Concreting_Logo.png"
+    ciq_logo_uri = "/static/images/ConcreteIQ_Logo_Nav.png"
 
     # Build context based on template type
     sample_context = {
