@@ -100,7 +100,7 @@ async def stripe_webhook(
 
     # Verify signature — return 200 even on failure to prevent Stripe retry storms
     try:
-        event = await payment_service.verify_webhook_signature(payload, signature)
+        event = await payment_service.verify_webhook_signature(payload, signature, db=db)
     except Exception as e:
         logger.warning(f"Stripe webhook signature verification failed: {e}")
         return {"received": True, "error": "Signature verification failed"}

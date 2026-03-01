@@ -20,6 +20,34 @@ from app.invoices import service as invoice_service
 from app.core.dates import sydney_now
 
 
+async def _get_stripe_key(db: Optional["AsyncSession"] = None) -> Optional[str]:
+    """Get Stripe secret key — checks DB first, falls back to env var."""
+    if db:
+        try:
+            from app.settings import service as settings_service
+            db_settings = await settings_service.get_settings_by_category(db, "integrations")
+            key = db_settings.get("stripe_secret_key")
+            if key:
+                return key
+        except Exception:
+            pass
+    return settings.stripe_secret_key or None
+
+
+async def _get_stripe_webhook_secret(db: Optional["AsyncSession"] = None) -> Optional[str]:
+    """Get Stripe webhook secret — checks DB first, falls back to env var."""
+    if db:
+        try:
+            from app.settings import service as settings_service
+            db_settings = await settings_service.get_settings_by_category(db, "integrations")
+            secret = db_settings.get("stripe_webhook_secret")
+            if secret:
+                return secret
+        except Exception:
+            pass
+    return settings.stripe_webhook_secret or None
+
+
 # =============================================================================
 # STRIPE CHECKOUT
 # =============================================================================
@@ -38,11 +66,12 @@ async def create_checkout_session(
     Returns:
         dict with checkout_url and session_id
     """
-    if not settings.stripe_secret_key:
+    stripe_key = await _get_stripe_key(db)
+    if not stripe_key:
         raise ValueError("Stripe is not configured")
 
     # Initialize Stripe with secret key
-    stripe.api_key = settings.stripe_secret_key
+    stripe.api_key = stripe_key
 
     # Calculate balance due
     balance_cents = invoice.total_cents - invoice.paid_cents
@@ -95,6 +124,7 @@ async def create_checkout_session(
 async def verify_webhook_signature(
     payload: bytes,
     signature: str,
+    db: Optional["AsyncSession"] = None,
 ) -> dict:
     """
     Verify Stripe webhook signature.
@@ -102,14 +132,15 @@ async def verify_webhook_signature(
     Returns parsed event if valid.
     Raises HTTPException if invalid.
     """
-    if not settings.stripe_webhook_secret:
+    webhook_secret = await _get_stripe_webhook_secret(db)
+    if not webhook_secret:
         raise HTTPException(500, "Stripe webhook secret not configured")
 
     try:
         event = stripe.Webhook.construct_event(
             payload,
             signature,
-            settings.stripe_webhook_secret,
+            webhook_secret,
         )
         return event
     except stripe.error.SignatureVerificationError:

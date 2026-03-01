@@ -254,7 +254,10 @@ async def integrations_page(
         (integration_settings.get('xero_client_id') or settings.xero_client_id) and
         (integration_settings.get('xero_client_secret') or settings.xero_client_secret)
     )
-    gcal_configured = bool(settings.google_credentials_json and settings.google_calendar_id)
+    gcal_configured = bool(
+        (integration_settings.get('google_credentials_json') or settings.google_credentials_json) and
+        (integration_settings.get('google_calendar_id') or settings.google_calendar_id)
+    )
     postmark_configured = bool(
         integration_settings.get('postmark_api_key') or settings.postmark_api_key
     )

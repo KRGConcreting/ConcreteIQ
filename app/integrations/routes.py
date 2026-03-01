@@ -51,7 +51,7 @@ router = APIRouter(dependencies=[Depends(require_login), Depends(verify_csrf)])
 # =============================================================================
 
 @router.get("/xero/connect", name="integrations:xero_connect")
-async def xero_connect(request: Request):
+async def xero_connect(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Start Xero OAuth flow.
 
@@ -62,7 +62,10 @@ async def xero_connect(request: Request):
     request.session["xero_oauth_state"] = state
 
     try:
-        auth_url = get_authorization_url(state)
+        # Read Xero client ID from DB first, then env var
+        from app.integrations.xero import _get_xero_credentials
+        client_id, _ = await _get_xero_credentials(db)
+        auth_url = get_authorization_url(state, client_id=client_id)
         return RedirectResponse(url=auth_url, status_code=302)
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -98,8 +101,8 @@ async def xero_callback(
     request.session.pop("xero_oauth_state", None)
 
     try:
-        # Exchange code for tokens
-        tokens = await exchange_code_for_tokens(code)
+        # Exchange code for tokens (reads credentials from DB first)
+        tokens = await exchange_code_for_tokens(code, db=db)
 
         # Get tenant ID
         tenant_id = await get_tenant_id(tokens["access_token"])

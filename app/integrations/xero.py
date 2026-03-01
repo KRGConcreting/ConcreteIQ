@@ -28,6 +28,32 @@ from app.models import OAuthToken, Customer, Invoice, Payment, ActivityLog, Expe
 
 logger = logging.getLogger(__name__)
 
+
+# =============================================================================
+# DB-FIRST CREDENTIAL HELPERS
+# =============================================================================
+
+async def _get_xero_credentials(db: Optional[AsyncSession] = None) -> tuple[str, str]:
+    """Get Xero client ID and secret — checks DB first, falls back to env vars."""
+    client_id = settings.xero_client_id or ""
+    client_secret = settings.xero_client_secret or ""
+
+    if db:
+        try:
+            from app.settings import service as settings_service
+            db_settings = await settings_service.get_settings_by_category(db, "integrations")
+            client_id = db_settings.get("xero_client_id") or client_id
+            client_secret = db_settings.get("xero_client_secret") or client_secret
+        except Exception:
+            pass
+
+    return client_id, client_secret
+
+
+def _get_xero_credentials_sync() -> tuple[str, str]:
+    """Get Xero credentials from env vars only (for sync/non-async contexts)."""
+    return settings.xero_client_id or "", settings.xero_client_secret or ""
+
 # =============================================================================
 # XERO API ENDPOINTS
 # =============================================================================
@@ -160,17 +186,19 @@ def _decrypt_token(encrypted: str) -> str:
 # OAUTH FLOW
 # =============================================================================
 
-def get_authorization_url(state: Optional[str] = None) -> str:
+def get_authorization_url(state: Optional[str] = None, client_id: Optional[str] = None) -> str:
     """
     Generate Xero OAuth authorization URL.
 
     Args:
         state: Optional state parameter for CSRF protection
+        client_id: Xero client ID (if None, reads from env var)
 
     Returns:
         Full authorization URL to redirect user to
     """
-    if not settings.xero_client_id:
+    xero_client_id = client_id or settings.xero_client_id
+    if not xero_client_id:
         raise ValueError("Xero client ID not configured")
 
     if state is None:
@@ -178,7 +206,7 @@ def get_authorization_url(state: Optional[str] = None) -> str:
 
     params = {
         "response_type": "code",
-        "client_id": settings.xero_client_id,
+        "client_id": xero_client_id,
         "redirect_uri": settings.xero_redirect_uri or f"{settings.app_url}/integrations/xero/callback",
         "scope": settings.xero_scopes,
         "state": state,
@@ -187,12 +215,13 @@ def get_authorization_url(state: Optional[str] = None) -> str:
     return f"{XERO_AUTH_URL}?{urlencode(params)}"
 
 
-async def exchange_code_for_tokens(code: str) -> dict:
+async def exchange_code_for_tokens(code: str, db: Optional[AsyncSession] = None) -> dict:
     """
     Exchange authorization code for access and refresh tokens.
 
     Args:
         code: Authorization code from OAuth callback
+        db: Optional database session for reading credentials from DB
 
     Returns:
         Dict with access_token, refresh_token, expires_in
@@ -200,7 +229,8 @@ async def exchange_code_for_tokens(code: str) -> dict:
     Raises:
         Exception on API error
     """
-    if not settings.xero_client_id or not settings.xero_client_secret:
+    client_id, client_secret = await _get_xero_credentials(db)
+    if not client_id or not client_secret:
         raise ValueError("Xero credentials not configured")
 
     redirect_uri = settings.xero_redirect_uri or f"{settings.app_url}/integrations/xero/callback"
@@ -213,7 +243,7 @@ async def exchange_code_for_tokens(code: str) -> dict:
                 "code": code,
                 "redirect_uri": redirect_uri,
             },
-            auth=(settings.xero_client_id, settings.xero_client_secret),
+            auth=(client_id, client_secret),
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=30.0,
         )
@@ -225,7 +255,7 @@ async def exchange_code_for_tokens(code: str) -> dict:
         return response.json()
 
 
-async def refresh_access_token(refresh_token: str) -> dict:
+async def refresh_access_token(refresh_token: str, db: Optional[AsyncSession] = None) -> dict:
     """
     Refresh access token using refresh token.
 
@@ -238,7 +268,8 @@ async def refresh_access_token(refresh_token: str) -> dict:
     Raises:
         Exception on API error
     """
-    if not settings.xero_client_id or not settings.xero_client_secret:
+    client_id, client_secret = await _get_xero_credentials(db)
+    if not client_id or not client_secret:
         raise ValueError("Xero credentials not configured")
 
     async with httpx.AsyncClient() as client:
@@ -248,7 +279,7 @@ async def refresh_access_token(refresh_token: str) -> dict:
                 "grant_type": "refresh_token",
                 "refresh_token": refresh_token,
             },
-            auth=(settings.xero_client_id, settings.xero_client_secret),
+            auth=(client_id, client_secret),
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=30.0,
         )
@@ -386,7 +417,7 @@ async def get_valid_access_token(db: AsyncSession) -> Optional[tuple[str, str]]:
     if token.expires_at and token.expires_at <= sydney_now() + timedelta(minutes=5):
         try:
             decrypted_refresh = _decrypt_token(token.refresh_token)
-            new_tokens = await refresh_access_token(decrypted_refresh)
+            new_tokens = await refresh_access_token(decrypted_refresh, db=db)
 
             await save_xero_tokens(
                 db,

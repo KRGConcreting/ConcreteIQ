@@ -19,19 +19,56 @@ from app.models import Quote
 logger = logging.getLogger(__name__)
 
 
+# =============================================================================
+# DB-FIRST CREDENTIAL HELPERS
+# =============================================================================
+
+# Module-level cache for DB credentials (refreshed each call to async helper)
+_cached_credentials_json: Optional[str] = None
+_cached_calendar_id: Optional[str] = None
+
+
+async def _load_google_credentials_from_db():
+    """Load Google Calendar credentials from DB, cache for sync functions."""
+    global _cached_credentials_json, _cached_calendar_id
+    try:
+        from app.database import get_async_session
+        from app.settings import service as settings_service
+        async with get_async_session() as db:
+            db_settings = await settings_service.get_settings_by_category(db, "integrations")
+            _cached_credentials_json = db_settings.get("google_credentials_json") or settings.google_credentials_json or None
+            _cached_calendar_id = db_settings.get("google_calendar_id") or _get_effective_calendar_id() or None
+    except Exception:
+        _cached_credentials_json = settings.google_credentials_json or None
+        _cached_calendar_id = _get_effective_calendar_id() or None
+
+
+def _get_effective_credentials_json() -> Optional[str]:
+    """Get Google credentials JSON — DB cache first, then env var."""
+    return _cached_credentials_json or settings.google_credentials_json or None
+
+
+def _get_effective_calendar_id() -> Optional[str]:
+    """Get Google Calendar ID — DB cache first, then env var."""
+    return _cached_calendar_id or _get_effective_calendar_id() or None
+
+
 def _get_credentials():
     """
     Get Google service account credentials from config.
 
     Returns None if not configured.
     """
-    if not settings.google_credentials_json or not settings.google_calendar_id:
+    creds_json = _get_effective_credentials_json()
+    calendar_id = _get_effective_calendar_id()
+
+    if not creds_json or not calendar_id:
         logger.debug("Google Calendar not configured")
         return None
 
     try:
         # Decode base64 credentials JSON
-        credentials_json = base64.b64decode(settings.google_credentials_json)
+        credentials_json = base64.b64decode(creds_json)
         credentials_info = json.loads(credentials_json)
 
         from google.oauth2.service_account import Credentials
@@ -163,6 +200,7 @@ async def create_job_event(
     Returns:
         Google event ID if successful, None on failure
     """
+    await _load_google_credentials_from_db()
     service = _get_calendar_service()
     if not service:
         logger.info("Google Calendar not configured, skipping event creation")
@@ -176,7 +214,7 @@ async def create_job_event(
         event_body = _build_event_body(quote, worker_names, customer_name, customer_phone)
 
         event = service.events().insert(
-            calendarId=settings.google_calendar_id,
+            calendarId=_get_effective_calendar_id(),
             body=event_body,
         ).execute()
 
@@ -203,6 +241,7 @@ async def update_job_event(
     Returns:
         True if successful, False on failure
     """
+    await _load_google_credentials_from_db()
     if not quote.gcal_event_id:
         logger.warning(f"Quote {quote.quote_number} has no calendar event to update")
         return False
@@ -216,7 +255,7 @@ async def update_job_event(
         event_body = _build_event_body(quote, worker_names)
 
         service.events().update(
-            calendarId=settings.google_calendar_id,
+            calendarId=_get_effective_calendar_id(),
             eventId=quote.gcal_event_id,
             body=event_body,
         ).execute()
@@ -239,6 +278,7 @@ async def delete_job_event(quote: Quote) -> bool:
     Returns:
         True if successful, False on failure
     """
+    await _load_google_credentials_from_db()
     if not quote.gcal_event_id:
         logger.warning(f"Quote {quote.quote_number} has no calendar event to delete")
         return False
@@ -250,7 +290,7 @@ async def delete_job_event(quote: Quote) -> bool:
 
     try:
         service.events().delete(
-            calendarId=settings.google_calendar_id,
+            calendarId=_get_effective_calendar_id(),
             eventId=quote.gcal_event_id,
         ).execute()
 
@@ -335,7 +375,7 @@ async def _list_holiday_events(service, year: int) -> dict[str, str]:
         page_token = None
         while True:
             events_result = service.events().list(
-                calendarId=settings.google_calendar_id,
+                calendarId=_get_effective_calendar_id(),
                 timeMin=time_min,
                 timeMax=time_max,
                 q=HOLIDAY_EVENT_PREFIX,
@@ -369,6 +409,7 @@ async def sync_nsw_holidays(year: int | None = None) -> dict:
     - Marks them as "KRG - HOLIDAY: <name>" with red color
     - Returns: {"synced": 3, "skipped": 8, "errors": 0, "year": 2026}
     """
+    await _load_google_credentials_from_db()
     if year is None:
         year = sydney_now().year
 
@@ -435,7 +476,7 @@ async def sync_nsw_holidays(year: int | None = None) -> dict:
             }
 
             service.events().insert(
-                calendarId=settings.google_calendar_id,
+                calendarId=_get_effective_calendar_id(),
                 body=event_body,
             ).execute()
 
@@ -467,6 +508,7 @@ async def get_synced_holidays(year: int | None = None) -> list[dict]:
     Returns:
         List of {"date": "2026-01-01", "name": "New Year's Day", "synced": True/False}
     """
+    await _load_google_credentials_from_db()
     if year is None:
         year = sydney_now().year
 
@@ -527,7 +569,7 @@ async def _list_compliance_events(service, fy: int) -> dict[str, str]:
         page_token = None
         while True:
             events_result = service.events().list(
-                calendarId=settings.google_calendar_id,
+                calendarId=_get_effective_calendar_id(),
                 timeMin=time_min,
                 timeMax=time_max,
                 q=COMPLIANCE_EVENT_PREFIX,
@@ -570,6 +612,7 @@ async def sync_compliance_deadlines(fy: int | None = None) -> dict:
 
     Returns: {"synced": N, "skipped": N, "errors": N, "fy": YYYY}
     """
+    await _load_google_credentials_from_db()
     from app.core.bas import get_compliance_deadlines
 
     if fy is None:
@@ -635,7 +678,7 @@ async def sync_compliance_deadlines(fy: int | None = None) -> dict:
             }
 
             service.events().insert(
-                calendarId=settings.google_calendar_id,
+                calendarId=_get_effective_calendar_id(),
                 body=event_body,
             ).execute()
 
@@ -668,6 +711,7 @@ async def get_synced_compliance_deadlines(fy: int | None = None) -> list[dict]:
     Returns:
         List of {"name": str, "due_date": str, "category": str, "synced": bool}
     """
+    await _load_google_credentials_from_db()
     from app.core.bas import get_compliance_deadlines, get_current_fy
 
     if fy is None:
