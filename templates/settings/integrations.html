@@ -85,7 +85,7 @@
                     <svg class="w-4 h-4 transition-transform" :class="showXeroCredentials ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
-                    <span x-text="showXeroCredentials ? 'Hide credentials' : 'Configure credentials'"></span>
+                    <span x-text="showXeroCredentials ? 'Hide credentials' : '{% if xero_configured %}Update credentials{% else %}Configure credentials{% endif %}'"></span>
                 </button>
 
                 <div x-show="showXeroCredentials" x-collapse class="space-y-4">
@@ -93,12 +93,14 @@
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Client ID</label>
                             <input type="text" x-model="credentials.xero_client_id"
+                                   @focus="if(credentials.xero_client_id.startsWith('••••')) credentials.xero_client_id = ''"
                                    placeholder="Enter Xero Client ID"
                                    class="input-field text-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Client Secret</label>
                             <input type="password" x-model="credentials.xero_client_secret"
+                                   @focus="if(credentials.xero_client_secret.startsWith('••••')) credentials.xero_client_secret = ''"
                                    placeholder="Enter Xero Client Secret"
                                    class="input-field text-sm">
                         </div>
@@ -125,8 +127,8 @@
                     </p>
                 </div>
 
-                {% if xero_configured and not showXeroCredentials %}
-                <a href="/integrations/xero/connect"
+                {% if xero_configured %}
+                <a x-show="!showXeroCredentials" href="/integrations/xero/connect"
                    class="inline-flex items-center gap-2 px-4 py-2 bg-[#13B5EA] hover:bg-[#0ea5d9] text-white font-medium rounded-xl transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
@@ -270,12 +272,14 @@
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5">Calendar ID</label>
                         <input type="text" x-model="credentials.google_calendar_id"
+                               @focus="if(credentials.google_calendar_id.startsWith('••••')) credentials.google_calendar_id = ''"
                                placeholder="e.g. primary or calendar@group.calendar.google.com"
                                class="input-field text-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5">Service Account JSON</label>
                         <textarea x-model="credentials.google_credentials_json"
+                                  @focus="if(credentials.google_credentials_json.startsWith('••••')) credentials.google_credentials_json = ''"
                                   placeholder='Paste your service account JSON credentials here'
                                   rows="4"
                                   class="input-field text-sm font-mono"></textarea>
@@ -346,12 +350,14 @@
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Publishable Key</label>
                             <input type="text" x-model="credentials.stripe_publishable_key"
+                                   @focus="if(credentials.stripe_publishable_key.startsWith('••••')) credentials.stripe_publishable_key = ''"
                                    placeholder="pk_live_..."
                                    class="input-field text-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Secret Key</label>
                             <input type="password" x-model="credentials.stripe_secret_key"
+                                   @focus="if(credentials.stripe_secret_key.startsWith('••••')) credentials.stripe_secret_key = ''"
                                    placeholder="sk_live_..."
                                    class="input-field text-sm">
                         </div>
@@ -359,6 +365,7 @@
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5">Webhook Secret (optional)</label>
                         <input type="password" x-model="credentials.stripe_webhook_secret"
+                               @focus="if(credentials.stripe_webhook_secret.startsWith('••••')) credentials.stripe_webhook_secret = ''"
                                placeholder="whsec_..."
                                class="input-field text-sm">
                         <p class="text-xs text-slate-600 mt-1">Required for automatic payment confirmation</p>
@@ -518,12 +525,14 @@
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">API Key</label>
                             <input type="text" x-model="credentials.vonage_api_key"
+                                   @focus="if(credentials.vonage_api_key.startsWith('••••')) credentials.vonage_api_key = ''"
                                    placeholder="Enter Vonage API Key"
                                    class="input-field text-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">API Secret</label>
                             <input type="password" x-model="credentials.vonage_api_secret"
+                                   @focus="if(credentials.vonage_api_secret.startsWith('••••')) credentials.vonage_api_secret = ''"
                                    placeholder="Enter Vonage API Secret"
                                    class="input-field text-sm">
                         </div>
@@ -650,19 +659,19 @@ function integrationsPage() {
         holidaySyncResult: '',
         holidaySyncSuccess: false,
 
-        // Credential values
+        // Credential values (pre-filled with masked values from DB if saved)
         credentials: {
-            xero_client_id: '',
-            xero_client_secret: '',
-            google_calendar_id: '',
-            google_credentials_json: '',
-            stripe_publishable_key: '',
-            stripe_secret_key: '',
-            stripe_webhook_secret: '',
-            postmark_api_key: {% if postmark_configured %}'••••••••••••••••'{% else %}''{% endif %},
-            vonage_api_key: '',
-            vonage_api_secret: '',
-            vonage_from_number: '',
+            xero_client_id: '{{ masked_credentials.xero_client_id }}',
+            xero_client_secret: '{{ masked_credentials.xero_client_secret }}',
+            google_calendar_id: '{{ masked_credentials.google_calendar_id }}',
+            google_credentials_json: '{{ masked_credentials.google_credentials_json }}',
+            stripe_publishable_key: '{{ masked_credentials.stripe_publishable_key }}',
+            stripe_secret_key: '{{ masked_credentials.stripe_secret_key }}',
+            stripe_webhook_secret: '{{ masked_credentials.stripe_webhook_secret }}',
+            postmark_api_key: '{{ masked_credentials.postmark_api_key }}',
+            vonage_api_key: '{{ masked_credentials.vonage_api_key }}',
+            vonage_api_secret: '{{ masked_credentials.vonage_api_secret }}',
+            vonage_from_number: '{{ masked_credentials.vonage_from_number }}',
         },
 
         init() {

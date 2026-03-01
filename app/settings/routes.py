@@ -273,6 +273,32 @@ async def integrations_page(
         sms_settings.get('vonage_api_secret')
     )
 
+    # Build masked credential values so users see that credentials are saved
+    # Shows "••••" + last 4 chars for IDs, full mask for secrets
+    def _mask(val: str, show_last: int = 4) -> str:
+        if not val:
+            return ""
+        if len(val) <= show_last:
+            return "••••" + val
+        return "••••" + val[-show_last:]
+
+    def _mask_secret(val: str) -> str:
+        return "••••••••••••" if val else ""
+
+    masked_credentials = {
+        "xero_client_id": _mask(integration_settings.get('xero_client_id') or settings.xero_client_id or ""),
+        "xero_client_secret": _mask_secret(integration_settings.get('xero_client_secret') or settings.xero_client_secret or ""),
+        "google_calendar_id": _mask(integration_settings.get('google_calendar_id') or settings.google_calendar_id or "", show_last=8),
+        "google_credentials_json": _mask_secret(integration_settings.get('google_credentials_json') or settings.google_credentials_json or ""),
+        "stripe_publishable_key": _mask(integration_settings.get('stripe_publishable_key') or ""),
+        "stripe_secret_key": _mask_secret(integration_settings.get('stripe_secret_key') or settings.stripe_secret_key or ""),
+        "stripe_webhook_secret": _mask_secret(integration_settings.get('stripe_webhook_secret') or settings.stripe_webhook_secret or ""),
+        "postmark_api_key": _mask_secret(integration_settings.get('postmark_api_key') or settings.postmark_api_key or ""),
+        "vonage_api_key": _mask(sms_settings.get('vonage_api_key') or ""),
+        "vonage_api_secret": _mask_secret(sms_settings.get('vonage_api_secret') or ""),
+        "vonage_from_number": sms_settings.get('vonage_from_number') or "",  # Phone numbers aren't secret
+    }
+
     response = templates.TemplateResponse("settings/integrations.html", {
         "request": request,
         "xero_status": xero_status,
@@ -284,6 +310,7 @@ async def integrations_page(
         "vonage_configured": vonage_configured,
         "sms_enabled": sms_settings.get('enabled', False),
         "holiday_years": sorted(NSW_PUBLIC_HOLIDAYS.keys()),
+        "masked_credentials": masked_credentials,
         "active_section": "integrations",
     })
     # Prevent browser caching so credential status is always fresh
