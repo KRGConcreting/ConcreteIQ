@@ -657,7 +657,7 @@ async def save_integration_credentials(
         if value and not value.startswith("••••"):  # Don't save masked values
             # For now, store as plain text in settings
             # In production, consider encrypting sensitive values
-            await settings_service.save_setting(db, category, key, value)
+            await settings_service.set_setting(db, category, key, value)
             saved_count += 1
 
     await db.commit()
