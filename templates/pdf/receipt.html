@@ -12,214 +12,83 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.6;
-            color: #1a1a2e;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #111827;
+            background: #ffffff;
         }
 
-        /* ── HEADER ── */
+        .page-wrap {
+            border-top: 3px solid #16a34a;
+        }
+
+        /* ══════════════════════════════════════════
+           HEADER
+           ══════════════════════════════════════════ */
         .header {
-            background: #1B2B4B;
-            padding: 32px 40px 28px 40px;
+            background: linear-gradient(160deg, #1a1a1a 0%, #242424 60%, #1a1a1a 100%);
+            padding: 38px 48px 34px;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
         }
-        .header-left { display: flex; align-items: center; gap: 16px; }
-        .header-logo { height: 56px; width: 56px; border-radius: 8px; }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header-logo {
+            height: 58px;
+            width: 58px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(232, 122, 46, 0.25);
+        }
         .header-biz h1 {
-            color: #ffffff;
-            font-size: 22pt;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-        }
-        .header-biz p {
-            color: rgba(255,255,255,0.55);
-            font-size: 9pt;
-            margin-top: 3px;
-        }
-        .header-right { text-align: right; }
-        .header-right .doc-type {
-            font-size: 10pt;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: #22c55e;
-        }
-        .header-right .doc-num {
-            color: #ffffff;
-            font-size: 16pt;
+            color: #E87A2E;
+            font-size: 21pt;
             font-weight: 700;
-            margin-top: 2px;
-        }
-        .header-right .doc-meta {
-            color: rgba(255,255,255,0.45);
-            font-size: 9pt;
-            margin-top: 6px;
-            line-height: 1.5;
-        }
-
-        .accent-bar {
-            height: 4px;
-            background: linear-gradient(to right, #22c55e 0%, #22c55e 40%, #1B2B4B 100%);
-        }
-
-        /* ── CONTENT ── */
-        .content { padding: 28px 40px 20px 40px; }
-
-        /* ── INFO GRID ── */
-        .info-grid {
-            display: flex;
-            gap: 32px;
-            margin-bottom: 28px;
-        }
-        .info-col { flex: 1; }
-        .info-label {
-            font-size: 8pt;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #16a34a;
-            margin-bottom: 10px;
-            padding-bottom: 6px;
-            border-bottom: 2px solid #f0f0f5;
-        }
-        .info-name {
-            font-size: 13pt;
-            font-weight: 700;
-            color: #1B2B4B;
-            margin-bottom: 4px;
-        }
-        .info-detail {
-            font-size: 10pt;
-            color: #64748b;
-            line-height: 1.5;
-        }
-
-        /* ── AMOUNT BOX ── */
-        .amount-box {
-            text-align: center;
-            padding: 36px 24px;
-            margin-bottom: 28px;
-            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
-            border: 2px solid #86efac;
-            border-radius: 14px;
-        }
-        .amount-label {
-            font-size: 9pt;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #16a34a;
-            margin-bottom: 10px;
-        }
-        .amount-value {
-            font-size: 36pt;
-            font-weight: 900;
-            color: #16a34a;
             letter-spacing: -0.02em;
+            line-height: 1.1;
         }
-
-        /* ── DETAILS TABLE ── */
-        .details-table {
-            width: 100%;
-            margin-bottom: 28px;
-            border-collapse: collapse;
-        }
-        .details-table td {
-            padding: 14px 18px;
-            border-bottom: 1px solid #eef0f6;
-            font-size: 11pt;
-        }
-        .details-table td:first-child { color: #64748b; width: 40%; }
-        .details-table td:last-child { font-weight: 700; color: #1B2B4B; text-align: right; }
-        .details-table tr:nth-child(even) td { background: #fafbfd; }
-
-        /* ── INVOICE SUMMARY ── */
-        .summary-box {
-            background: #f8f9fc;
-            border: 1px solid #e8ecf4;
-            border-left: 5px solid #E87A2E;
-            border-radius: 0 10px 10px 0;
-            padding: 20px 22px;
-            margin-bottom: 28px;
-        }
-        .summary-title {
+        .header-meta {
+            color: rgba(255,255,255,0.35);
             font-size: 8pt;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #E87A2E;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e8ecf4;
-        }
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 7px 0;
-            font-size: 11pt;
-            color: #64748b;
-        }
-        .summary-row .val { font-weight: 600; color: #1B2B4B; }
-        .summary-row.total {
-            padding-top: 10px;
             margin-top: 6px;
-            border-top: 2px solid #eef0f6;
+            letter-spacing: 0.4px;
+        }
+        .header-right {
+            text-align: right;
+            padding-top: 2px;
+        }
+        .doc-badge {
+            font-size: 30pt;
             font-weight: 800;
+            color: #4ade80;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+        .doc-number {
+            color: rgba(255,255,255,0.8);
             font-size: 12pt;
-            color: #1B2B4B;
+            font-weight: 600;
+            margin-top: 5px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            letter-spacing: 0.5px;
         }
-        .summary-row.total .val { color: #1B2B4B; }
-        .summary-row.paid { color: #16a34a; }
-        .summary-row.paid .val { color: #16a34a; font-weight: 700; }
-        .summary-row.balance { font-weight: 800; font-size: 12pt; }
-
-        /* ── SUCCESS BOX ── */
-        .success-box {
-            text-align: center;
-            padding: 20px;
-            background: #f0fdf4;
-            border: 2px solid #86efac;
-            border-radius: 10px;
-            margin-bottom: 24px;
-        }
-        .success-box .check {
-            font-size: 20pt;
-            color: #16a34a;
-            margin-bottom: 6px;
-        }
-        .success-box p {
-            font-size: 12pt;
-            color: #16a34a;
-            font-weight: 700;
-        }
-
-        /* ── TAX INFO ── */
-        .tax-box {
-            background: #f8f9fc;
-            border: 1px solid #e8ecf4;
-            border-radius: 10px;
-            padding: 16px 22px;
-            margin-bottom: 20px;
-        }
-        .tax-title {
-            font-size: 8pt;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #E87A2E;
-            margin-bottom: 8px;
-        }
-        .tax-text {
-            font-size: 9.5pt;
-            color: #64748b;
+        .doc-details {
+            color: rgba(255,255,255,0.3);
+            font-size: 8.5pt;
+            margin-top: 8px;
             line-height: 1.6;
         }
 
-        /* ── RECEIPT WATERMARK ── */
+        .accent-divider {
+            height: 2px;
+            background: linear-gradient(90deg, #16a34a 0%, #4ade80 35%, rgba(74,222,128,0.15) 70%, transparent 100%);
+        }
+
+        /* Watermark */
         .receipt-watermark {
             position: fixed;
             top: 45%;
@@ -227,71 +96,286 @@
             transform: translate(-50%, -50%) rotate(-18deg);
             font-size: 80pt;
             font-weight: 900;
-            color: rgba(22, 163, 74, 0.05);
+            color: rgba(22, 163, 74, 0.04);
             text-transform: uppercase;
-            letter-spacing: 12px;
+            letter-spacing: 16px;
         }
 
-        /* ── FOOTER ── */
-        .footer {
-            background: #1B2B4B;
-            padding: 22px 40px;
-            text-align: center;
+        /* ══════════════════════════════════════════
+           CONTENT
+           ══════════════════════════════════════════ */
+        .content {
+            padding: 32px 48px 24px;
         }
-        .footer p { color: rgba(255,255,255,0.55); font-size: 9pt; line-height: 1.6; }
-        .footer .biz-name { color: #ffffff; font-weight: 700; font-size: 11pt; margin-bottom: 4px; }
-        .footer .powered {
-            margin-top: 10px;
+
+        .info-grid {
+            display: flex;
+            gap: 44px;
+            margin-bottom: 32px;
+        }
+        .info-col { flex: 1; }
+        .info-label {
             font-size: 7pt;
-            color: rgba(255,255,255,0.3);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: #16a34a;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1.5px solid #f0f0f0;
         }
-        .footer .powered img { height: 16px; opacity: 0.3; vertical-align: middle; margin-left: 4px; }
+        .info-primary {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 3px;
+        }
+        .info-secondary {
+            font-size: 9.5pt;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        /* ══════════════════════════════════════════
+           AMOUNT HERO
+           ══════════════════════════════════════════ */
+        .amount-hero {
+            text-align: center;
+            padding: 42px 28px;
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            border: 1.5px solid #bbf7d0;
+            border-radius: 14px;
+            position: relative;
+        }
+        .amount-hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #16a34a, #4ade80);
+            border-radius: 0 0 3px 3px;
+        }
+        .amount-tag {
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #16a34a;
+            margin-bottom: 10px;
+        }
+        .amount-figure {
+            font-size: 42pt;
+            font-weight: 900;
+            color: #15803d;
+            font-family: 'Consolas', 'Courier New', monospace;
+            letter-spacing: -1px;
+        }
+
+        /* ══════════════════════════════════════════
+           DETAILS TABLE
+           ══════════════════════════════════════════ */
+        .details-table {
+            width: 100%;
+            margin-bottom: 30px;
+            border-collapse: collapse;
+        }
+        .details-table td {
+            padding: 13px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 10pt;
+        }
+        .details-table td:first-child {
+            color: #6b7280;
+            width: 40%;
+            font-size: 9.5pt;
+        }
+        .details-table td:last-child {
+            font-weight: 700;
+            color: #1a1a1a;
+            text-align: right;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        .details-table tr:nth-child(even) td { background: #fafafa; }
+        .details-table tr:last-child td { border-bottom: 2px solid #e5e7eb; }
+
+        /* ══════════════════════════════════════════
+           INVOICE SUMMARY
+           ══════════════════════════════════════════ */
+        .summary-card {
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid #E87A2E;
+            border-radius: 0 10px 10px 0;
+            padding: 20px 24px;
+            margin-bottom: 30px;
+            background: #fafafa;
+        }
+        .section-label {
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: #E87A2E;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 7px 0;
+            font-size: 10pt;
+            color: #6b7280;
+        }
+        .summary-row .val {
+            font-weight: 600;
+            color: #1a1a1a;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        .summary-row.total {
+            padding-top: 10px;
+            margin-top: 6px;
+            border-top: 1.5px solid #e5e7eb;
+            font-weight: 800;
+            font-size: 11pt;
+            color: #1a1a1a;
+        }
+        .summary-row.paid { color: #16a34a; }
+        .summary-row.paid .val { color: #16a34a; font-weight: 700; }
+        .summary-row.balance { font-weight: 800; font-size: 11pt; }
+
+        /* Success */
+        .success-card {
+            text-align: center;
+            padding: 24px;
+            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            border: 1.5px solid #bbf7d0;
+            border-radius: 10px;
+            margin-bottom: 26px;
+        }
+        .success-icon {
+            font-size: 26pt;
+            color: #16a34a;
+            margin-bottom: 6px;
+        }
+        .success-text {
+            font-size: 11pt;
+            color: #15803d;
+            font-weight: 700;
+        }
+
+        /* Tax info */
+        .tax-card {
+            background: #fafafa;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px 22px;
+            margin-bottom: 22px;
+        }
+        .tax-label {
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: #E87A2E;
+            margin-bottom: 6px;
+        }
+        .tax-text {
+            font-size: 9pt;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        /* ══════════════════════════════════════════
+           FOOTER
+           ══════════════════════════════════════════ */
+        .footer {
+            background: linear-gradient(160deg, #1a1a1a 0%, #242424 60%, #1a1a1a 100%);
+            padding: 22px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid #16a34a;
+        }
+        .footer-biz {
+            color: #E87A2E;
+            font-weight: 700;
+            font-size: 10pt;
+            margin-bottom: 2px;
+        }
+        .footer-info {
+            color: rgba(255,255,255,0.3);
+            font-size: 8pt;
+            line-height: 1.5;
+        }
+        .footer-right { text-align: right; }
+        .footer-powered {
+            font-size: 7pt;
+            color: rgba(255,255,255,0.15);
+        }
+        .footer-powered img {
+            height: 14px;
+            opacity: 0.15;
+            vertical-align: middle;
+            margin-left: 3px;
+        }
     </style>
 </head>
 <body>
     <div class="receipt-watermark">RECEIPT</div>
 
+    <div class="page-wrap">
+
     <!-- ══════ HEADER ══════ -->
     <div class="header">
         <div class="header-left">
             <img src="{{ logo_uri }}" alt="" class="header-logo">
-            <div class="header-biz">
-                <h1>{{ business.trading_as or business.name }}</h1>
-                <p>ABN: {{ business.abn }} &nbsp;|&nbsp; Licence: {{ business.license }}</p>
+            <div>
+                <h1 class="header-biz">{{ business.trading_as or business.name }}</h1>
+                {% if business.abn or business.license %}
+                <div class="header-meta">
+                    {% if business.abn %}ABN {{ business.abn }}{% endif %}
+                    {% if business.abn and business.license %} &bull; {% endif %}
+                    {% if business.license %}Licence {{ business.license }}{% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
         <div class="header-right">
-            <div class="doc-type">Receipt</div>
-            <div class="doc-num">{{ invoice.invoice_number }}</div>
-            <div class="doc-meta">{{ generated_at }}</div>
+            <div class="doc-badge">Receipt</div>
+            <div class="doc-number">{{ invoice.invoice_number }}</div>
+            <div class="doc-details">{{ generated_at }}</div>
         </div>
     </div>
-    <div class="accent-bar"></div>
+    <div class="accent-divider"></div>
 
     <!-- ══════ CONTENT ══════ -->
     <div class="content">
 
-        <!-- Customer / Business Info -->
         <div class="info-grid">
             <div class="info-col">
                 <div class="info-label">Received From</div>
-                <div class="info-name">{{ customer.name or 'Customer' }}</div>
-                {% if customer.email %}<div class="info-detail">{{ customer.email }}</div>{% endif %}
-                {% if customer.phone %}<div class="info-detail">{{ customer.phone }}</div>{% endif %}
+                <div class="info-primary">{{ customer.name or 'Customer' }}</div>
+                {% if customer.email %}<div class="info-secondary">{{ customer.email }}</div>{% endif %}
+                {% if customer.phone %}<div class="info-secondary">{{ customer.phone }}</div>{% endif %}
             </div>
             <div class="info-col">
                 <div class="info-label">Received By</div>
-                <div class="info-name">{{ business.trading_as or business.name }}</div>
-                <div class="info-detail">{{ business.address }}</div>
-                <div class="info-detail">{{ business.email }}</div>
-                <div class="info-detail">{{ business.phone }}</div>
+                <div class="info-primary">{{ business.trading_as or business.name }}</div>
+                <div class="info-secondary">{{ business.address }}</div>
+                <div class="info-secondary">{{ business.email }}</div>
+                <div class="info-secondary">{{ business.phone }}</div>
             </div>
         </div>
 
-        <!-- Amount Paid -->
-        <div class="amount-box">
-            <p class="amount-label">Amount Paid</p>
-            <p class="amount-value">{{ payment.amount_cents|currency }}</p>
+        <!-- Amount Hero -->
+        <div class="amount-hero">
+            <p class="amount-tag">Payment Received</p>
+            <p class="amount-figure">{{ payment.amount_cents|currency }}</p>
         </div>
 
         <!-- Payment Details -->
@@ -317,14 +401,14 @@
             {% if invoice.description %}
             <tr>
                 <td>Description</td>
-                <td>{{ invoice.description }}</td>
+                <td style="font-family: 'Segoe UI', system-ui, sans-serif;">{{ invoice.description }}</td>
             </tr>
             {% endif %}
         </table>
 
         <!-- Invoice Summary -->
-        <div class="summary-box">
-            <div class="summary-title">Invoice Summary</div>
+        <div class="summary-card">
+            <div class="section-label">Invoice Summary</div>
             <div class="summary-row">
                 <span>Invoice Total (inc GST)</span>
                 <span class="val">{{ invoice.total_cents|currency }}</span>
@@ -344,26 +428,37 @@
         </div>
 
         {% if invoice.balance_cents <= 0 %}
-        <div class="success-box">
-            <p class="check">&#10003;</p>
-            <p>This invoice has been paid in full. Thank you for your business!</p>
+        <div class="success-card">
+            <p class="success-icon">&#10003;</p>
+            <p class="success-text">This invoice has been paid in full. Thank you for your business!</p>
         </div>
         {% endif %}
 
-        <!-- Tax Receipt Notice -->
-        <div class="tax-box">
-            <div class="tax-title">Tax Information</div>
-            <p class="tax-text">This receipt serves as proof of payment for taxation purposes. GST of ${{ '%.2f'|format((payment.amount_cents or 0) / 100 / 11) }} is included in the payment amount. ABN: {{ business.abn }}</p>
+        <div class="tax-card">
+            <div class="tax-label">Tax Information</div>
+            <p class="tax-text">This receipt serves as proof of payment for taxation purposes. GST of ${{ '%.2f'|format((payment.amount_cents or 0) / 100 / 11) }} is included in the payment amount.{% if business.abn %} ABN: {{ business.abn }}{% endif %}</p>
         </div>
     </div>
 
     <!-- ══════ FOOTER ══════ -->
     <div class="footer">
-        <p class="biz-name">{{ business.trading_as or business.name }}</p>
-        <p>{{ business.address }}</p>
-        <p>Phone: {{ business.phone }} &nbsp;|&nbsp; Email: {{ business.email }}</p>
-        <p>ABN: {{ business.abn }} &nbsp;|&nbsp; Licence: {{ business.license }}</p>
-        <p class="powered">Powered by <img src="{{ ciq_logo_uri }}" alt="ConcreteIQ"></p>
+        <div class="footer-left">
+            <div class="footer-biz">{{ business.trading_as or business.name }}</div>
+            <div class="footer-info">
+                {{ business.address }}<br>
+                {{ business.phone }} &bull; {{ business.email }}
+            </div>
+        </div>
+        <div class="footer-right">
+            <div class="footer-info" style="margin-bottom: 6px;">
+                {% if business.abn %}ABN {{ business.abn }}{% endif %}
+                {% if business.abn and business.license %} &bull; {% endif %}
+                {% if business.license %}Licence {{ business.license }}{% endif %}
+            </div>
+            <div class="footer-powered">Powered by <img src="{{ ciq_logo_uri }}" alt="ConcreteIQ"></div>
+        </div>
+    </div>
+
     </div>
 </body>
 </html>

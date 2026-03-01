@@ -18,6 +18,12 @@ from app.core.security import decrypt_customer_pii
 
 logger = logging.getLogger(__name__)
 
+
+def _email_logo_url() -> str:
+    """Public URL for business logo in email templates."""
+    return f"{settings.app_url}/static/images/KyleRGyoles_Concreting_Logo.png"
+
+
 # =============================================================================
 # POSTMARK API CLIENT
 # =============================================================================
@@ -254,6 +260,7 @@ async def send_quote_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render quote email template: {str(e)}")
@@ -352,6 +359,7 @@ async def send_amendment_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render amendment email template: {str(e)}")
@@ -457,6 +465,7 @@ async def send_invoice_email(
             bank_name=settings.bank_name,
             bank_bsb=settings.bank_bsb,
             bank_account=settings.bank_account,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render invoice email template: {str(e)}")
@@ -560,6 +569,7 @@ async def send_payment_receipt_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render payment receipt template: {str(e)}")
@@ -736,6 +746,7 @@ def send_payment_reminder_email_sync(
             bank_name=settings.bank_name,
             bank_bsb=settings.bank_bsb,
             bank_account=settings.bank_account,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render payment reminder template: {str(e)}")
@@ -817,6 +828,7 @@ def send_job_reminder_email_sync(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render job reminder template: {str(e)}")
@@ -899,6 +911,7 @@ async def send_review_request_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render review request template: {str(e)}")
@@ -984,6 +997,7 @@ async def send_quote_followup_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render quote followup template: {str(e)}")
@@ -1072,6 +1086,7 @@ async def send_progress_update_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render progress update template: {str(e)}")
@@ -1139,6 +1154,7 @@ def send_review_request_email_sync(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render review request template: {str(e)}")
@@ -1232,6 +1248,7 @@ async def send_quote_expiry_warning_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render quote expiry warning template: {str(e)}")
@@ -1335,6 +1352,7 @@ async def send_job_complete_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render job complete template: {str(e)}")
@@ -1455,6 +1473,7 @@ async def send_booking_confirmed_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
+            logo_url=_email_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render booking confirmed template: {str(e)}")

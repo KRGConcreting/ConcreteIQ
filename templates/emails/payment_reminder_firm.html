@@ -19,8 +19,9 @@
 
                     <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #1B2B4B 0%, #243b53 100%); padding: 28px 40px; text-align: center;">
-                            <p style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; line-height: 1.3;">{{ business_name }}</p>
+                        <td style="background: linear-gradient(160deg, #1a1a1a 0%, #242424 60%, #1a1a1a 100%); padding: 28px 40px; text-align: center;">
+                            {% if logo_url %}<img src="{{ logo_url }}" alt="" width="48" height="48" style="display: block; margin: 0 auto 12px; width: 48px; height: 48px; border-radius: 10px; border: 1.5px solid rgba(232, 122, 46, 0.25);">{% endif %}
+                            <p style="margin: 0; font-size: 22px; font-weight: 800; color: #E87A2E; letter-spacing: -0.02em; line-height: 1.3;">{{ business_name }}</p>
                         </td>
                     </tr>
                     <!-- Orange accent line -->
@@ -33,7 +34,7 @@
                         <td style="padding: 32px 40px;">
 
                 <!-- Title & Badge -->
-                <h1 style="font-size: 22px; font-weight: 700; color: #1B2B4B; margin: 0 0 8px 0; text-align: center;">Payment Overdue</h1>
+                <h1 style="font-size: 22px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px 0; text-align: center;">Payment Overdue</h1>
                 <p style="color: #6b7280; margin: 0 0 16px 0; font-size: 14px; text-align: center;">Invoice {{ invoice.invoice_number }}</p>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
                     <tr>
@@ -45,8 +46,8 @@
 
                 <!-- Greeting -->
                 <p style="color: #374151; font-size: 15px; margin: 0 0 8px 0;">Hi {{ customer.name }},</p>
-                <p style="color: #374151; font-size: 15px; margin: 0 0 24px 0;">Your payment for invoice <strong style="color: #1B2B4B;">{{ invoice.invoice_number }}</strong> is now <strong style="color: #dc2626;">{{ days_overdue }} days overdue</strong>. Please arrange payment at your earliest convenience to avoid any further action.</p>
-                <p style="color: #374151; font-size: 13px; margin: 12px 0 0 0; line-height: 1.6;"><strong style="color: #1B2B4B;">Please note:</strong> A late payment fee of 2% per month may apply to invoices that remain overdue, in accordance with our terms of trade.</p>
+                <p style="color: #374151; font-size: 15px; margin: 0 0 24px 0;">Your payment for invoice <strong style="color: #1a1a1a;">{{ invoice.invoice_number }}</strong> is now <strong style="color: #dc2626;">{{ days_overdue }} days overdue</strong>. Please arrange payment at your earliest convenience to avoid any further action.</p>
+                <p style="color: #374151; font-size: 13px; margin: 12px 0 0 0; line-height: 1.6;"><strong style="color: #1a1a1a;">Please note:</strong> A late payment fee of 2% per month may apply to invoices that remain overdue, in accordance with our terms of trade.</p>
 
                 <!-- Section Label -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
@@ -62,12 +63,12 @@
                     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                         <tr>
                             <td style="padding: 6px 0; color: #6b7280; font-size: 14px;">Invoice Total</td>
-                            <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #1B2B4B; font-size: 14px;">{{ total_formatted }}</td>
+                            <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #1a1a1a; font-size: 14px;">{{ total_formatted }}</td>
                         </tr>
                         {% if invoice.paid_cents > 0 %}
                         <tr>
                             <td style="padding: 6px 0; color: #6b7280; font-size: 14px;">Amount Paid</td>
-                            <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #1B2B4B; font-size: 14px;">{{ paid_formatted }}</td>
+                            <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #1a1a1a; font-size: 14px;">{{ paid_formatted }}</td>
                         </tr>
                         {% endif %}
                         <tr>
@@ -76,7 +77,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding: 6px 0; font-weight: 700; color: #1B2B4B; font-size: 15px;">Balance Due</td>
+                            <td style="padding: 6px 0; font-weight: 700; color: #1a1a1a; font-size: 15px;">Balance Due</td>
                             <td style="padding: 6px 0; text-align: right; font-weight: 800; font-size: 22px; color: #dc2626;">{{ balance_formatted }}</td>
                         </tr>
                     </table>
@@ -126,19 +127,19 @@
                     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                         <tr>
                             <td style="padding: 5px 0; color: #6b7280; font-size: 13px;">Bank</td>
-                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1B2B4B;">{{ bank_name }}</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1a1a1a;">{{ bank_name }}</td>
                         </tr>
                         <tr>
                             <td style="padding: 5px 0; color: #6b7280; font-size: 13px;">BSB</td>
-                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1B2B4B;">{{ bank_bsb }}</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1a1a1a;">{{ bank_bsb }}</td>
                         </tr>
                         <tr>
                             <td style="padding: 5px 0; color: #6b7280; font-size: 13px;">Account</td>
-                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1B2B4B;">{{ bank_account }}</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1a1a1a;">{{ bank_account }}</td>
                         </tr>
                         <tr>
                             <td style="padding: 5px 0; color: #6b7280; font-size: 13px;">Reference</td>
-                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1B2B4B;">{{ invoice.invoice_number }}</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; color: #1a1a1a;">{{ invoice.invoice_number }}</td>
                         </tr>
                     </table>
                         </td>
@@ -152,14 +153,14 @@
 
                     <!-- Footer -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #1B2B4B 0%, #243b53 100%); padding: 28px 40px; text-align: center;">
-                            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #ffffff;">{{ business_name }}</p>
+                        <td style="background: linear-gradient(160deg, #1a1a1a 0%, #242424 60%, #1a1a1a 100%); padding: 28px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #E87A2E;">{{ business_name }}</p>
                             <p style="margin: 0 0 4px 0; font-size: 13px; color: rgba(255,255,255,0.7);">
                                 {% if business_phone %}<a href="tel:{{ business_phone }}" style="color: #E87A2E; text-decoration: none;">{{ business_phone }}</a>{% endif %}
                                 {% if business_phone and business_email %}<span style="color: rgba(255,255,255,0.3); padding: 0 8px;">|</span>{% endif %}
                                 {% if business_email %}<a href="mailto:{{ business_email }}" style="color: #E87A2E; text-decoration: none;">{{ business_email }}</a>{% endif %}
                             </p>
-                            <p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">ABN: {{ business_abn }} | Licence: {{ business_licence }}</p>
+                            {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
                             <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
                         </td>

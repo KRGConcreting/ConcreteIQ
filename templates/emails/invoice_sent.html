@@ -21,8 +21,9 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07); border-top: none;">
                     <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #1B2B4B 0%, #243b53 100%); padding: 28px 40px; text-align: center;">
-                            <p style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; line-height: 1.3;">{{ business_name }}</p>
+                        <td style="background: linear-gradient(160deg, #1a1a1a 0%, #242424 60%, #1a1a1a 100%); padding: 28px 40px; text-align: center;">
+                            {% if logo_url %}<img src="{{ logo_url }}" alt="" width="48" height="48" style="display: block; margin: 0 auto 12px; width: 48px; height: 48px; border-radius: 10px; border: 1.5px solid rgba(232, 122, 46, 0.25);">{% endif %}
+                            <p style="margin: 0; font-size: 22px; font-weight: 800; color: #E87A2E; letter-spacing: -0.02em; line-height: 1.3;">{{ business_name }}</p>
                         </td>
                     </tr>
                     <!-- Orange accent line -->
@@ -33,7 +34,7 @@
                     <tr>
                         <td style="padding: 32px 40px;">
                             <!-- Title -->
-                            <h1 style="margin: 0 0 4px 0; font-size: 24px; font-weight: 800; color: #1B2B4B; text-align: center;">Invoice</h1>
+                            <h1 style="margin: 0 0 4px 0; font-size: 24px; font-weight: 800; color: #1a1a1a; text-align: center;">Invoice</h1>
                             <p style="margin: 0 0 16px 0; font-size: 13px; color: #6b7280; text-align: center;">{{ invoice.invoice_number }}</p>
 
                             <!-- Stage Badge -->
@@ -46,7 +47,7 @@
                             </table>
 
                             <!-- Greeting -->
-                            <p style="margin: 0 0 8px 0; font-size: 15px; color: #1B2B4B; font-weight: 600;">Hi {{ customer.name }},</p>
+                            <p style="margin: 0 0 8px 0; font-size: 15px; color: #1a1a1a; font-weight: 600;">Hi {{ customer.name }},</p>
                             <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151; line-height: 1.7;">Please find your invoice details below. You can pay securely online or via bank transfer.</p>
 
                             <!-- Summary Box -->
@@ -64,11 +65,11 @@
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280;">Subtotal</td>
-                                                <td style="padding: 6px 0; font-size: 14px; color: #1B2B4B; font-weight: 600; text-align: right;">${{ "%.2f"|format(invoice.subtotal_cents / 100) }}</td>
+                                                <td style="padding: 6px 0; font-size: 14px; color: #1a1a1a; font-weight: 600; text-align: right;">${{ "%.2f"|format(invoice.subtotal_cents / 100) }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280;">GST (10%)</td>
-                                                <td style="padding: 6px 0; font-size: 14px; color: #1B2B4B; font-weight: 600; text-align: right;">${{ "%.2f"|format(invoice.gst_cents / 100) }}</td>
+                                                <td style="padding: 6px 0; font-size: 14px; color: #1a1a1a; font-weight: 600; text-align: right;">${{ "%.2f"|format(invoice.gst_cents / 100) }}</td>
                                             </tr>
                                         </table>
 
@@ -78,7 +79,7 @@
                                                 <td style="padding: 12px 0 0 0; border-top: 2px solid #e2e8f0;">
                                                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                                         <tr>
-                                                            <td style="padding: 6px 0; font-size: 15px; color: #1B2B4B; font-weight: 700;">Total Due</td>
+                                                            <td style="padding: 6px 0; font-size: 15px; color: #1a1a1a; font-weight: 700;">Total Due</td>
                                                             <td style="padding: 6px 0; font-size: 22px; font-weight: 800; color: #E87A2E; text-align: right;">{{ total_formatted }}</td>
                                                         </tr>
                                                     </table>
@@ -118,19 +119,19 @@
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td style="padding: 5px 0; font-size: 13px; color: #6b7280; width: 90px;">Bank</td>
-                                                <td style="padding: 5px 0; font-size: 13px; color: #1B2B4B; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ bank_name }}</td>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #1a1a1a; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ bank_name }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 5px 0; font-size: 13px; color: #6b7280; width: 90px;">BSB</td>
-                                                <td style="padding: 5px 0; font-size: 13px; color: #1B2B4B; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ bank_bsb }}</td>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #1a1a1a; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ bank_bsb }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 5px 0; font-size: 13px; color: #6b7280; width: 90px;">Account</td>
-                                                <td style="padding: 5px 0; font-size: 13px; color: #1B2B4B; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ bank_account }}</td>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #1a1a1a; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ bank_account }}</td>
                                             </tr>
                                             <tr>
                                                 <td style="padding: 5px 0; font-size: 13px; color: #6b7280; width: 90px;">Reference</td>
-                                                <td style="padding: 5px 0; font-size: 13px; color: #1B2B4B; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ invoice.invoice_number }}</td>
+                                                <td style="padding: 5px 0; font-size: 13px; color: #1a1a1a; font-weight: 700; font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;">{{ invoice.invoice_number }}</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -143,14 +144,14 @@
                     </tr>
                     <!-- Footer -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #1B2B4B 0%, #243b53 100%); padding: 28px 40px; text-align: center;">
-                            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #ffffff;">{{ business_name }}</p>
+                        <td style="background: linear-gradient(160deg, #1a1a1a 0%, #242424 60%, #1a1a1a 100%); padding: 28px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 700; color: #E87A2E;">{{ business_name }}</p>
                             <p style="margin: 0 0 4px 0; font-size: 13px; color: rgba(255,255,255,0.7);">
                                 {% if business_phone %}<a href="tel:{{ business_phone }}" style="color: #E87A2E; text-decoration: none;">{{ business_phone }}</a>{% endif %}
                                 {% if business_phone and business_email %}<span style="color: rgba(255,255,255,0.3); padding: 0 8px;">|</span>{% endif %}
                                 {% if business_email %}<a href="mailto:{{ business_email }}" style="color: #E87A2E; text-decoration: none;">{{ business_email }}</a>{% endif %}
                             </p>
-                            <p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">ABN: {{ business_abn }} | Licence: {{ business_licence }}</p>
+                            {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
                             <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
                         </td>
