@@ -436,6 +436,7 @@
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5">Server API Token</label>
                         <input type="password" x-model="credentials.postmark_api_key"
+                               @focus="if(credentials.postmark_api_key.startsWith('••••')) credentials.postmark_api_key = ''"
                                placeholder="Enter your Postmark Server API Token"
                                class="input-field text-sm">
                     </div>
