@@ -32,15 +32,15 @@
     </div>
 
     <!-- Quote Context -->
-    {% if quote.job_name or quote.site_address %}
+    {% if quote.job_name or quote.job_address %}
     <div class="portal-card animate-fade-in-up delay-1">
         <div class="px-6 py-5 sm:px-8">
             <h3 class="text-xs font-bold uppercase tracking-wider text-primary-500 mb-3">Project</h3>
             {% if quote.job_name %}
             <p class="text-base font-semibold text-slate-900">{{ quote.job_name }}</p>
             {% endif %}
-            {% if quote.site_address %}
-            <p class="text-sm text-slate-500 mt-1">{{ quote.site_address }}</p>
+            {% if quote.job_address %}
+            <p class="text-sm text-slate-500 mt-1">{{ quote.job_address }}</p>
             {% endif %}
         </div>
     </div>

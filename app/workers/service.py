@@ -61,6 +61,8 @@ async def create_worker(
         email=data.email,
         notes=data.notes,
         active=True,
+        claims_tax_free_threshold=data.claims_tax_free_threshold,
+        pay_frequency=data.pay_frequency,
     )
 
     db.add(worker)

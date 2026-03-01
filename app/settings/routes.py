@@ -1464,25 +1464,29 @@ async def save_sms_templates(
 @router.get("/backup", name="settings:backup_page")
 async def backup_page(request: Request):
     """Backup & Restore management page."""
-    import os
-
-    backup_dir = BASE_DIR / "backups"
-    backup_dir.mkdir(exist_ok=True)
+    import logging
+    logger = logging.getLogger(__name__)
 
     backups = []
-    for f in sorted(backup_dir.iterdir(), reverse=True):
-        if f.is_file() and f.suffix in (".db", ".sql", ".json"):
-            stat = f.stat()
-            backups.append({
-                "filename": f.name,
-                "size_mb": round(stat.st_size / (1024 * 1024), 1),
-                "created_at": datetime.fromtimestamp(stat.st_mtime).strftime("%d %b %Y %H:%M"),
-            })
+    try:
+        backup_dir = BASE_DIR / "backups"
+        backup_dir.mkdir(exist_ok=True)
+
+        for f in sorted(backup_dir.iterdir(), reverse=True):
+            if f.is_file() and f.suffix in (".db", ".sql", ".json"):
+                stat = f.stat()
+                backups.append({
+                    "filename": f.name,
+                    "size_mb": round(stat.st_size / (1024 * 1024), 1),
+                    "created_at": datetime.fromtimestamp(stat.st_mtime).strftime("%d %b %Y %H:%M"),
+                })
+    except Exception as e:
+        logger.warning(f"Could not list backups: {e}")
 
     return templates.TemplateResponse("settings/backup.html", {
         "request": request,
         "active_section": "backup",
-        "backups": backups[:20],  # Last 20 backups
+        "backups": backups[:20],
     })
 
 

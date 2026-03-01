@@ -218,7 +218,7 @@ async def create_labour_quote(
 
     PAYG_RATE = 0.17
     SUPER_RATE = 0.12
-    WORKCOVER_RATE = 0.03
+    WORKCOVER_RATE = 0.085
 
     customer = await db.get(Customer, data.customer_id)
     if not customer:

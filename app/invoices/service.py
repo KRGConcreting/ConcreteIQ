@@ -694,7 +694,7 @@ async def create_progress_invoices(
         description=f"Created {len(invoices)} progress invoices for {quote.quote_number}",
         entity_type="quote",
         entity_id=quote.id,
-        ip_address=request.client.host if request.client else None,
+        ip_address=ip_address or (request.client.host if request and request.client else None),
         extra_data={
             "invoice_ids": [inv.id for inv in invoices],
             "total_invoiced_cents": quote.total_invoiced_cents,

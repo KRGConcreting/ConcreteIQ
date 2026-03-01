@@ -219,6 +219,12 @@ async def view_quote(
             "request": request,
             "quote": quote,
             "customer": customer,
+            "business": {
+                "name": settings.business_name,
+                "trading_as": settings.trading_as,
+                "phone": settings.business_phone,
+                "email": settings.business_email,
+            },
         })
 
     if quote.expiry_date and quote.expiry_date < sydney_today():
@@ -231,6 +237,12 @@ async def view_quote(
             "request": request,
             "quote": quote,
             "customer": customer,
+            "business": {
+                "name": settings.business_name,
+                "trading_as": settings.trading_as,
+                "phone": settings.business_phone,
+                "email": settings.business_email,
+            },
         })
 
     # Mark as viewed on first access (only if status is 'sent')

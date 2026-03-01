@@ -170,7 +170,7 @@
                                 <span x-text="'$' + (superCents / 100).toFixed(2)"></span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-slate-500">WorkCover (3%)</span>
+                                <span class="text-slate-500">WorkCover (8.5%)</span>
                                 <span x-text="'$' + (workcoverCents / 100).toFixed(2)"></span>
                             </div>
                         </div>
@@ -287,7 +287,7 @@ function labourQuote() {
             return this.grossCents > 0 ? Math.round(this.paygCents / this.grossCents * 100) : 17;
         },
         get superCents() { return Math.round(this.grossCents * 0.12); },
-        get workcoverCents() { return Math.round(this.grossCents * 0.03); },
+        get workcoverCents() { return Math.round(this.grossCents * 0.085); },
         get subtotalCents() { return this.grossCents + this.superCents + this.workcoverCents; },
         get gstCents() { return Math.round(this.subtotalCents * 0.10); },
         get totalCents() { return this.subtotalCents + this.gstCents; },

@@ -72,10 +72,10 @@ async def get_all_notifications(
         query = query.where(Notification.is_read == False)
 
     # Get total count
-    count_result = await db.execute(
-        select(func.count(Notification.id))
-        .where(Notification.is_read == False if not include_read else True)
-    )
+    count_query = select(func.count(Notification.id))
+    if not include_read:
+        count_query = count_query.where(Notification.is_read == False)
+    count_result = await db.execute(count_query)
     total = count_result.scalar() or 0
 
     # Get notifications
@@ -694,6 +694,10 @@ async def check_overdue_invoices(db: AsyncSession) -> int:
     invoices = result.scalars().all()
 
     for invoice in invoices:
+        # Mark as overdue if not already
+        if invoice.status != "overdue":
+            invoice.status = "overdue"
+
         days_overdue = (today - invoice.due_date).days
 
         # Only notify at specific intervals: 1, 7, 14, 21, 30 days

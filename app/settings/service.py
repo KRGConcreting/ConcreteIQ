@@ -268,7 +268,7 @@ DEFAULTS = {
     "pricing.gst_rate": 0.10,
     "pricing.super_rate": 0.12,
     "pricing.payg_rate": 0.17,
-    "pricing.workcover_rate": 0.03,
+    "pricing.workcover_rate": 0.085,
     "pricing.minimum_quote": 165000,  # cents inc GST ($1,650)
 
     # =========================================================================

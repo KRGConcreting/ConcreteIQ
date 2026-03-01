@@ -187,21 +187,21 @@
             <div class="flex flex-col items-end space-y-2">
                 <div class="flex justify-between w-full max-w-xs text-sm">
                     <span class="text-slate-500">Subtotal</span>
-                    <span class="font-medium text-slate-700">${{ "%.2f"|format(quote.subtotal_cents / 100) }}</span>
+                    <span class="font-medium text-slate-700">${{ "%.2f"|format((quote.subtotal_cents or 0) / 100) }}</span>
                 </div>
-                {% if quote.discount_cents > 0 %}
+                {% if (quote.discount_cents or 0) > 0 %}
                 <div class="flex justify-between w-full max-w-xs text-sm text-green-600">
                     <span>Discount</span>
-                    <span class="font-medium">-${{ "%.2f"|format(quote.discount_cents / 100) }}</span>
+                    <span class="font-medium">-${{ "%.2f"|format((quote.discount_cents or 0) / 100) }}</span>
                 </div>
                 {% endif %}
                 <div class="flex justify-between w-full max-w-xs text-sm">
                     <span class="text-slate-500">GST (10%)</span>
-                    <span class="font-medium text-slate-700">${{ "%.2f"|format(quote.gst_cents / 100) }}</span>
+                    <span class="font-medium text-slate-700">${{ "%.2f"|format((quote.gst_cents or 0) / 100) }}</span>
                 </div>
                 <div class="flex justify-between w-full max-w-xs border-t border-slate-200 pt-3 mt-1">
                     <span class="text-lg font-bold text-slate-900 font-display">Total</span>
-                    <span class="text-lg font-bold text-slate-900 font-display">${{ "%.2f"|format(quote.total_cents / 100) }}</span>
+                    <span class="text-lg font-bold text-slate-900 font-display">${{ "%.2f"|format((quote.total_cents or 0) / 100) }}</span>
                 </div>
             </div>
         </div>

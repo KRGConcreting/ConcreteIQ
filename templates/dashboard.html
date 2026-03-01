@@ -675,7 +675,7 @@
 
 <script>
 function dismissAlert(notificationId) {
-    fetch('/notifications/api/' + notificationId + '/read', { method: 'POST' })
+    fetch('/notifications/api/mark-read/' + notificationId, { method: 'POST' })
         .then(function(r) { return r.json(); })
         .then(function(data) {
             var el = document.getElementById('alert-' + notificationId);

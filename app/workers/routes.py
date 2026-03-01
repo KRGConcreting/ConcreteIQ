@@ -171,14 +171,13 @@ async def api_crew_rates(
     """API: Get default crew rates per role from Settings.
 
     Used by the worker form to pre-fill rates when creating/editing workers.
-    Returns rates for worker-selectable roles (excludes owner).
+    Returns rates for all roles including owner.
     """
     from app.quotes.pricing import get_crew_rates_async
     rates = await get_crew_rates_async(db)
-    # Only return roles valid for workers (exclude owner)
     return {
         role: rates[role]
-        for role in ["finisher", "experienced_labourer", "labourer"]
+        for role in ["owner", "finisher", "experienced_labourer", "labourer"]
         if role in rates
     }
 

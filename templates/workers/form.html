@@ -62,12 +62,14 @@
                             class="input-field w-full">
                         <option value="labourer">Labourer</option>
                         <option value="experienced_labourer">Experienced Labourer</option>
-                        <option value="finisher">Finisher</option>
+                        <option value="finisher">Concretor / Finisher</option>
+                        <option value="owner">Head Concretor (Owner)</option>
                     </select>
                     <p class="mt-1 text-xs text-slate-500">
                         <span x-show="form.role === 'labourer'">General tasks: prep work, cleanup, basic labour</span>
                         <span x-show="form.role === 'experienced_labourer'">Skilled tasks: formwork, reinforcement, machinery</span>
                         <span x-show="form.role === 'finisher'">Specialist: finishing, trowelling, exposed aggregate</span>
+                        <span x-show="form.role === 'owner'">Owner / head concretor — all-inclusive rate</span>
                     </p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">

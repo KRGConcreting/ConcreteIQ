@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     licence_number: str = "374931C"
     business_phone: str = "0423 005 129"
     business_email: str = "kyle@krgconcreting.au"
-    business_address: str = "Thurgoona NSW 2640"
+    business_address: str = "1/32 Whitton Drive, Thurgoona NSW 2640"
     
     # Integrations (optional)
     stripe_secret_key: str | None = None
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # Google Calendar (service account for job scheduling)
     google_calendar_id: str = ""  # Calendar ID to create events in
     google_credentials_json: str = ""  # Service account JSON (base64 encoded)
-    google_review_url: str = ""  # URL for Google reviews (for post-job emails)
+    google_review_url: str = "https://g.page/r/Cd-0sbGF_o_nEAE/review"  # Google reviews link
 
     # Redis (for Celery background tasks)
     redis_url: str = "redis://localhost:6379/0"
@@ -68,10 +68,10 @@ class Settings(BaseSettings):
     r2_endpoint: str | None = None
     r2_public_url: str = ""  # CDN URL for serving photos
     
-    # Bank details for invoices
-    bank_name: str = "Commonwealth Bank"
-    bank_bsb: str = "062-000"
-    bank_account: str = "1234 5678"
+    # Bank details for invoices (user must set via env vars or settings UI)
+    bank_name: str = "Great Southern Bank"
+    bank_bsb: str = ""
+    bank_account: str = ""
 
     # App URL (override in production, e.g. https://app.krgconcreting.au)
     app_url: str = "http://localhost:8010"

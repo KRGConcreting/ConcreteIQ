@@ -89,10 +89,10 @@ async def _run_safe_migrations():
     migrations = [
         ("customers", "portal_access_token", "VARCHAR(64)"),
         # Part B-C: Expense model upgrades for Xero/BAS
-        ("expenses", "gst_free", "BOOLEAN DEFAULT 0"),
+        ("expenses", "gst_free", "BOOLEAN DEFAULT FALSE"),
         ("expenses", "xero_sync_error", "TEXT"),
         # PAYG withholding fields for workers
-        ("workers", "claims_tax_free_threshold", "BOOLEAN DEFAULT 1"),
+        ("workers", "claims_tax_free_threshold", "BOOLEAN DEFAULT TRUE"),
         ("workers", "pay_frequency", "VARCHAR(20) DEFAULT 'weekly'"),
     ]
 

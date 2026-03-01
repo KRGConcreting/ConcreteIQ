@@ -245,6 +245,13 @@ TRAILER_SOIL_PER_LOAD = 11400
 # Concrete: tip $63 + unloading $84 + fuel $20 = $167/load
 TRAILER_CONCRETE_PER_LOAD = 16700
 
+# Waste tip destinations (address options for trailer disposal)
+WASTE_TIP_DESTINATIONS = {
+    "jacksons": "Jacksons Wodonga, 17 Kendall St, Wodonga",
+    "albury_waste": "Albury Waste Management, 565 Mudge St, Lavington",
+    "wodonga_transfer": "Wodonga Waste Transfer, 29 Kane Rd, Wodonga",
+}
+
 # ==============================================================================
 # PRODUCTIVITY RATES (m² or lm per hour)
 # ==============================================================================
@@ -381,7 +388,7 @@ CREW_ROLES = {
 ROLE_TO_SETTINGS_PREFIX = {
     "owner": "crew_owner",
     "finisher": "crew_finisher",
-    "experienced_labourer": "crew_exp_labourer",
+    "exp_labourer": "crew_exp_labourer",
     "labourer": "crew_labourer",
 }
 
@@ -427,7 +434,7 @@ TRAVEL = {
 GST_RATE = 0.10
 SUPER_RATE = 0.12  # 12% super guarantee
 PAYG_RATE = 0.17
-WORKCOVER_RATE = 0.03
+WORKCOVER_RATE = 0.085
 
 # ==============================================================================
 # MINIMUM QUOTE

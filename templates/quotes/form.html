@@ -602,6 +602,7 @@
                                 <div><label class="field-label">Depth (mm)</label><input type="number" x-model.number="form.excavation_depth" @input="recalculate()" min="0" step="10" class="input-field" placeholder="0"></div>
                                 <div><label class="field-label">Disposal</label><select x-model="form.excavation_disposal" @change="recalculate()" class="select-field"><option value="none">No Disposal</option><option value="trailer">Trailer</option><option value="skipbin">Skip Bin</option></select></div>
                                 <div x-show="form.dig_method === 'machine'"><label class="field-label">Soil Type</label><select x-model="form.soil_type" @change="recalculate()" class="select-field"><option value="topsoil">Topsoil</option><option value="soil">Soil</option><option value="clay">Clay</option><option value="rock">Rock</option></select></div>
+                                <div x-show="form.excavation_disposal === 'trailer'" class="col-span-2 md:col-span-4"><label class="field-label">Tip Destination</label><select x-model="form.waste_tip_destination" @change="recalculate()" class="select-field"><option value="jacksons">Jacksons Wodonga — 17 Kendall St</option><option value="albury_waste">Albury Waste Management — 565 Mudge St, Lavington</option><option value="wodonga_transfer">Wodonga Waste Transfer — 29 Kane Rd</option></select></div>
                             </div>
                         </div>
                         <!-- Pressure Washer -->
@@ -649,6 +650,14 @@
                                 <div class="grid grid-cols-2 gap-4">
                                     <div><label class="field-label">Removal Method</label><select x-model="form.removal_method" @change="recalculate()" class="select-field"><option value="manual">Manual</option><option value="machine">Machine</option></select></div>
                                     <div><label class="field-label">Disposal</label><select x-model="form.removal_disposal" @change="recalculate()" class="select-field"><option value="skip_bin">Skip Bin — $363/m³ inc</option><option value="trailer">Trailer — $167/load inc</option></select></div>
+                                </div>
+                                <div x-show="form.removal_disposal === 'trailer'" class="mt-3">
+                                    <label class="field-label">Tip Destination</label>
+                                    <select x-model="form.waste_tip_destination" @change="recalculate()" class="select-field">
+                                        <option value="jacksons">Jacksons Wodonga — 17 Kendall St</option>
+                                        <option value="albury_waste">Albury Waste Management — 565 Mudge St, Lavington</option>
+                                        <option value="wodonga_transfer">Wodonga Waste Transfer — 29 Kane Rd</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -952,10 +961,10 @@
                             <div class="flex justify-between text-amber-700"><span>Operations</span><span class="font-medium" x-text="'$' + ((summary.allocation.operations || 0) / 100).toFixed(2)"></span></div>
                             <div class="flex justify-between text-red-700"><span>GST/PAYG</span><span class="font-medium" x-text="'$' + (((summary.allocation.gst || 0) + (summary.allocation.payg || 0)) / 100).toFixed(2)"></span></div>
                             <div class="flex justify-between text-sky-700"><span>Super</span><span class="font-medium" x-text="'$' + ((summary.allocation.super || 0) / 100).toFixed(2)"></span></div>
-                            <div class="flex justify-between text-blue-700"><span>Wages</span><span class="font-medium" x-text="'$' + ((summary.allocation.wages || 0) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-blue-700"><span>Crew Wages</span><span class="font-medium" x-text="'$' + ((summary.allocation.wages || 0) / 100).toFixed(2)"></span></div>
                             <div class="flex justify-between text-indigo-700"><span>Workcover</span><span class="font-medium" x-text="'$' + ((summary.allocation.workcover || 0) / 100).toFixed(2)"></span></div>
                             <div class="flex justify-between text-purple-700"><span>Pro4x Account</span><span class="font-medium" x-text="'$' + ((summary.allocation.pro4x || 0) / 100).toFixed(2)"></span></div>
-                            <div class="flex justify-between text-emerald-700 font-medium border-t border-slate-100 pt-1 mt-1"><span>Profit Draw</span><span class="font-bold" x-text="'$' + ((summary.allocation.profit_draw || 0) / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between text-emerald-700 font-medium border-t border-slate-100 pt-1 mt-1"><span>Kyle's Pay</span><span class="font-bold" x-text="'$' + ((summary.allocation.profit_draw || 0) / 100).toFixed(2)"></span></div>
                         </div>
                         <div x-data="{ allocOpen: false }" class="border-t border-slate-200 pt-3">
                             <button @click="allocOpen = !allocOpen" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="allocOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-emerald-400"></span>Payment Allocation</button>
@@ -967,10 +976,10 @@
                                             <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-amber-700">Operations</span><span class="font-medium text-amber-800" x-text="'$' + (stage.operations / 100).toFixed(2)"></span></div>
                                             <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-red-700">GST/PAYG</span><span class="font-medium text-red-800" x-text="'$' + (stage.gst_payg / 100).toFixed(2)"></span></div>
                                             <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-sky-700">Super</span><span class="font-medium text-sky-800" x-text="'$' + (stage.super / 100).toFixed(2)"></span></div>
-                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-blue-700">Wages</span><span class="font-medium text-blue-800" x-text="'$' + (stage.wages / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-blue-700">Crew Wages</span><span class="font-medium text-blue-800" x-text="'$' + (stage.wages / 100).toFixed(2)"></span></div>
                                             <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-indigo-700">Workcover</span><span class="font-medium text-indigo-800" x-text="'$' + (stage.workcover / 100).toFixed(2)"></span></div>
                                             <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-purple-700">Pro4x Account</span><span class="font-medium text-purple-800" x-text="'$' + (stage.pro4x / 100).toFixed(2)"></span></div>
-                                            <div class="flex justify-between py-1"><span class="text-emerald-700 font-medium">Profit</span><span class="font-bold text-emerald-800" x-text="'$' + (stage.profit_draw / 100).toFixed(2)"></span></div>
+                                            <div class="flex justify-between py-1"><span class="text-emerald-700 font-medium">Kyle's Pay</span><span class="font-bold text-emerald-800" x-text="'$' + (stage.profit_draw / 100).toFixed(2)"></span></div>
                                         </div>
                                     </div>
                                 </template>
@@ -1011,7 +1020,7 @@ function calculatePaygWithholding(weeklyBaseWageCents) {
 function getPaygFractionOfLoaded(hourlyLoadedCostCents, standardHoursPerWeek = 38) {
     if (hourlyLoadedCostCents <= 0) return 0.17;
     // Derive base wage: loaded = base * (1 + super + workcover)
-    const ON_COST_MULTIPLIER = 1 + 0.12 + 0.03; // 1.15
+    const ON_COST_MULTIPLIER = 1 + 0.12 + 0.085; // 1.205
     const hourlyBaseCents = hourlyLoadedCostCents / ON_COST_MULTIPLIER;
     const weeklyBase = hourlyBaseCents * standardHoursPerWeek;
     const weeklyPayg = calculatePaygWithholding(weeklyBase);
@@ -1067,6 +1076,7 @@ function quoteCalculator() {
             dig_method: {{ (quote.calculator_input.get('dig_method', 'hand') if quote and quote.calculator_input else 'hand') | tojson }},
             excavation_disposal: {{ (quote.calculator_input.get('excavation_disposal', 'none') if quote and quote.calculator_input else 'none') | tojson }},
             soil_type: {{ (quote.calculator_input.get('soil_type', 'soil') if quote and quote.calculator_input else 'soil') | tojson }},
+            waste_tip_destination: {{ (quote.calculator_input.get('waste_tip_destination', 'jacksons') if quote and quote.calculator_input else 'jacksons') | tojson }},
 
             // Equipment hire
             pressure_washer: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('pressure_washer') else 'false' }},
@@ -1427,23 +1437,71 @@ function quoteCalculator() {
             const pro4xTotalCents = Math.round(pro4xReturnKm * pro4xPerKm); // in cents
 
             // === 7-BUCKET ACCOUNT ALLOCATION ===
-            // Rates as fraction of LOADED cost (loaded = base * 1.155)
-            const ON_COST_MULT = 1 + 0.12 + 0.03; // 1.15
-            const SUPER_RATE = 0.12 / ON_COST_MULT;        // ~10.43% of loaded
-            const WORKCOVER_RATE = 0.03 / ON_COST_MULT;    // ~2.60% of loaded
+            // Tells Kyle exactly how much to put in each bank account.
+            // Owner (Kyle): no super, no workcover, no PAYG — goes straight to Kyle's Pay
+            // Employees: super (12%), workcover (8.5%), PAYG withheld from base wages
+            //
+            // Bucket accounting identity (must always hold):
+            //   Operations + GST/PAYG + Super + Crew Wages + Workcover + Pro4x + Kyle's Pay
+            //   = Total inc GST
 
-            // Calculate effective PAYG rate from selected workers' loaded cost rates
-            const allSelectedWorkerIds = [
+            const ON_COST_MULT = 1 + 0.12 + 0.085; // 1.205
+            const SUPER_RATE = 0.12 / ON_COST_MULT;        // ~9.96% of loaded
+            const WORKCOVER_RATE = 0.085 / ON_COST_MULT;   // ~7.05% of loaded
+
+            // Identify owner vs employee workers
+            const ownerWorkerIds = new Set(
+                this.availableWorkers.filter(w => w.role === 'owner').map(w => w.id)
+            );
+
+            // Calculate Kyle's (owner) cost rate for each phase ($/hr)
+            const setupHrs = r.setup_hours || 0;
+            const pourHrs = r.pour_hours || 0;
+            const finishHrs = r.finish_hours || 0;
+
+            let kyleSetupRate = 0;  // $/hr
+            let kylePourRate = 0;   // $/hr
+            for (const id of (this.form.setup_day_workers || [])) {
+                const wId = parseInt(id);
+                if (ownerWorkerIds.has(wId)) {
+                    const w = this.availableWorkers.find(w => w.id === wId);
+                    if (w) kyleSetupRate += (w.cost_rate_cents || 0) / 100;
+                }
+            }
+            for (const id of (this.form.pour_day_workers || [])) {
+                const wId = parseInt(id);
+                if (ownerWorkerIds.has(wId)) {
+                    const w = this.availableWorkers.find(w => w.id === wId);
+                    if (w) kylePourRate += (w.cost_rate_cents || 0) / 100;
+                }
+            }
+
+            // RATIO-BASED SPLIT — unit-agnostic, guarantees kyle + employees = total exactly
+            // Kyle's fraction = (kyle's cost-weighted hours) / (total team cost-weighted hours)
+            const totalSetupCostRate = this.setupDayCostRate;  // $/hr (all workers incl custom)
+            const totalPourCostRate = this.pourDayCostRate;     // $/hr (all workers incl custom)
+
+            const kyleCostWeighted = kyleSetupRate * setupHrs + kylePourRate * (pourHrs + finishHrs);
+            const totalCostWeighted = totalSetupCostRate * setupHrs + totalPourCostRate * (pourHrs + finishHrs);
+
+            const totalLabourCost = r.labour_cost_cents || 0;
+            const kyleFraction = totalCostWeighted > 0 ? kyleCostWeighted / totalCostWeighted : 0;
+            const kyleLabourCents = Math.round(totalLabourCost * kyleFraction);
+            // Employees' loaded cost = remainder (no rounding gap)
+            const workersGrossLabourCents = totalLabourCost - kyleLabourCents;
+
+            // Calculate effective PAYG rate from EMPLOYEE workers only (not owner)
+            const employeeWorkerIds = [
                 ...new Set([
                     ...(this.form.setup_day_workers || []),
                     ...(this.form.pour_day_workers || []),
                 ])
-            ];
-            let effectivePaygRate = 0.17; // Fallback
-            if (allSelectedWorkerIds.length > 0 && this.availableWorkers.length > 0) {
-                let totalRate = 0;
-                let workerCount = 0;
-                for (const id of allSelectedWorkerIds) {
+            ].filter(id => !ownerWorkerIds.has(parseInt(id)));
+
+            let effectivePaygRate = 0.17; // Fallback ~17% of loaded
+            if (employeeWorkerIds.length > 0 && this.availableWorkers.length > 0) {
+                let totalRate = 0, workerCount = 0;
+                for (const id of employeeWorkerIds) {
                     const worker = this.availableWorkers.find(w => w.id === parseInt(id));
                     if (worker && worker.cost_rate_cents > 0) {
                         totalRate += getPaygFractionOfLoaded(worker.cost_rate_cents);
@@ -1453,12 +1511,13 @@ function quoteCalculator() {
                 if (workerCount > 0) effectivePaygRate = totalRate / workerCount;
             }
 
-            // Korbain's gross wages = labour_cost_cents (actual cost from calculator)
-            const grossWagesCents = r.labour_cost_cents || 0;
-            const paygWithheld = Math.round(grossWagesCents * effectivePaygRate);
-            const superAmount = Math.round(grossWagesCents * SUPER_RATE);
-            const workcover = Math.round(grossWagesCents * WORKCOVER_RATE);
-            const netWages = grossWagesCents - paygWithheld;
+            // Apply on-costs ONLY to employees (not Kyle)
+            const paygWithheld = Math.round(workersGrossLabourCents * effectivePaygRate);
+            const superAmount = Math.round(workersGrossLabourCents * SUPER_RATE);
+            const workcover = Math.round(workersGrossLabourCents * WORKCOVER_RATE);
+            // NET wages = actual employee take-home pay (loaded minus ALL deductions)
+            // loaded = base × 1.205 → take-home = loaded - super - workcover - PAYG
+            const netWages = workersGrossLabourCents - superAmount - workcover - paygWithheld;
 
             const subtotalCents = r.subtotal_cents || 0;
             const gstAmount = r.gst_cents || 0;
@@ -1477,7 +1536,6 @@ function quoteCalculator() {
             if (this.form.price_override_enabled && this.form.price_override_value > 0) {
                 const overrideTotal = this.form.price_override_value * 100;
                 const rawTotal = r.total_cents || 0;
-                // Discount in override mode = difference between raw total and override
                 discountCents = Math.max(0, rawTotal - overrideTotal);
             }
             // Discount reduces the ex-GST subtotal (profit absorbs the discount)
@@ -1485,14 +1543,20 @@ function quoteCalculator() {
             const adjustedSubtotalCents = Math.max(0, subtotalCents - discountExGst);
             const adjustedGst = Math.round(adjustedSubtotalCents * 0.1);
 
-            // Bucket values
+            // Bucket values — what to put in each bank account
             const bucketOperations = totalMaterials + travelCost + pumpCost + overheadCost;
             const bucketGstPayg = adjustedGst + paygWithheld;
             const bucketSuper = superAmount;
-            const bucketWages = netWages;
+            const bucketWages = netWages;  // Employee take-home (transferred to their bank)
             const bucketWorkcover = workcover;
             const bucketPro4x = pro4xTotalCents;
-            const bucketProfitDraw = Math.max(0, adjustedSubtotalCents - bucketOperations - grossWagesCents - bucketSuper - bucketWorkcover - bucketPro4x);
+            // Kyle's Pay = his labour cost + full job margin (markup profit) - vehicle costs
+            // Super/workcover already accounted for in their own buckets from employee portion only
+            const bucketKylesPay = kyleLabourCents + Math.max(0,
+                adjustedSubtotalCents - bucketOperations - totalLabourCost - bucketPro4x
+            );
+            // Keep as alias for downstream references
+            const bucketProfitDraw = bucketKylesPay;
 
             return {
                 concrete: {
@@ -1608,7 +1672,8 @@ function quoteCalculator() {
                     payg: paygWithheld,
                     super: bucketSuper,
                     wages: bucketWages,
-                    gross_wages: grossWagesCents,
+                    gross_wages: workersGrossLabourCents,
+                    kyle_labour: kyleLabourCents,
                     workcover: bucketWorkcover,
                     pro4x: bucketPro4x,
                     profit_draw: bucketProfitDraw,
@@ -1888,6 +1953,7 @@ function quoteCalculator() {
                         excavation_depth: this.form.excavation_depth,
                         dig_method: this.form.dig_method,
                         excavation_disposal: this.form.excavation_disposal,
+                        waste_tip_destination: this.form.waste_tip_destination,
                         soil_type: this.form.soil_type,
                         pressure_washer: this.form.pressure_washer,
                         pressure_washer_duration: this.form.pressure_washer_duration,
@@ -1915,6 +1981,7 @@ function quoteCalculator() {
                         complexity: this.form.complexity,
                         tier: this.form.tier,
                         team_tier: this.form.team_tier,
+                        setup_crew_count: this.setupCrewCount || 3,
                         distance_km: this.form.distance_km,
                         concrete_distance_km: this.form.concrete_distance_km,
                         inc_release_agent: this.form.inc_release_agent,

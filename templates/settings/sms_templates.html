@@ -12,6 +12,7 @@
     </div>
 
     <form action="/settings/sms-templates" method="POST" class="space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
 
         <!-- Available Variables -->
         <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">

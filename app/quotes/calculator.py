@@ -32,6 +32,7 @@ from app.quotes.pricing import (
     # Disposal
     SKIPBIN_MINIMUM_M3, SKIPBIN_SOIL_PER_M3, SKIPBIN_CONCRETE_PER_M3,
     TRAILER_CAPACITY_M3, TRAILER_SOIL_PER_LOAD, TRAILER_CONCRETE_PER_LOAD,
+    WASTE_TIP_DESTINATIONS,
     # Concrete removal
     CONCRETE_REMOVAL,
     # Complexity
@@ -80,6 +81,7 @@ class CalculatorInput:
     soil_type: str = "soil"       # topsoil, soil, clay, rock
     dig_method: str = "hand"      # hand or machine
     excavation_disposal: str = "none"  # none, skipbin, trailer
+    waste_tip_destination: str = "jacksons"  # jacksons, albury_waste, wodonga_transfer
 
     # Equipment hire
     pressure_washer: bool = False
@@ -799,8 +801,9 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
         else:  # trailer
             num_loads = max(1, math.ceil(exc_volume / TRAILER_CAPACITY_M3))
             disposal_cost = num_loads * TRAILER_SOIL_PER_LOAD
+            tip_name = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, "tip")
             r.line_items.append(LineItem(
-                description=f"Trailer Disposal — soil ({num_loads} load{'s' if num_loads > 1 else ''})",
+                description=f"Trailer Disposal — soil to {tip_name} ({num_loads} load{'s' if num_loads > 1 else ''})",
                 quantity=num_loads,
                 unit="load",
                 unit_price_cents=TRAILER_SOIL_PER_LOAD,
@@ -893,6 +896,7 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
             # $167/load, 0.5m³ per load
             num_loads = max(1, math.ceil(r.removal_volume_m3 / TRAILER_CAPACITY_M3)) if r.removal_volume_m3 > 0 else 1
             disposal_cost = num_loads * TRAILER_CONCRETE_PER_LOAD
+            tip_name = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, "tip")
 
         r.removal_disposal_cents = disposal_cost
 
@@ -901,7 +905,8 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
 
         # Line item for quote
         method_label = "Manual" if inp.removal_method == "manual" else "Machine"
-        disposal_labels = {"skip_bin": "skip bin", "trailer": "trailer to tip"}
+        tip_dest = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, "tip")
+        disposal_labels = {"skip_bin": "skip bin", "trailer": f"trailer to {tip_dest}"}
         disposal_label = disposal_labels.get(inp.removal_disposal, "skip bin")
         reo_label = " (reinforced)" if inp.removal_reinforced else ""
 
@@ -1177,7 +1182,7 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
         mat += int(MATERIALS["isolation_joint"] * inp.isolation_joints)
     
     # Fence sheeting
-    if inp.inc_fence_sheeting and inp.fence_sheeting > 0:
+    if inp.fence_sheeting > 0:
         mat += int(MATERIALS["fence_sheeting"] * inp.fence_sheeting)
     
     # Formwork wear
@@ -1267,6 +1272,10 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
         # Pressure washer hire
         half_day = inp.slab_area <= 60
         r.finish_materials_cents = 15000 if half_day else 22000  # cents
+
+    # Acid wash chemical cost ($3/m² = 300 cents/m²)
+    if inp.acid_wash and inp.slab_area > 0:
+        r.finish_materials_cents += int(CHEMICALS.get("Acid Wash", 300) * inp.slab_area)
     
     # ==========================================================================
     # LABOUR
@@ -1386,8 +1395,9 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
     
     r.markup_cents = total_markup
     
-    r.raw_cost_cents = (r.excavation_cost_cents + r.removal_cost_cents + 
-                        total_materials + total_labour + 
+    r.raw_cost_cents = (r.excavation_cost_cents + r.removal_cost_cents +
+                        r.drainage_cost_cents +
+                        total_materials + total_labour +
                         r.overhead_cents + r.travel_cents)
     
     r.subtotal_cents = r.raw_cost_cents + r.markup_cents

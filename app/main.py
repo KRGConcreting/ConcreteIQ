@@ -40,7 +40,8 @@ from app.costing.routes import router as costing_router
 from app.sms_inbox.routes import router as sms_inbox_router
 from app.security.routes import router as security_router
 from app.documents.routes import router as documents_router
-from app.suppliers.routes import router as suppliers_router
+# Suppliers module removed per user request
+# from app.suppliers.routes import router as suppliers_router
 
 import logging
 
@@ -165,7 +166,7 @@ app.include_router(costing_router, prefix="/costing", tags=["Job Costing"])
 app.include_router(sms_inbox_router, prefix="/sms-inbox", tags=["SMS Inbox"])
 app.include_router(security_router, prefix="/security", tags=["Security"])
 app.include_router(documents_router, prefix="/documents", tags=["Documents"])
-app.include_router(suppliers_router, prefix="/suppliers", tags=["Suppliers"])
+# app.include_router(suppliers_router, prefix="/suppliers", tags=["Suppliers"])  # Removed
 
 
 # Root redirect

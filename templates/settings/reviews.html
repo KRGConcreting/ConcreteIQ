@@ -16,6 +16,7 @@
         </div>
 
         <form method="POST" action="/settings/reviews" class="space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
             <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                 <div>
                     <p class="font-medium text-slate-900">Enable Review Requests</p>

@@ -702,7 +702,7 @@ class PourCalculatorResult(BaseModel):
 class WorkerCreate(BaseModel):
     """Create a worker."""
     name: str = Field(..., min_length=1, max_length=255)
-    role: str = Field(default="labourer", pattern="^(finisher|experienced_labourer|labourer)$")
+    role: str = Field(default="labourer", pattern="^(owner|finisher|experienced_labourer|labourer)$")
     hourly_rate_cents: int = Field(default=0, ge=0)
     cost_rate_cents: int = Field(default=0, ge=0)
     phone: Optional[str] = Field(None, max_length=50)
@@ -715,7 +715,7 @@ class WorkerCreate(BaseModel):
 class WorkerUpdate(BaseModel):
     """Update a worker."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    role: Optional[str] = Field(None, pattern="^(finisher|experienced_labourer|labourer)$")
+    role: Optional[str] = Field(None, pattern="^(owner|finisher|experienced_labourer|labourer)$")
     hourly_rate_cents: Optional[int] = Field(None, ge=0)
     cost_rate_cents: Optional[int] = Field(None, ge=0)
     phone: Optional[str] = Field(None, max_length=50)

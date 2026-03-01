@@ -441,7 +441,7 @@ async def api_void_invoice(
 async def api_send_reminder(
     request: Request,
     id: int,
-    tier: str = "friendly",
+    tier: str = Query("friendly"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """

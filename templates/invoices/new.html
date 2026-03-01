@@ -48,7 +48,7 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <span class="font-semibold text-slate-900 font-display">{{ quote.quote_number }}</span>
-                                    <span class="text-sm text-slate-500 ml-2">{{ quote.job_name or quote.site_address or 'No description' }}</span>
+                                    <span class="text-sm text-slate-500 ml-2">{{ quote.job_name or quote.job_address or 'No description' }}</span>
                                 </div>
                                 <div class="text-right flex items-center gap-2">
                                     <span class="font-bold text-slate-900 font-display">${{ '{:,.0f}'.format((quote.total_cents or 0) / 100) }}</span>

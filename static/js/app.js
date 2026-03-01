@@ -20,6 +20,13 @@
         warning: 'Warning',
     };
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     function getToastContainer() {
         var container = document.getElementById('toast-container');
         if (!container) {
@@ -182,7 +189,7 @@
     /* ── Button Ripple Effect ── */
     function initRipples() {
         document.addEventListener('click', function(e) {
-            var btn = e.target.closest('.btn-primary, .btn-secondary, .btn-danger');
+            var btn = e.target.closest('.btn-primary, .btn-secondary, .btn-danger, .btn-v4-primary, .btn-v4-secondary, .btn-v4-danger');
             if (!btn) return;
 
             var rect = btn.getBoundingClientRect();
@@ -202,7 +209,7 @@
     }
 
 
-    /* ── Sound Effects Module ── */
+    /* ── Premium Sound Effects Module ── */
     var audioCtx = null;
     function getAudioCtx() {
         if (!audioCtx) {
@@ -210,6 +217,23 @@
             catch(e) { return null; }
         }
         return audioCtx;
+    }
+
+    /* Create a short convolution reverb impulse for spatial depth */
+    function createReverb(ctx, decay, length) {
+        decay = decay || 1.5; length = length || 0.6;
+        var rate = ctx.sampleRate;
+        var len = rate * length;
+        var impulse = ctx.createBuffer(2, len, rate);
+        for (var ch = 0; ch < 2; ch++) {
+            var data = impulse.getChannelData(ch);
+            for (var i = 0; i < len; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+            }
+        }
+        var conv = ctx.createConvolver();
+        conv.buffer = impulse;
+        return conv;
     }
 
     var Sound = {
@@ -222,11 +246,18 @@
             o.type = type || 'sine';
             o.frequency.setValueAtTime(freq, start);
             g.gain.setValueAtTime(0, start);
-            g.gain.linearRampToValueAtTime(gainVal, start + 0.008);
-            g.gain.setValueAtTime(gainVal, start + dur * 0.6);
+            g.gain.linearRampToValueAtTime(gainVal, start + 0.006);
+            g.gain.setValueAtTime(gainVal, start + dur * 0.5);
             g.gain.exponentialRampToValueAtTime(0.001, start + dur);
-            o.start(start); o.stop(start + dur + 0.01);
+            o.start(start); o.stop(start + dur + 0.05);
             return o;
+        },
+
+        /* Premium shimmer — high sine with gentle detuned chorus */
+        _shimmer: function(ctx, freq, gainVal, start, dur, dest) {
+            this._note(ctx, freq, 'sine', gainVal, start, dur, dest);
+            this._note(ctx, freq * 1.002, 'sine', gainVal * 0.3, start, dur * 1.2, dest);
+            this._note(ctx, freq * 0.998, 'sine', gainVal * 0.3, start, dur * 1.2, dest);
         },
 
         play: function(type) {
@@ -236,63 +267,94 @@
             var self = this;
             var now = ctx.currentTime;
 
+            /* Shared reverb bus for spatial depth */
+            var reverb = createReverb(ctx, 2.0, 0.5);
+            var reverbGain = ctx.createGain();
+            reverbGain.gain.value = 0.15;
+            reverb.connect(reverbGain);
+            reverbGain.connect(ctx.destination);
+
+            /* Master compressor for polish */
+            var comp = ctx.createDynamicsCompressor();
+            comp.threshold.value = -18; comp.ratio.value = 4;
+            comp.connect(ctx.destination);
+            comp.connect(reverb);
+
             switch(type) {
                 case 'click':
-                    // Soft tap — short sine pop with harmonic
-                    self._note(ctx, 600, 'sine', 0.025, now, 0.06);
-                    self._note(ctx, 1200, 'sine', 0.008, now, 0.04);
+                    /* Premium tap — crisp with subtle body */
+                    self._note(ctx, 800, 'sine', 0.02, now, 0.04, comp);
+                    self._note(ctx, 1600, 'sine', 0.008, now, 0.025, comp);
+                    self._note(ctx, 400, 'sine', 0.006, now, 0.05, comp);
                     break;
 
                 case 'success':
-                    // Warm major chord arpeggio: C5 → E5 → G5 → C6
-                    self._note(ctx, 523, 'sine', 0.035, now, 0.28);
-                    self._note(ctx, 523, 'triangle', 0.015, now, 0.28);
-                    self._note(ctx, 659, 'sine', 0.035, now + 0.1, 0.25);
-                    self._note(ctx, 784, 'sine', 0.035, now + 0.2, 0.25);
-                    self._note(ctx, 784, 'triangle', 0.012, now + 0.2, 0.25);
-                    self._note(ctx, 1047, 'sine', 0.03, now + 0.3, 0.35);
-                    self._note(ctx, 1047, 'triangle', 0.01, now + 0.3, 0.35);
+                    /* Luxe ascending chime — C5→E5→G5→C6 with shimmer tail */
+                    self._shimmer(ctx, 523, 0.025, now, 0.35, comp);          /* C5 */
+                    self._shimmer(ctx, 659, 0.028, now + 0.09, 0.32, comp);   /* E5 */
+                    self._shimmer(ctx, 784, 0.03, now + 0.18, 0.32, comp);    /* G5 */
+                    self._shimmer(ctx, 1047, 0.025, now + 0.28, 0.5, comp);   /* C6 */
+                    /* Sparkle overtone at the top */
+                    self._note(ctx, 2093, 'sine', 0.006, now + 0.30, 0.4, comp);
+                    self._note(ctx, 1568, 'sine', 0.005, now + 0.35, 0.35, comp);
                     break;
 
                 case 'error':
-                    // Low minor second buzz — feels wrong without being annoying
-                    self._note(ctx, 220, 'sine', 0.03, now, 0.18);
-                    self._note(ctx, 233, 'triangle', 0.025, now, 0.18);
-                    self._note(ctx, 196, 'sine', 0.03, now + 0.12, 0.2);
-                    self._note(ctx, 208, 'triangle', 0.02, now + 0.12, 0.2);
+                    /* Muted low double-tap — subtle but unmistakable */
+                    self._note(ctx, 280, 'sine', 0.03, now, 0.12, comp);
+                    self._note(ctx, 280, 'triangle', 0.015, now, 0.12, comp);
+                    self._note(ctx, 210, 'sine', 0.035, now + 0.14, 0.16, comp);
+                    self._note(ctx, 210, 'triangle', 0.018, now + 0.14, 0.16, comp);
                     break;
 
                 case 'notification':
-                    // Two-tone chime — bright and friendly (like iMessage)
-                    self._note(ctx, 880, 'sine', 0.03, now, 0.15);
-                    self._note(ctx, 1760, 'sine', 0.008, now, 0.1);
-                    self._note(ctx, 1175, 'sine', 0.035, now + 0.12, 0.22);
-                    self._note(ctx, 2349, 'sine', 0.008, now + 0.12, 0.15);
+                    /* Crystal bell chime — like a high-end phone notification */
+                    self._shimmer(ctx, 1047, 0.022, now, 0.18, comp);           /* C6 */
+                    self._note(ctx, 2093, 'sine', 0.005, now, 0.12, comp);      /* C7 overtone */
+                    self._shimmer(ctx, 1319, 0.028, now + 0.13, 0.3, comp);     /* E6 */
+                    self._note(ctx, 2637, 'sine', 0.005, now + 0.13, 0.2, comp);/* E7 overtone */
+                    /* Subtle low body for warmth */
+                    self._note(ctx, 523, 'sine', 0.006, now + 0.05, 0.3, comp);
                     break;
 
                 case 'money':
-                    // Cash register ka-ching — metallic shimmer with ring
-                    self._note(ctx, 1319, 'sine', 0.03, now, 0.08);
-                    self._note(ctx, 2637, 'sine', 0.012, now, 0.06);
-                    self._note(ctx, 1568, 'sine', 0.025, now + 0.06, 0.08);
-                    self._note(ctx, 2093, 'sine', 0.04, now + 0.1, 0.4);
-                    self._note(ctx, 2093, 'triangle', 0.015, now + 0.1, 0.4);
-                    self._note(ctx, 4186, 'sine', 0.008, now + 0.1, 0.25);
-                    self._note(ctx, 2637, 'sine', 0.02, now + 0.15, 0.35);
+                    /* Premium cash register — bright metallic with satisfying ring */
+                    self._note(ctx, 1568, 'sine', 0.02, now, 0.06, comp);         /* G6 tap */
+                    self._note(ctx, 3136, 'sine', 0.005, now, 0.04, comp);         /* G7 */
+                    self._note(ctx, 1976, 'sine', 0.018, now + 0.05, 0.06, comp);  /* B6 */
+                    /* The ring — shimmering sustained chord */
+                    self._shimmer(ctx, 2093, 0.025, now + 0.09, 0.55, comp);       /* C7 */
+                    self._shimmer(ctx, 2637, 0.018, now + 0.12, 0.45, comp);       /* E7 */
+                    self._note(ctx, 4186, 'sine', 0.004, now + 0.09, 0.35, comp);  /* C8 sparkle */
+                    /* Warm bass body */
+                    self._note(ctx, 523, 'sine', 0.008, now + 0.09, 0.4, comp);
                     break;
 
                 case 'alert':
-                    // Two-tone warning — firm but not harsh
-                    self._note(ctx, 740, 'sine', 0.04, now, 0.12);
-                    self._note(ctx, 740, 'triangle', 0.02, now, 0.12);
-                    self._note(ctx, 587, 'sine', 0.045, now + 0.15, 0.18);
-                    self._note(ctx, 587, 'triangle', 0.02, now + 0.15, 0.18);
+                    /* Firm two-tone — descending with authority */
+                    self._note(ctx, 880, 'sine', 0.03, now, 0.1, comp);
+                    self._note(ctx, 880, 'triangle', 0.012, now, 0.1, comp);
+                    self._note(ctx, 698, 'sine', 0.035, now + 0.14, 0.15, comp);
+                    self._note(ctx, 698, 'triangle', 0.015, now + 0.14, 0.15, comp);
+                    /* Subtle repeat for urgency */
+                    self._note(ctx, 880, 'sine', 0.015, now + 0.38, 0.08, comp);
+                    self._note(ctx, 698, 'sine', 0.02, now + 0.48, 0.12, comp);
                     break;
             }
+
+            /* Clean up audio nodes after sound finishes to prevent memory leak */
+            setTimeout(function() {
+                try {
+                    comp.disconnect();
+                    reverb.disconnect();
+                    reverbGain.disconnect();
+                } catch(e) { /* already disconnected */ }
+            }, 1500);
         },
 
         toggle: function() {
             this.enabled = !this.enabled;
+            localStorage.setItem('concreteiq_sounds', this.enabled);
             return this.enabled;
         }
     };
@@ -396,11 +458,13 @@
                 .then(function(data) {
                     if (!data) return;
 
-                    // Update badge count
+                    // Update badge count and styling
                     if (self.badgeEl) {
                         if (data.unread_count > 0) {
                             self.badgeEl.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
                             self.badgeEl.style.display = '';
+                            self.badgeEl.style.background = '#ef4444';
+                            self.badgeEl.style.color = '#fff';
                         } else {
                             self.badgeEl.style.display = 'none';
                         }
@@ -420,8 +484,8 @@
                                 '<div class="toast-accent"></div>' +
                                 TOAST_ICONS[toastType] +
                                 '<div class="toast-body">' +
-                                    '<div class="toast-title">' + n.title + '</div>' +
-                                    '<div class="toast-message">' + n.message + '</div>' +
+                                    '<div class="toast-title">' + escapeHtml(n.title) + '</div>' +
+                                    '<div class="toast-message">' + escapeHtml(n.message) + '</div>' +
                                 '</div>' +
                                 '<button class="toast-close" aria-label="Close">' +
                                     '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
