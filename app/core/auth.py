@@ -96,6 +96,24 @@ async def _check_session_version(request: Request) -> bool:
     return session_ver >= current_ver
 
 
+def _is_ajax_request(request: Request) -> bool:
+    """Detect AJAX/fetch requests (not browser page navigation)."""
+    # API paths
+    if request.url.path.startswith("/api/"):
+        return True
+    # Fetch requests include CSRF header or accept JSON
+    if request.headers.get("X-CSRF-Token"):
+        return True
+    if "application/json" in request.headers.get("Accept", ""):
+        return True
+    # POST/PUT/DELETE with content-type are typically AJAX
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        ct = request.headers.get("Content-Type", "")
+        if "multipart/form-data" in ct or "application/json" in ct:
+            return True
+    return False
+
+
 async def require_login(request: Request) -> None:
     """
     Dependency that requires authentication.
@@ -103,21 +121,20 @@ async def require_login(request: Request) -> None:
     Validates session version to support forced logout.
     """
     if not is_authenticated(request):
-        # For API requests, return 401
-        if request.url.path.startswith("/api/"):
-            raise HTTPException(status_code=401, detail="Not authenticated")
-        # For page requests, redirect to login
+        if _is_ajax_request(request):
+            raise HTTPException(status_code=401, detail="Session expired — please log in again")
+        # For page navigation, redirect to login (302 changes POST to GET)
         raise HTTPException(
-            status_code=307,
+            status_code=302,
             headers={"Location": f"/login?next={request.url.path}"}
         )
 
     # Check session version (for forced logout / session revocation)
     if not await _check_session_version(request):
-        if request.url.path.startswith("/api/"):
-            raise HTTPException(status_code=401, detail="Session expired")
+        if _is_ajax_request(request):
+            raise HTTPException(status_code=401, detail="Session expired — please log in again")
         raise HTTPException(
-            status_code=307,
+            status_code=302,
             headers={"Location": "/login?next=/dashboard"}
         )
 

@@ -806,6 +806,11 @@ function integrationsPage() {
                 });
 
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        this.showMessage('Session expired — redirecting to login...', 'error');
+                        setTimeout(() => { window.location.href = '/login?next=/settings/integrations'; }, 1500);
+                        return;
+                    }
                     let msg = 'Error saving credentials';
                     try { const d = await response.json(); msg = formatErrorDetail(d.detail, msg); } catch(_){}
                     this.showMessage(msg, 'error');
@@ -813,8 +818,12 @@ function integrationsPage() {
                 }
 
                 const data = await response.json();
+                if (!data.success) {
+                    this.showMessage(data.detail || 'Failed to save credentials', 'error');
+                    return;
+                }
                 this.showMessage(`${service.charAt(0).toUpperCase() + service.slice(1)} credentials saved! Refreshing...`);
-                setTimeout(() => window.location.reload(), 1500);
+                setTimeout(() => { window.location.href = window.location.pathname + '?_=' + Date.now(); }, 1500);
             } catch (e) {
                 console.error('Credential save error:', e);
                 this.showMessage('Network error - please try again', 'error');

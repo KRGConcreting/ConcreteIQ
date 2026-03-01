@@ -3,13 +3,16 @@ Settings routes — Application settings and integrations management.
 """
 
 import json
+import logging
 import shutil
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import quote as url_quote
 
+logger = logging.getLogger(__name__)
+
 from fastapi import APIRouter, Depends, Request, Query, HTTPException, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -267,7 +270,7 @@ async def integrations_page(
         sms_settings.get('vonage_api_secret')
     )
 
-    return templates.TemplateResponse("settings/integrations.html", {
+    response = templates.TemplateResponse("settings/integrations.html", {
         "request": request,
         "xero_status": xero_status,
         "xero_configured": xero_configured,
@@ -280,6 +283,9 @@ async def integrations_page(
         "holiday_years": sorted(NSW_PUBLIC_HOLIDAYS.keys()),
         "active_section": "integrations",
     })
+    # Prevent browser caching so credential status is always fresh
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 # =============================================================================
@@ -663,15 +669,29 @@ async def save_integration_credentials(
     # Save each credential
     saved_count = 0
     for key in credential_keys[service]:
-        value = form.get(key)
+        raw_value = form.get(key)
+        value = str(raw_value).strip() if raw_value else ""
         if value and not value.startswith("••••"):  # Don't save masked values
             await settings_service.set_setting(db, category, key, value)
             saved_count += 1
+            logger.info(f"Saved credential {category}.{key} ({len(value)} chars)")
 
     if saved_count == 0:
-        return {"success": False, "detail": "No new credentials provided. Clear the field and enter your actual API key."}
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "detail": "No new credentials provided. Clear the field and enter your actual API key."},
+        )
 
     await db.commit()
+    logger.info(f"Committed {saved_count} credentials for {service}")
+
+    # Verify the save persisted
+    verify = await settings_service.get_settings_by_category(db, category)
+    for key in credential_keys[service]:
+        if verify.get(key):
+            logger.info(f"Verified {category}.{key} persisted OK")
+        else:
+            logger.warning(f"WARNING: {category}.{key} NOT found after commit!")
 
     return {"success": True, "message": f"{service.title()} credentials saved", "saved": saved_count}
 
