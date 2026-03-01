@@ -166,8 +166,9 @@ async def settings_email(
 ):
     """Email Configuration settings page."""
     email = await settings_service.get_settings_by_category(db, 'email')
-    # Check if Postmark is configured via environment
-    postmark_configured = bool(settings.postmark_api_key)
+    # Check if Postmark is configured via DB or environment
+    pm_db_key = await settings_service.get_setting(db, 'integrations', 'postmark_api_key')
+    postmark_configured = bool(pm_db_key or settings.postmark_api_key)
     return templates.TemplateResponse("settings/email.html", {
         "request": request,
         "email": email,
@@ -244,11 +245,20 @@ async def integrations_page(
     # Get Xero connection status
     xero_status = await get_xero_connection_status(db)
 
-    # Check which integrations are configured
-    xero_configured = bool(settings.xero_client_id and settings.xero_client_secret)
+    # Check which integrations are configured (DB overrides env var)
+    integration_settings = await settings_service.get_settings_by_category(db, 'integrations')
+    xero_configured = bool(
+        (integration_settings.get('xero_client_id') or settings.xero_client_id) and
+        (integration_settings.get('xero_client_secret') or settings.xero_client_secret)
+    )
     gcal_configured = bool(settings.google_credentials_json and settings.google_calendar_id)
-    postmark_configured = bool(settings.postmark_api_key)
-    stripe_configured = bool(settings.stripe_secret_key and settings.stripe_publishable_key)
+    postmark_configured = bool(
+        integration_settings.get('postmark_api_key') or settings.postmark_api_key
+    )
+    stripe_configured = bool(
+        (integration_settings.get('stripe_secret_key') or settings.stripe_secret_key) and
+        (integration_settings.get('stripe_publishable_key') or settings.stripe_publishable_key)
+    )
 
     # Check Vonage SMS configuration
     sms_settings = await settings_service.get_settings_by_category(db, 'sms')

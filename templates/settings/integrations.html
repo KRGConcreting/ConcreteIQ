@@ -658,7 +658,7 @@ function integrationsPage() {
             stripe_publishable_key: '',
             stripe_secret_key: '',
             stripe_webhook_secret: '',
-            postmark_api_key: '',
+            postmark_api_key: {% if postmark_configured %}'••••••••••••••••'{% else %}''{% endif %},
             vonage_api_key: '',
             vonage_api_secret: '',
             vonage_from_number: '',

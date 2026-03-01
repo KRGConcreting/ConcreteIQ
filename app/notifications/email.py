@@ -25,6 +25,24 @@ logger = logging.getLogger(__name__)
 POSTMARK_API_URL = "https://api.postmarkapp.com/email"
 
 
+async def _get_postmark_key(db: Optional[AsyncSession] = None) -> Optional[str]:
+    """
+    Get the Postmark API key — checks database first, then falls back to env var.
+
+    Credentials saved via Settings > Integrations go to the DB.
+    Credentials set in .env are the fallback.
+    """
+    if db:
+        try:
+            from app.settings import service as settings_service
+            db_key = await settings_service.get_setting(db, "integrations", "postmark_api_key")
+            if db_key:
+                return db_key
+        except Exception:
+            pass
+    return settings.postmark_api_key or None
+
+
 async def send_email(
     to: str,
     subject: str,
@@ -52,7 +70,9 @@ async def send_email(
         True if email sent successfully, False otherwise.
         NEVER raises exceptions - fails gracefully.
     """
-    if not settings.postmark_api_key:
+    # Get API key from DB (saved via UI) or env var fallback
+    api_key = await _get_postmark_key(db)
+    if not api_key:
         logger.warning("Postmark API key not configured - email not sent")
         return False
 
@@ -77,7 +97,7 @@ async def send_email(
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "X-Postmark-Server-Token": settings.postmark_api_key,
+        "X-Postmark-Server-Token": api_key,
     }
 
     postmark_message_id = None
