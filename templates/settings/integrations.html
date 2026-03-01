@@ -797,19 +797,25 @@ function integrationsPage() {
             }
 
             try {
+                const csrfToken = (document.cookie.match(/csrf_token=([^;]+)/)||[])[1]||'';
                 const response = await fetch(`/settings/integrations/${service}/credentials`, {
                     method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken },
                     body: formData,
                 });
-                const data = await response.json();
 
-                if (response.ok) {
-                    this.showMessage(`${service.charAt(0).toUpperCase() + service.slice(1)} credentials saved! Refreshing...`);
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    this.showMessage(formatErrorDetail(data.detail, 'Error saving credentials'), 'error');
+                if (!response.ok) {
+                    let msg = 'Error saving credentials';
+                    try { const d = await response.json(); msg = formatErrorDetail(d.detail, msg); } catch(_){}
+                    this.showMessage(msg, 'error');
+                    return;
                 }
+
+                const data = await response.json();
+                this.showMessage(`${service.charAt(0).toUpperCase() + service.slice(1)} credentials saved! Refreshing...`);
+                setTimeout(() => window.location.reload(), 1500);
             } catch (e) {
+                console.error('Credential save error:', e);
                 this.showMessage('Network error - please try again', 'error');
             } finally {
                 this.saving = false;

@@ -256,20 +256,20 @@ async def postmark_webhook(
 
 
 # =============================================================================
-# VONAGE / CLICKSEND SMS DELIVERY
+# SMS DELIVERY RECEIPTS (VONAGE)
 # =============================================================================
 
-@router.post("/clicksend")
-async def clicksend_webhook(
+@router.post("/sms")
+async def sms_delivery_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Handle SMS delivery webhooks (Vonage DLR or ClickSend).
+    Handle SMS delivery receipt webhooks (Vonage DLR).
 
     Authentication: Bearer token via WEBHOOK_SECRET.
-    Configure in provider webhook settings:
-      URL: https://app.krgconcreting.au/webhooks/clicksend?token=YOUR_SECRET
+    Configure in Vonage dashboard (Settings → Default SMS Webhook):
+      URL: https://app.krgconcreting.au/webhooks/sms?token=YOUR_SECRET
 
     Vonage sends delivery receipts with:
     - messageId: The provider message ID
@@ -282,7 +282,7 @@ async def clicksend_webhook(
     """
     # Authenticate webhook
     if not _verify_webhook_token(request):
-        logger.warning(f"ClickSend webhook auth failed from {request.client.host if request.client else 'unknown'}")
+        logger.warning(f"SMS delivery webhook auth failed from {request.client.host if request.client else 'unknown'}")
         raise HTTPException(403, "Invalid webhook token")
 
     # Enforce payload size limit
