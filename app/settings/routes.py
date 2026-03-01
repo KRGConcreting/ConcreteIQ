@@ -506,7 +506,10 @@ async def test_email(
 
     if success:
         return {"success": True, "message": "Test email sent"}
-    return {"success": False, "error": "Failed to send email. Check Postmark configuration."}
+
+    # Return the actual Postmark error so the user can fix the issue
+    detail = getattr(send_email, '_last_error', None) or "Unknown error"
+    return {"success": False, "error": f"Failed to send email: {detail}"}
 
 
 @router.get("/api/email/preview/{template_name}", name="settings:api:email:preview")

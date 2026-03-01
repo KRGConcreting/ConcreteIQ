@@ -43,6 +43,34 @@ async def _get_postmark_key(db: Optional[AsyncSession] = None) -> Optional[str]:
     return settings.postmark_api_key or None
 
 
+async def _get_email_settings(db: Optional[AsyncSession] = None) -> dict:
+    """
+    Get email settings (from_name, from_address, reply_to) from DB,
+    falling back to env var defaults.
+
+    Settings > Email page saves these to the 'email' category in the DB.
+    """
+    from_name = ""
+    from_address = settings.postmark_from_email or ""
+    reply_to = ""
+
+    if db:
+        try:
+            from app.settings import service as settings_service
+            email_settings = await settings_service.get_settings_by_category(db, "email")
+            from_name = email_settings.get("from_name", "") or ""
+            from_address = email_settings.get("from_address", "") or from_address
+            reply_to = email_settings.get("reply_to", "") or ""
+        except Exception:
+            pass
+
+    return {
+        "from_name": from_name.strip(),
+        "from_address": from_address.strip(),
+        "reply_to": reply_to.strip(),
+    }
+
+
 async def send_email(
     to: str,
     subject: str,
@@ -80,19 +108,35 @@ async def send_email(
         logger.warning("No recipient email provided - email not sent")
         return False
 
+    # Get email settings from DB (from_name, from_address, reply_to)
+    email_cfg = await _get_email_settings(db)
+    from_address = email_cfg["from_address"]
+    from_name = email_cfg["from_name"]
+    reply_to_addr = email_cfg["reply_to"]
+
+    # Format "From" as "Name <email>" if name is configured
+    if from_name:
+        from_field = f"{from_name} <{from_address}>"
+    else:
+        from_field = from_address
+
     # Use plain text fallback if not provided
     if not text_body:
         text_body = f"Please view this email in an HTML-capable email client.\n\nSubject: {subject}"
 
     # Prepare payload
     payload = {
-        "From": settings.postmark_from_email,
+        "From": from_field,
         "To": to,
         "Subject": subject,
         "HtmlBody": html_body,
         "TextBody": text_body,
         "MessageStream": "outbound",
     }
+
+    # Add ReplyTo if configured and different from From
+    if reply_to_addr and reply_to_addr != from_address:
+        payload["ReplyTo"] = reply_to_addr
 
     headers = {
         "Accept": "application/json",
@@ -101,6 +145,7 @@ async def send_email(
     }
 
     postmark_message_id = None
+    postmark_error = None
     success = False
 
     try:
@@ -118,11 +163,18 @@ async def send_email(
                 success = True
                 logger.info(f"Email sent to {to}: {subject} (MessageID: {postmark_message_id})")
             else:
-                logger.error(f"Postmark API error {response.status_code}: {response.text}")
+                try:
+                    err_data = response.json()
+                    postmark_error = err_data.get("Message", response.text)
+                except Exception:
+                    postmark_error = response.text
+                logger.error(f"Postmark API error {response.status_code}: {postmark_error}")
 
     except httpx.TimeoutException:
+        postmark_error = "Request timed out connecting to Postmark"
         logger.error(f"Postmark API timeout sending to {to}")
     except Exception as e:
+        postmark_error = str(e)
         logger.error(f"Email send error: {str(e)}")
 
     # Log to unified communication log
@@ -145,6 +197,12 @@ async def send_email(
             # Don't commit here - let the caller handle the transaction
         except Exception as e:
             logger.error(f"Failed to log email: {str(e)}")
+
+    if not success and postmark_error:
+        # Store last error for callers that want more detail
+        send_email._last_error = postmark_error
+    else:
+        send_email._last_error = None
 
     return success
 
