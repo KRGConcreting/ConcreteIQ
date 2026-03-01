@@ -736,6 +736,14 @@ input[type="checkbox"]:checked {
     opacity: 1;
 }
 
+/* Missing Tailwind color utilities for pay distribution */
+.bg-pink-100 { background-color: #fce7f3; }
+.bg-pink-400 { background-color: #f472b6; }
+.text-pink-600 { color: #db2777; }
+.bg-violet-100 { background-color: #ede9fe; }
+.bg-violet-400 { background-color: #a78bfa; }
+.text-violet-600 { color: #7c3aed; }
+
 /* Nav active indicator — orange underline on dark header */
 .nav-active-indicator {
     position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%);

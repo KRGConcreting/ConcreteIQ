@@ -1417,8 +1417,8 @@ async def save_reviews_settings(
 
     await db.commit()
 
-    from app.core.templates import add_flash
-    add_flash(request, "Reviews settings saved", "success")
+    from app.core.templates import flash
+    flash(request, "Reviews settings saved", "success")
     return RedirectResponse(url="/settings/reviews", status_code=303)
 
 
@@ -1455,8 +1455,8 @@ async def save_sms_templates(
 
     await db.commit()
 
-    from app.core.templates import add_flash
-    add_flash(request, "SMS templates saved", "success")
+    from app.core.templates import flash
+    flash(request, "SMS templates saved", "success")
     return RedirectResponse(url="/settings/sms-templates", status_code=303)
 
 

@@ -1016,12 +1016,19 @@ async def quote_new_labour_page(
     result = await db.execute(select(Customer).order_by(Customer.name))
     customers = result.scalars().all()
 
+    from app.models import Worker
+    worker_result = await db.execute(
+        select(Worker).where(Worker.active == True).order_by(Worker.name)
+    )
+    workers = worker_result.scalars().all()
+
     from app.quotes.pricing import TEAM_RATES
     return templates.TemplateResponse("quotes/labour_form.html", {
         "request": request,
         "quote": None,
         "customer": customer,
         "customers": customers,
+        "workers": workers,
         "is_new": True,
         "team_rates": TEAM_RATES,
     })

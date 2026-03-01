@@ -48,8 +48,18 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Worker Name <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="form.worker_name" placeholder="e.g. Corbain" class="input-field w-full" required>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Workers <span class="text-red-500">*</span></label>
+                        <div class="space-y-1.5 mt-1">
+                            {% for w in workers %}
+                            <label class="flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-all cursor-pointer"
+                                   :class="form.selected_workers.includes({{ w.id }}) ? 'border-orange-300 bg-orange-50/50 shadow-sm' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'">
+                                <input type="checkbox" value="{{ w.id }}" x-model.number="form.selected_workers"
+                                       class="rounded border-slate-300 text-orange-500 focus:ring-orange-500/30">
+                                <span class="text-sm font-medium text-slate-700">{{ w.name }}</span>
+                                <span class="text-xs text-slate-400 ml-auto">{{ w.role | replace('_', ' ') | title }} · ${{ '%.2f' | format(w.hourly_rate_cents / 100) }}/hr</span>
+                            </label>
+                            {% endfor %}
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5">Work Date <span class="text-red-500">*</span></label>
@@ -150,10 +160,26 @@
                         </div>
                     </div>
                     <div class="space-y-3 text-sm mt-4">
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Rate</span>
-                            <span class="font-medium" x-text="'$' + (hourlyRate / 100).toFixed(2) + '/hr'"></span>
-                        </div>
+                        <template x-if="form.selected_workers.length > 0">
+                            <div class="space-y-1">
+                                <template x-for="wid in form.selected_workers" :key="wid">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-500" x-text="(availableWorkers.find(w => w.id === wid) || {}).name"></span>
+                                        <span class="text-slate-600" x-text="'$' + ((availableWorkers.find(w => w.id === wid) || {}).hourly_rate_cents / 100).toFixed(2) + '/hr'"></span>
+                                    </div>
+                                </template>
+                                <div class="flex justify-between border-t border-slate-100 pt-1">
+                                    <span class="text-slate-500">Combined Rate</span>
+                                    <span class="font-medium" x-text="'$' + (hourlyRate / 100).toFixed(2) + '/hr'"></span>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="form.selected_workers.length === 0">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Rate</span>
+                                <span class="font-medium" x-text="'$' + (hourlyRate / 100).toFixed(2) + '/hr'"></span>
+                            </div>
+                        </template>
                         <div class="flex justify-between">
                             <span class="text-slate-500">Hours</span>
                             <span class="font-medium" x-text="form.hours + ' hrs'"></span>
@@ -250,11 +276,18 @@ function calculatePaygWithholdingLabour(weeklyGrossCents) {
 function labourQuote() {
     const existing = {{ ((quote.calculator_input | tojson) if quote and quote.calculator_input else 'null') | safe }};
     const TEAM_RATES = {{ team_rates | tojson | safe }};
+    const WORKERS = {{ workers | map(attribute='__dict__') | list | tojson | safe if workers else '[]' }};
 
     return {
         submitting: false,
+        availableWorkers: [
+            {% for w in workers %}
+            { id: {{ w.id }}, name: {{ w.name | tojson }}, role: {{ w.role | tojson }}, hourly_rate_cents: {{ w.hourly_rate_cents }}, cost_rate_cents: {{ w.cost_rate_cents or 0 }} },
+            {% endfor %}
+        ],
         form: {
             customer_id: {{ (customer.id if customer else (quote.customer_id if quote else '')) | tojson }},
+            selected_workers: existing && existing.selected_worker_ids ? existing.selected_worker_ids : [],
             worker_name: existing ? existing.worker_name || '' : '',
             work_date: existing ? existing.work_date || new Date().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             job_name: {{ (quote.job_name if quote else '') | tojson }},
@@ -267,7 +300,23 @@ function labourQuote() {
             internal_notes: {{ (quote.internal_notes or '') | tojson }},
         },
 
+        get selectedWorkerNames() {
+            return this.form.selected_workers.map(id =>
+                (this.availableWorkers.find(w => w.id === id) || {}).name
+            ).filter(Boolean).join(', ');
+        },
+        get combinedSellRate() {
+            // Sum of all selected workers' sell rates
+            return this.form.selected_workers.reduce((sum, id) => {
+                const w = this.availableWorkers.find(w => w.id === id);
+                return sum + (w ? w.hourly_rate_cents : 0);
+            }, 0);
+        },
         get hourlyRate() {
+            // If workers are selected, use their combined sell rate
+            if (this.form.selected_workers.length > 0) {
+                return this.combinedSellRate;
+            }
             if (this.form.rate_type === 'custom') {
                 return Math.round((this.form.custom_rate || 0) * 100);
             }
@@ -294,22 +343,27 @@ function labourQuote() {
         get netWagesCents() { return this.grossCents - this.paygCents; },
 
         get canSubmit() {
-            return this.form.customer_id && this.form.worker_name && this.form.hours > 0 && this.form.work_date;
+            return this.form.customer_id && (this.form.selected_workers.length > 0 || this.form.worker_name) && this.form.hours > 0 && this.form.work_date;
         },
 
         async submit() {
             if (!this.canSubmit || this.submitting) return;
             this.submitting = true;
 
+            // Build worker name from selected workers or manual entry
+            const workerName = this.form.selected_workers.length > 0
+                ? this.selectedWorkerNames
+                : this.form.worker_name;
+
             const payload = {
                 customer_id: parseInt(this.form.customer_id),
                 job_name: this.form.job_name || null,
                 job_address: this.form.job_address || null,
                 work_date: this.form.work_date,
-                worker_name: this.form.worker_name,
+                worker_name: workerName,
                 hours: this.form.hours,
-                team_tier: this.form.team_tier,
-                hourly_rate_cents: this.form.rate_type === 'custom' ? this.hourlyRate : null,
+                team_tier: this.form.selected_workers.length > 0 ? null : this.form.team_tier,
+                hourly_rate_cents: this.form.selected_workers.length > 0 ? this.hourlyRate : (this.form.rate_type === 'custom' ? this.hourlyRate : null),
                 notes: this.form.notes || null,
                 internal_notes: this.form.internal_notes || null,
             };

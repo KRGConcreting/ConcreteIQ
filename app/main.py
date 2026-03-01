@@ -17,7 +17,7 @@ from starlette.responses import JSONResponse
 from app.config import settings
 from app.database import init_db, get_db
 from app.core.templates import templates, set_flash_cookie
-from app.core.auth import is_authenticated, get_csrf_token, set_csrf_cookie
+from app.core.auth import is_authenticated, require_login, get_csrf_token, set_csrf_cookie
 from app.middleware import RequestIDMiddleware, SecurityHeadersMiddleware, PortalRateLimitMiddleware, IPWhitelistMiddleware
 
 # Import routers
@@ -178,10 +178,8 @@ async def root(request: Request):
 
 
 # Dashboard
-@app.get("/dashboard")
+@app.get("/dashboard", dependencies=[Depends(require_login)])
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
-    if not is_authenticated(request):
-        return RedirectResponse(url="/login", status_code=302)
 
     # Import here to avoid circular imports
     from app.reports.service import (

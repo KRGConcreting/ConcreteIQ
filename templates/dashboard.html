@@ -260,7 +260,7 @@
                 <template x-for="item in splits" :key="item.name">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full" :class="item.dot"></div>
+                            <div class="w-2 h-2 rounded-full" :style="'background-color:' + item.color"></div>
                             <span class="text-xs text-slate-600" x-text="item.name"></span>
                         </div>
                         <span class="text-xs font-display font-bold text-slate-800">$<span x-text="fmt(item.amount)"></span></span>
@@ -796,13 +796,13 @@ function paySplitWidget(currentCents, goalCents) {
     const THRESHOLD = 1543;
     // Base weekly allocations for the 7 standard accounts
     const BASE = [
-        { name: 'Daily Account', base: 257, dot: 'bg-orange-400', keySplit: true },
-        { name: 'PAYG Tax', base: 322, dot: 'bg-blue-400', taxSplit: true },
-        { name: 'Vehicle', base: 278, dot: 'bg-slate-400' },
-        { name: 'Health', base: 86, dot: 'bg-red-400' },
-        { name: 'Fun Card', base: 212, dot: 'bg-pink-400', keySplit: true },
-        { name: 'Savings', base: 330, dot: 'bg-emerald-400', keySplit: true },
-        { name: 'Subscriptions', base: 58, dot: 'bg-violet-400' },
+        { name: 'Daily Account', base: 257, color: '#fb923c', keySplit: true },
+        { name: 'PAYG Tax', base: 322, color: '#60a5fa', taxSplit: true },
+        { name: 'Vehicle', base: 278, color: '#94a3b8' },
+        { name: 'Health', base: 86, color: '#f87171' },
+        { name: 'Fun Card', base: 212, color: '#f472b6', keySplit: true },
+        { name: 'Savings', base: 330, color: '#34d399', keySplit: true },
+        { name: 'Subscriptions', base: 58, color: '#a78bfa' },
     ];
     // "Keep" dispersal weights (proportional to base amounts)
     const KEEP_ACCOUNTS = BASE.filter(a => a.keySplit);
@@ -844,12 +844,12 @@ function paySplitWidget(currentCents, goalCents) {
                 if (a.taxSplit) amount += extraTax;
                 // Disperse Keep proportionally into Daily, Fun Card, Savings
                 if (a.keySplit) amount += Math.round(keepPool * (a.base / KEEP_TOTAL_BASE) * 100) / 100;
-                return { name: a.name, dot: a.dot, amount };
+                return { name: a.name, color: a.color, amount };
             });
 
             // Trustee as a main row
             if (this.trustee > 0) {
-                this.splits.push({ name: 'Trustee Account', dot: 'bg-emerald-500', amount: this.trustee });
+                this.splits.push({ name: 'Trustee Account', color: '#10b981', amount: this.trustee });
             }
 
             this.total = this.splits.reduce((s, a) => s + a.amount, 0);

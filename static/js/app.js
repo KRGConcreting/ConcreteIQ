@@ -209,7 +209,7 @@
     }
 
 
-    /* ── Premium Sound Effects Module ── */
+    /* ── Premium Sound Effects Module v2 ── */
     var audioCtx = null;
     function getAudioCtx() {
         if (!audioCtx) {
@@ -219,9 +219,9 @@
         return audioCtx;
     }
 
-    /* Create a short convolution reverb impulse for spatial depth */
+    /* Stereo convolution reverb — lush room tail */
     function createReverb(ctx, decay, length) {
-        decay = decay || 1.5; length = length || 0.6;
+        decay = decay || 2.2; length = length || 0.8;
         var rate = ctx.sampleRate;
         var len = rate * length;
         var impulse = ctx.createBuffer(2, len, rate);
@@ -239,25 +239,40 @@
     var Sound = {
         enabled: localStorage.getItem('concreteiq_sounds') !== 'false',
 
-        _note: function(ctx, freq, type, gainVal, start, dur, dest) {
+        /* Smooth note with ADSR-like envelope (slower attack, natural decay) */
+        _tone: function(ctx, freq, type, vol, start, dur, dest) {
             var o = ctx.createOscillator();
             var g = ctx.createGain();
             o.connect(g); g.connect(dest || ctx.destination);
             o.type = type || 'sine';
             o.frequency.setValueAtTime(freq, start);
+            /* Smooth attack (15ms) → sustain (40%) → exponential release */
             g.gain.setValueAtTime(0, start);
-            g.gain.linearRampToValueAtTime(gainVal, start + 0.006);
-            g.gain.setValueAtTime(gainVal, start + dur * 0.5);
-            g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+            g.gain.linearRampToValueAtTime(vol, start + 0.015);
+            g.gain.setValueAtTime(vol * 0.85, start + dur * 0.4);
+            g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
             o.start(start); o.stop(start + dur + 0.05);
             return o;
         },
 
-        /* Premium shimmer — high sine with gentle detuned chorus */
-        _shimmer: function(ctx, freq, gainVal, start, dur, dest) {
-            this._note(ctx, freq, 'sine', gainVal, start, dur, dest);
-            this._note(ctx, freq * 1.002, 'sine', gainVal * 0.3, start, dur * 1.2, dest);
-            this._note(ctx, freq * 0.998, 'sine', gainVal * 0.3, start, dur * 1.2, dest);
+        /* Rich bell — fundamental + inharmonic partials for metallic shimmer */
+        _bell: function(ctx, freq, vol, start, dur, dest) {
+            /* Fundamental */
+            this._tone(ctx, freq, 'sine', vol, start, dur, dest);
+            /* 2nd partial (slightly sharp — bell-like inharmonicity) */
+            this._tone(ctx, freq * 2.02, 'sine', vol * 0.35, start, dur * 0.7, dest);
+            /* 3rd partial */
+            this._tone(ctx, freq * 3.01, 'sine', vol * 0.12, start, dur * 0.5, dest);
+            /* Detuned chorus for width */
+            this._tone(ctx, freq * 1.003, 'sine', vol * 0.2, start, dur * 0.9, dest);
+            this._tone(ctx, freq * 0.997, 'sine', vol * 0.2, start, dur * 0.9, dest);
+        },
+
+        /* Glass marimba — warm body with bright attack */
+        _marimba: function(ctx, freq, vol, start, dur, dest) {
+            this._tone(ctx, freq, 'sine', vol, start, dur, dest);
+            this._tone(ctx, freq * 4, 'sine', vol * 0.08, start, dur * 0.15, dest);
+            this._tone(ctx, freq * 2, 'sine', vol * 0.25, start, dur * 0.5, dest);
         },
 
         play: function(type) {
@@ -267,89 +282,100 @@
             var self = this;
             var now = ctx.currentTime;
 
-            /* Shared reverb bus for spatial depth */
-            var reverb = createReverb(ctx, 2.0, 0.5);
+            /* Reverb send bus */
+            var reverb = createReverb(ctx, 2.5, 0.9);
             var reverbGain = ctx.createGain();
-            reverbGain.gain.value = 0.15;
+            reverbGain.gain.value = 0.18;
             reverb.connect(reverbGain);
             reverbGain.connect(ctx.destination);
 
-            /* Master compressor for polish */
+            /* Highpass on reverb to keep it airy */
+            var reverbHp = ctx.createBiquadFilter();
+            reverbHp.type = 'highpass';
+            reverbHp.frequency.value = 600;
+            reverbHp.connect(reverb);
+
+            /* Master bus: gentle compression + soft limiting */
             var comp = ctx.createDynamicsCompressor();
-            comp.threshold.value = -18; comp.ratio.value = 4;
+            comp.threshold.value = -20; comp.ratio.value = 3; comp.knee.value = 10;
+            comp.attack.value = 0.003; comp.release.value = 0.15;
             comp.connect(ctx.destination);
-            comp.connect(reverb);
+            comp.connect(reverbHp);
 
             switch(type) {
                 case 'click':
-                    /* Premium tap — crisp with subtle body */
-                    self._note(ctx, 800, 'sine', 0.02, now, 0.04, comp);
-                    self._note(ctx, 1600, 'sine', 0.008, now, 0.025, comp);
-                    self._note(ctx, 400, 'sine', 0.006, now, 0.05, comp);
+                    /* Soft woody tap — like tapping premium glass */
+                    self._tone(ctx, 1200, 'sine', 0.015, now, 0.03, comp);
+                    self._tone(ctx, 600, 'sine', 0.01, now, 0.045, comp);
+                    self._tone(ctx, 2400, 'sine', 0.004, now, 0.015, comp);
                     break;
 
                 case 'success':
-                    /* Luxe ascending chime — C5→E5→G5→C6 with shimmer tail */
-                    self._shimmer(ctx, 523, 0.025, now, 0.35, comp);          /* C5 */
-                    self._shimmer(ctx, 659, 0.028, now + 0.09, 0.32, comp);   /* E5 */
-                    self._shimmer(ctx, 784, 0.03, now + 0.18, 0.32, comp);    /* G5 */
-                    self._shimmer(ctx, 1047, 0.025, now + 0.28, 0.5, comp);   /* C6 */
-                    /* Sparkle overtone at the top */
-                    self._note(ctx, 2093, 'sine', 0.006, now + 0.30, 0.4, comp);
-                    self._note(ctx, 1568, 'sine', 0.005, now + 0.35, 0.35, comp);
+                    /* Luxe ascending marimba: G4→B4→D5→G5 (Gmaj) with bell tail */
+                    self._marimba(ctx, 392, 0.03, now, 0.4, comp);             /* G4 */
+                    self._marimba(ctx, 494, 0.032, now + 0.1, 0.38, comp);     /* B4 */
+                    self._marimba(ctx, 587, 0.034, now + 0.2, 0.38, comp);     /* D5 */
+                    self._bell(ctx, 784, 0.028, now + 0.32, 0.65, comp);       /* G5 bell */
+                    /* High sparkle */
+                    self._tone(ctx, 1568, 'sine', 0.005, now + 0.35, 0.5, comp);
+                    self._tone(ctx, 2352, 'sine', 0.003, now + 0.38, 0.35, comp);
                     break;
 
                 case 'error':
-                    /* Muted low double-tap — subtle but unmistakable */
-                    self._note(ctx, 280, 'sine', 0.03, now, 0.12, comp);
-                    self._note(ctx, 280, 'triangle', 0.015, now, 0.12, comp);
-                    self._note(ctx, 210, 'sine', 0.035, now + 0.14, 0.16, comp);
-                    self._note(ctx, 210, 'triangle', 0.018, now + 0.14, 0.16, comp);
+                    /* Warm low double-note — gentle but clear (Eb3→Db3) */
+                    self._marimba(ctx, 311, 0.035, now, 0.18, comp);           /* Eb4 */
+                    self._tone(ctx, 156, 'sine', 0.012, now, 0.2, comp);       /* sub body */
+                    self._marimba(ctx, 277, 0.038, now + 0.2, 0.22, comp);     /* Db4 */
+                    self._tone(ctx, 139, 'sine', 0.014, now + 0.2, 0.25, comp);
                     break;
 
                 case 'notification':
-                    /* Crystal bell chime — like a high-end phone notification */
-                    self._shimmer(ctx, 1047, 0.022, now, 0.18, comp);           /* C6 */
-                    self._note(ctx, 2093, 'sine', 0.005, now, 0.12, comp);      /* C7 overtone */
-                    self._shimmer(ctx, 1319, 0.028, now + 0.13, 0.3, comp);     /* E6 */
-                    self._note(ctx, 2637, 'sine', 0.005, now + 0.13, 0.2, comp);/* E7 overtone */
-                    /* Subtle low body for warmth */
-                    self._note(ctx, 523, 'sine', 0.006, now + 0.05, 0.3, comp);
+                    /* Crystal two-tone chime: E5→A5 (perfect 4th) — like iPhone but softer */
+                    self._bell(ctx, 659, 0.025, now, 0.35, comp);              /* E5 */
+                    self._bell(ctx, 880, 0.028, now + 0.15, 0.5, comp);        /* A5 */
+                    /* Airy sparkle tail */
+                    self._tone(ctx, 1760, 'sine', 0.004, now + 0.18, 0.4, comp);
+                    self._tone(ctx, 1319, 'sine', 0.003, now + 0.2, 0.35, comp);
+                    /* Warm sub presence */
+                    self._tone(ctx, 330, 'sine', 0.006, now + 0.05, 0.35, comp);
                     break;
 
                 case 'money':
-                    /* Premium cash register — bright metallic with satisfying ring */
-                    self._note(ctx, 1568, 'sine', 0.02, now, 0.06, comp);         /* G6 tap */
-                    self._note(ctx, 3136, 'sine', 0.005, now, 0.04, comp);         /* G7 */
-                    self._note(ctx, 1976, 'sine', 0.018, now + 0.05, 0.06, comp);  /* B6 */
-                    /* The ring — shimmering sustained chord */
-                    self._shimmer(ctx, 2093, 0.025, now + 0.09, 0.55, comp);       /* C7 */
-                    self._shimmer(ctx, 2637, 0.018, now + 0.12, 0.45, comp);       /* E7 */
-                    self._note(ctx, 4186, 'sine', 0.004, now + 0.09, 0.35, comp);  /* C8 sparkle */
-                    /* Warm bass body */
-                    self._note(ctx, 523, 'sine', 0.008, now + 0.09, 0.4, comp);
+                    /* Premium cash register: bright coin + resonant ring (Cmaj7) */
+                    /* Initial coin strike */
+                    self._tone(ctx, 2093, 'sine', 0.015, now, 0.04, comp);
+                    self._tone(ctx, 4186, 'sine', 0.005, now, 0.02, comp);
+                    /* The satisfying ring — stacked chord */
+                    self._bell(ctx, 1047, 0.022, now + 0.06, 0.6, comp);       /* C6 */
+                    self._bell(ctx, 1319, 0.018, now + 0.1, 0.5, comp);        /* E6 */
+                    self._bell(ctx, 1568, 0.016, now + 0.14, 0.45, comp);      /* G6 */
+                    self._tone(ctx, 1976, 'sine', 0.008, now + 0.18, 0.4, comp); /* B6 */
+                    /* Deep warm body */
+                    self._tone(ctx, 262, 'sine', 0.008, now + 0.06, 0.5, comp);
+                    self._tone(ctx, 523, 'sine', 0.006, now + 0.06, 0.4, comp);
                     break;
 
                 case 'alert':
-                    /* Firm two-tone — descending with authority */
-                    self._note(ctx, 880, 'sine', 0.03, now, 0.1, comp);
-                    self._note(ctx, 880, 'triangle', 0.012, now, 0.1, comp);
-                    self._note(ctx, 698, 'sine', 0.035, now + 0.14, 0.15, comp);
-                    self._note(ctx, 698, 'triangle', 0.015, now + 0.14, 0.15, comp);
-                    /* Subtle repeat for urgency */
-                    self._note(ctx, 880, 'sine', 0.015, now + 0.38, 0.08, comp);
-                    self._note(ctx, 698, 'sine', 0.02, now + 0.48, 0.12, comp);
+                    /* Two-tone attention pulse: F5→Db5 (descending minor 3rd) × 2 */
+                    self._marimba(ctx, 698, 0.035, now, 0.12, comp);           /* F5 */
+                    self._marimba(ctx, 554, 0.038, now + 0.15, 0.16, comp);    /* Db5 */
+                    /* Softer echo repeat */
+                    self._marimba(ctx, 698, 0.02, now + 0.4, 0.1, comp);
+                    self._marimba(ctx, 554, 0.025, now + 0.52, 0.14, comp);
+                    /* Sub weight */
+                    self._tone(ctx, 277, 'sine', 0.008, now + 0.15, 0.3, comp);
                     break;
             }
 
-            /* Clean up audio nodes after sound finishes to prevent memory leak */
+            /* Clean up audio nodes after playback */
             setTimeout(function() {
                 try {
                     comp.disconnect();
                     reverb.disconnect();
                     reverbGain.disconnect();
+                    reverbHp.disconnect();
                 } catch(e) { /* already disconnected */ }
-            }, 1500);
+            }, 2000);
         },
 
         toggle: function() {
