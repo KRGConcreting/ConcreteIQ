@@ -371,9 +371,10 @@ async def save_xero_tokens(
     token = result.scalar_one_or_none()
 
     if token:
-        # Update existing
+        # Update existing — preserve old refresh_token if new one is empty
         token.access_token = _encrypt_token(access_token)
-        token.refresh_token = _encrypt_token(refresh_token)
+        if refresh_token:
+            token.refresh_token = _encrypt_token(refresh_token)
         token.expires_at = expires_at
         token.extra_data = {"tenant_id": tenant_id}
         token.updated_at = sydney_now()
@@ -382,7 +383,7 @@ async def save_xero_tokens(
         token = OAuthToken(
             provider="xero",
             access_token=_encrypt_token(access_token),
-            refresh_token=_encrypt_token(refresh_token),
+            refresh_token=_encrypt_token(refresh_token) if refresh_token else "",
             expires_at=expires_at,
             extra_data={"tenant_id": tenant_id},
         )
