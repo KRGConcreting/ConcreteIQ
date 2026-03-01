@@ -850,8 +850,8 @@
                             <div class="flex justify-between items-center py-1" x-show="summary.excavation.show"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-amber-400"></span>Excavation</span><span class="font-medium" x-text="'$' + (summary.excavation.total / 100).toFixed(2)"></span></div>
                             <div class="flex justify-between items-center py-1" x-show="summary.removal.show"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-red-400"></span>Removal</span><span class="font-medium" x-text="'$' + (summary.removal.total / 100).toFixed(2)"></span></div>
                             <div class="flex justify-between items-center py-1" x-show="summary.drainage.show"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-green-400"></span>Drainage</span><span class="font-medium" x-text="'$' + (summary.drainage.total / 100).toFixed(2)"></span></div>
-                            <div class="flex justify-between items-center py-1"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-sky-400"></span>Setup</span><span class="font-medium" x-text="'$' + (summary.setup.total / 100).toFixed(2)"></span></div>
-                            <div class="flex justify-between items-center py-1"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-orange-400"></span>Pour</span><span class="font-medium" x-text="'$' + (summary.pour.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-sky-400"></span>Formwork</span><span class="font-medium" x-text="'$' + (summary.setup.total / 100).toFixed(2)"></span></div>
+                            <div class="flex justify-between items-center py-1"><span class="text-slate-600 flex items-center gap-1.5"><span class="section-dot bg-orange-400"></span>Placement</span><span class="font-medium" x-text="'$' + (summary.pour.total / 100).toFixed(2)"></span></div>
                         </div>
                         <div class="border-t border-slate-200 pt-2 mt-2 space-y-1">
                             <div class="flex justify-between"><span class="text-slate-500">Raw Cost</span><span class="font-medium" x-text="'$' + (summary.pricing.raw_cost / 100).toFixed(2)"></span></div>
@@ -887,7 +887,7 @@
                             </div>
                         </div>
                         <div x-data="{ open: true }" class="border-t border-slate-100 pt-3">
-                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-sky-400"></span>Setup</button>
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-sky-400"></span>Formwork & Reinforcement</button>
                             <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
                                 <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Materials</p>
                                 <template x-for="item in summary.setup.items" :key="item.name"><div class="flex justify-between" x-show="item.cost > 0"><span class="text-slate-500" x-text="item.name"></span><span x-text="'$' + (item.cost / 100).toFixed(2)"></span></div></template>
@@ -902,7 +902,7 @@
                             </div>
                         </div>
                         <div x-data="{ open: true }" class="border-t border-slate-100 pt-3">
-                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-orange-400"></span>Pour</button>
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-orange-400"></span>Placement & Finishing</button>
                             <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
                                 <p class="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Materials</p>
                                 <template x-for="item in summary.pour.items" :key="item.name"><div class="flex justify-between" x-show="item.cost > 0"><span class="text-slate-500" x-text="item.name"></span><span x-text="'$' + (item.cost / 100).toFixed(2)"></span></div></template>

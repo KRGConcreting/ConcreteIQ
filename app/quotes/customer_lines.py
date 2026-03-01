@@ -4,6 +4,12 @@ Customer-facing line item generation for Quote Preview.
 Transforms calculator results into editable grouped line items
 that the customer sees on the quote. Internal cost data is NOT
 exposed — this is purely a presentation layer.
+
+Quantity display rule:
+  Dynamic quantities (hours, lineal metres, m², m³, counts, km)
+  always get "approx." — these are estimates.
+  Fixed specs (depths, diameters, grades, widths) stay exact —
+  these are what we're building to.
 """
 
 from uuid import uuid4
@@ -34,7 +40,7 @@ def generate_customer_line_items(
     groups = []
     sort_order = 0
 
-    # === 1. CONCRETE ===
+    # === 1. CONCRETE SUPPLY & DELIVERY ===
     # concrete_cost_cents already includes travel, additive, short load,
     # colour surcharge, and fibre cost — do NOT add them again.
     concrete_total = calculator_result.get("concrete_cost_cents") or 0
@@ -42,49 +48,55 @@ def generate_customer_line_items(
     if concrete_total > 0:
         sub_items = []
 
-        # Grade description
+        # Grade description — spec, no approx.
         grade = calculator_input.get("concrete_grade", "N25")
         sub_items.append({
-            "description": f"{grade} ready-mix concrete",
+            "description": f"{grade} Ready-Mix Concrete (to AS 1379)",
             "price_cents": None,
         })
 
-        # Volume
+        # Volume — dynamic quantity
         volume = calculator_result.get("volume_m3", 0)
         if volume > 0:
             sub_items.append({
-                "description": f"{volume:.2f}m³ (includes 8% wastage buffer)",
+                "description": f"Estimated Volume: approx. {volume:.2f}m³ (incl. 8% allowance for wastage & site variation)",
                 "price_cents": None,
             })
 
-        # Coloured concrete
+        # Coloured concrete — spec
         colour = calculator_input.get("concrete_colour", "")
         if calculator_input.get("coloured_concrete") and colour:
             sub_items.append({
-                "description": f"Colour oxide: {colour}",
+                "description": f"Integral Colour Oxide – {colour}",
                 "price_cents": None,
             })
 
-        # Mix additive
+        # Mix additive — spec
         additive = calculator_input.get("mix_additive", "None")
         if additive and additive != "None":
             sub_items.append({
-                "description": f"Mix additive: {additive}",
+                "description": f"Concrete Admixture – {additive}",
                 "price_cents": None,
             })
 
-        # Concrete delivery
+        # Concrete delivery — hide km unless >50km
         concrete_distance = calculator_input.get("concrete_distance_km", 0)
         if concrete_distance and concrete_distance > 0:
-            sub_items.append({
-                "description": f"Concrete delivery ({concrete_distance}km)",
-                "price_cents": None,
-            })
+            if concrete_distance > 50:
+                sub_items.append({
+                    "description": f"Concrete Delivery Radius Charge (approx. {concrete_distance}km)",
+                    "price_cents": None,
+                })
+            else:
+                sub_items.append({
+                    "description": "Concrete Delivery Radius Charge",
+                    "price_cents": None,
+                })
 
         # Short load fee
         if calculator_result.get("short_load_fee_cents", 0) > 0:
             sub_items.append({
-                "description": "Small load surcharge",
+                "description": "Short Load Surcharge (below minimum load)",
                 "price_cents": None,
             })
 
@@ -98,7 +110,7 @@ def generate_customer_line_items(
         })
         sort_order += 1
 
-    # === 2. SITE PREPARATION (excavation + removal + subbase) ===
+    # === 2. EXCAVATION & SUBGRADE PREPARATION ===
     show_exc = calculator_result.get("show_excavation", False)
     show_rem = calculator_result.get("show_removal", False)
     show_sub = calculator_result.get("show_subbase", False)
@@ -113,49 +125,49 @@ def generate_customer_line_items(
         sub_items = []
 
         if show_exc:
-            exc_depth = calculator_input.get("excavation_depth", 0)
-            area = calculator_input.get("slab_area", 0)
+            exc_depth = calculator_input.get("excavation_depth", 0)  # spec
+            area = calculator_input.get("slab_area", 0)              # dynamic
             sub_items.append({
-                "description": f"Excavation to {exc_depth}mm depth ({area}m²)",
+                "description": f"Site Excavation – {exc_depth}mm Depth (approx. {area}m²)",
                 "price_cents": None,
             })
 
         if show_rem:
-            rem_area = calculator_input.get("removal_area", 0)
-            rem_thick = int(calculator_input.get("removal_thickness", 100))
+            rem_area = calculator_input.get("removal_area", 0)        # dynamic
+            rem_thick = int(calculator_input.get("removal_thickness", 100))  # spec
             rem_reinforced = calculator_input.get("removal_reinforced", False)
             reo_note = ", reinforced" if rem_reinforced else ""
             sub_items.append({
-                "description": f"Existing concrete removal ({rem_area}m² × {rem_thick}mm{reo_note})",
+                "description": f"Demolition & Removal of Existing Concrete (approx. {rem_area}m² × {rem_thick}mm depth{reo_note})",
                 "price_cents": None,
             })
-            # Disposal detail
+            # Disposal detail — no quantities
             rem_method = calculator_input.get("removal_method", "manual")
             rem_disposal = calculator_input.get("removal_disposal", "skip_bin")
-            method_label = "machine" if rem_method == "machine" else "manual"
+            method_label = "machine breakout" if rem_method == "machine" else "manual breakout"
             disposal_labels = {"skip_bin": "skip bin", "trailer": "trailer to tip"}
             disposal_label = disposal_labels.get(rem_disposal, "skip bin")
             sub_items.append({
-                "description": f"Incl. sawcutting, {method_label} removal & {disposal_label} disposal",
+                "description": f"Incl. sawcutting, {method_label}, removal & {disposal_label} disposal",
                 "price_cents": None,
             })
 
         if show_sub:
-            sub_thick = calculator_input.get("subbase_thickness", 0)
+            sub_thick = calculator_input.get("subbase_thickness", 0)  # spec
             sub_items.append({
-                "description": f"Subbase preparation ({sub_thick}mm compacted fill)",
+                "description": f"Subgrade Preparation – {sub_thick}mm Compacted Granular Fill",
                 "price_cents": None,
             })
 
             if calculator_input.get("compaction", False):
                 sub_items.append({
-                    "description": "Mechanical compaction",
+                    "description": "Mechanical Compaction of Subgrade",
                     "price_cents": None,
                 })
 
         groups.append({
             "id": str(uuid4()),
-            "category": "Site Preparation",
+            "category": "Excavation & Subgrade Preparation",
             "sub_items": sub_items,
             "total_cents": site_prep_total,
             "show_sub_prices": False,
@@ -163,7 +175,7 @@ def generate_customer_line_items(
         })
         sort_order += 1
 
-    # === PLUMBING & DRAINAGE ===
+    # === STORMWATER & DRAINAGE ===
     show_drainage = calculator_result.get("show_drainage", False)
     drainage_total = calculator_result.get("drainage_cost_cents") or 0
 
@@ -171,54 +183,54 @@ def generate_customer_line_items(
         sub_items = []
         ci = calculator_input  # shorthand
 
-        # Pits
+        # Pits — counts are dynamic, sizes are specs
         total_pits = (ci.get("drain_pits_300", 0) + ci.get("drain_pits_450", 0) + ci.get("drain_centralising_pits", 0))
         if total_pits > 0:
             pit_details = []
             if ci.get("drain_pits_300", 0):
-                pit_details.append(f"{ci['drain_pits_300']}× 300mm")
+                pit_details.append(f"approx. {ci['drain_pits_300']}× 300mm")
             if ci.get("drain_pits_450", 0):
-                pit_details.append(f"{ci['drain_pits_450']}× 450mm")
+                pit_details.append(f"approx. {ci['drain_pits_450']}× 450mm")
             if ci.get("drain_centralising_pits", 0):
-                pit_details.append(f"{ci['drain_centralising_pits']}× centralising")
-            sub_items.append({"description": f"Stormwater pits ({', '.join(pit_details)})", "price_cents": None})
+                pit_details.append(f"approx. {ci['drain_centralising_pits']}× centralising")
+            sub_items.append({"description": f"Stormwater Pit Installation ({', '.join(pit_details)})", "price_cents": None})
 
-        # Grates
+        # Grates — count is dynamic
         total_grates = ci.get("drain_grates_standard", 0) + ci.get("drain_grates_heavy", 0)
         if total_grates > 0:
-            sub_items.append({"description": f"Drainage grates ({total_grates})", "price_cents": None})
+            sub_items.append({"description": f"Drainage Grate Supply & Install (approx. {total_grates})", "price_cents": None})
 
-        # Surface drain
+        # Surface drain — lm is dynamic
         if ci.get("drain_surface_drain_lm", 0) > 0:
-            sub_items.append({"description": f"Surface drain ({ci['drain_surface_drain_lm']}lm)", "price_cents": None})
+            sub_items.append({"description": f"Surface Channel Drain (approx. {ci['drain_surface_drain_lm']} lineal metres)", "price_cents": None})
 
-        # Pipe
+        # Pipe — lm is dynamic
         if ci.get("drain_ag_pipe_lm", 0) > 0:
-            sub_items.append({"description": f"90mm ag pipe ({ci['drain_ag_pipe_lm']}lm)", "price_cents": None})
+            sub_items.append({"description": f"90mm Agricultural Drainage Pipe (approx. {ci['drain_ag_pipe_lm']} lineal metres)", "price_cents": None})
         if ci.get("drain_stormwater_100_lm", 0) > 0:
-            sub_items.append({"description": f"100mm stormwater pipe ({ci['drain_stormwater_100_lm']}lm)", "price_cents": None})
+            sub_items.append({"description": f"100mm Stormwater Pipe (approx. {ci['drain_stormwater_100_lm']} lineal metres)", "price_cents": None})
         if ci.get("drain_stormwater_150_lm", 0) > 0:
-            sub_items.append({"description": f"150mm stormwater pipe ({ci['drain_stormwater_150_lm']}lm)", "price_cents": None})
+            sub_items.append({"description": f"150mm Stormwater Pipe (approx. {ci['drain_stormwater_150_lm']} lineal metres)", "price_cents": None})
 
-        # Other items
+        # Other items — counts and lm are dynamic
         if ci.get("drain_tpiece_connections", 0) > 0:
-            sub_items.append({"description": f"Junction connections ({ci['drain_tpiece_connections']})", "price_cents": None})
+            sub_items.append({"description": f"Stormwater Junction Connections (approx. {ci['drain_tpiece_connections']})", "price_cents": None})
         if ci.get("drain_trench_lm", 0) > 0:
-            sub_items.append({"description": f"Trench excavation ({ci['drain_trench_lm']}lm)", "price_cents": None})
+            sub_items.append({"description": f"Drainage Trench Excavation (approx. {ci['drain_trench_lm']} lineal metres)", "price_cents": None})
         if ci.get("drain_relocations", 0) > 0:
-            sub_items.append({"description": f"Drain relocation ({ci['drain_relocations']})", "price_cents": None})
+            sub_items.append({"description": f"Existing Drain Relocation (approx. {ci['drain_relocations']})", "price_cents": None})
 
         groups.append({
             "id": str(uuid4()),
-            "category": "Plumbing & Drainage",
-            "sub_items": sub_items or [{"description": "Drainage works", "price_cents": None}],
+            "category": "Stormwater & Drainage",
+            "sub_items": sub_items or [{"description": "Stormwater & drainage works", "price_cents": None}],
             "total_cents": drainage_total,
             "show_sub_prices": False,
             "sort_order": sort_order,
         })
         sort_order += 1
 
-    # === 3. SETUP ===
+    # === 3. FORMWORK & REINFORCEMENT ===
     setup_total = (
         (calculator_result.get("setup_materials_cents") or 0) +
         (calculator_result.get("setup_labour_cents") or 0)
@@ -227,110 +239,110 @@ def generate_customer_line_items(
     if setup_total > 0:
         sub_items = []
 
-        # Reinforcement
+        # Reinforcement — reo type is spec, area is dynamic
         reo = calculator_input.get("reinforcement", "None")
         if reo and reo != "None":
             area = calculator_input.get("slab_area", 0)
             sub_items.append({
-                "description": f"{reo} reinforcement ({area}m²)",
+                "description": f"{reo} Reinforcement (approx. {area}m²)",
                 "price_cents": None,
             })
 
-        # Edge formwork
+        # Edge formwork — lm is dynamic
         edge_fw = calculator_input.get("edge_formwork", 0)
         int_fw = calculator_input.get("internal_formwork", 0)
         total_fw = (edge_fw or 0) + (int_fw or 0)
         if total_fw > 0:
             sub_items.append({
-                "description": f"Formwork ({total_fw}lm)",
+                "description": f"Formwork Installation (approx. {total_fw} lineal metres)",
                 "price_cents": None,
             })
 
-        # Moisture barrier
+        # Moisture barrier — no quantity
         if calculator_input.get("inc_moisture_barrier", False):
             sub_items.append({
-                "description": "Moisture barrier (vapour barrier)",
+                "description": "Vapour Barrier / Moisture Membrane",
                 "price_cents": None,
             })
 
-        # Isolation joints
+        # Isolation joints — lm is dynamic
         iso = calculator_input.get("isolation_joints", 0)
         if iso and iso > 0:
             sub_items.append({
-                "description": f"Isolation joints ({iso}lm)",
+                "description": f"Isolation Joint Material (approx. {iso} lineal metres)",
                 "price_cents": None,
             })
 
-        # Fence sheeting
+        # Fence sheeting — lm is dynamic
         bp = calculator_input.get("fence_sheeting", 0)
         if bp and bp > 0:
             sub_items.append({
-                "description": f"Fence sheeting ({bp}lm)",
+                "description": f"Temporary Site Protection Sheeting (approx. {bp} lineal metres)",
                 "price_cents": None,
             })
 
-        # Steps
+        # Steps — count is dynamic
         steps = calculator_input.get("steps", 0)
         if steps and steps > 0:
             sub_items.append({
-                "description": f"Step formation ({steps} step{'s' if steps > 1 else ''})",
+                "description": f"Step Formation (approx. {steps} step{'s' if steps > 1 else ''})",
                 "price_cents": None,
             })
 
-        # Dowels
+        # Dowels — count is dynamic
         dowel_count = calculator_result.get("dowel_count", 0)
         if dowel_count and dowel_count > 0:
             sub_items.append({
-                "description": f"Dowel bars ({dowel_count} bars)",
+                "description": f"Dowel Bar Installation (approx. {dowel_count} bars)",
                 "price_cents": None,
             })
 
-        # Rebates (starter bars)
+        # Rebates — lm is dynamic
         rebate_lm = calculator_input.get("rebates", 0)
         if rebate_lm and rebate_lm > 0:
             sub_items.append({
-                "description": f"Rebates — formed step with starter bars ({rebate_lm}lm)",
+                "description": f"Formed Rebate with Starter Bars (approx. {rebate_lm} lineal metres)",
                 "price_cents": None,
             })
 
-        # Pier holes
+        # Pier holes — count is dynamic, dia/depth/bars-per-pier are specs
         piers = calculator_input.get("pier_holes", 0)
         if piers and piers > 0:
             dia = calculator_input.get("pier_diameter", 300)
             depth = calculator_input.get("pier_depth", 600)
             bars = calculator_input.get("pier_starters", 4)
             sub_items.append({
-                "description": f"Pier holes ({piers}× {int(dia)}mm dia × {int(depth)}mm deep, {bars} starter bars each)",
+                "description": f"Pier Hole Excavation (approx. {piers}× {int(dia)}mm dia. × {int(depth)}mm deep, incl. {bars} starter bars per pier)",
                 "price_cents": None,
             })
 
-        # Edge beams
+        # Edge beams — length is dynamic, width/depth are specs
         if calculator_input.get("edge_beams") and calculator_input.get("edge_beam_length", 0) > 0:
             beam_len = calculator_input.get("edge_beam_length", 0)
             beam_depth = calculator_input.get("edge_beam_depth", 200)
             beam_width = calculator_input.get("edge_beam_width", 300)
             sub_items.append({
-                "description": f"Edge beams ({beam_len}lm × {int(beam_width)}mm × {int(beam_depth)}mm) with reinforcement",
+                "description": f"Edge Beam Formation (approx. {beam_len} lineal metres × {int(beam_width)}mm wide × {int(beam_depth)}mm deep) incl. Reinforcement",
                 "price_cents": None,
             })
 
-        # Setup labour
+        # Setup labour — hours are dynamic
         setup_hrs = calculator_result.get("setup_hours", 0)
         if setup_hrs > 0:
             sub_items.append({
-                "description": f"Setup labour ({setup_hrs:.1f} hrs)",
+                "description": f"Setup & Preparation Labour (approx. {setup_hrs:.1f} hrs)",
                 "price_cents": None,
             })
 
-        # Site prep + mobilisation
+        # Site prep + mobilisation — no quantity
         sub_items.append({
-            "description": "Site preparation & mobilisation",
+            "description": "Site Preparation & Mobilisation",
             "price_cents": None,
         })
 
         groups.append({
             "id": str(uuid4()),
-            "category": "Setup",
+            "category": "Formwork & Reinforcement",
             "sub_items": sub_items,
             "total_cents": setup_total,
             "show_sub_prices": False,
@@ -338,7 +350,7 @@ def generate_customer_line_items(
         })
         sort_order += 1
 
-    # === 4. POUR & FINISH ===
+    # === 4. CONCRETE PLACEMENT & FINISHING ===
     pour_total = (
         (calculator_result.get("pour_materials_cents") or 0) +
         (calculator_result.get("pour_labour_cents") or 0) +
@@ -349,27 +361,28 @@ def generate_customer_line_items(
     if pour_total > 0:
         sub_items = []
 
+        # No quantity
         sub_items.append({
-            "description": "Concrete placement & finishing",
+            "description": "Concrete Placement & Surface Finishing",
             "price_cents": None,
         })
 
-        # Placement method
+        # No quantity
         if calculator_input.get("placement_method") == "Wheelbarrow":
             sub_items.append({
-                "description": "Wheelbarrow placement (extended pour time)",
+                "description": "Manual Barrow Placement (extended pour time – restricted site access)",
                 "price_cents": None,
             })
 
-        # Falls complexity
+        # Falls complexity — percentage is a spec/factor, not an estimated quantity
         falls_pct = calculator_input.get("falls_complexity_pct", 0)
         if falls_pct and falls_pct > 0:
             sub_items.append({
-                "description": f"Complex drainage falls (+{int(falls_pct)}% pour time)",
+                "description": f"Drainage Fall Formation (+{int(falls_pct)}% additional pour time)",
                 "price_cents": None,
             })
 
-        # Chemicals/inclusions
+        # Chemicals/inclusions — no quantities
         inclusion_items = []
         if calculator_input.get("inc_release_agent"):
             inclusion_items.append("form release agent")
@@ -386,56 +399,57 @@ def generate_customer_line_items(
 
         if inclusion_items:
             sub_items.append({
-                "description": f"Includes: {', '.join(inclusion_items)}",
+                "description": f"Incl. {', '.join(inclusion_items[:-1])} & {inclusion_items[-1]}" if len(inclusion_items) > 1 else f"Incl. {inclusion_items[0]}",
                 "price_cents": None,
             })
 
-        # Control joints
+        # Control joints — lm is dynamic, method is spec
         cj = calculator_input.get("control_joints", 0)
         cj_method = calculator_input.get("control_joint_method", "Sawcut")
         if cj and cj > 0:
             sub_items.append({
-                "description": f"Control joints — {cj_method} ({cj}lm)",
+                "description": f"Control Joints – {cj_method} Finish (approx. {cj} lineal metres)",
                 "price_cents": None,
             })
 
-        # Exposed aggregate
+        # Exposed aggregate — no quantity
         wash_off = calculator_input.get("wash_off", "N/A")
         if wash_off and wash_off != "N/A":
-            desc = "Exposed aggregate finish"
             if calculator_input.get("acid_wash"):
-                desc += " with acid wash"
+                desc = "Exposed Aggregate Finish incl. Acid Wash"
+            else:
+                desc = "Exposed Aggregate Finish"
             sub_items.append({
                 "description": desc,
                 "price_cents": None,
             })
 
-        # Pump
+        # Pump — no quantity
         if calculator_input.get("pump_required"):
             sub_items.append({
-                "description": "Concrete pump",
+                "description": "Concrete Pump Hire",
                 "price_cents": None,
             })
 
-        # Pour labour hours
+        # Pour labour — hours are dynamic
         pour_hrs = calculator_result.get("pour_hours", 0)
         finish_hrs = calculator_result.get("finish_hours", 0)
         total_pour_hrs = pour_hrs + finish_hrs
         if total_pour_hrs > 0:
             sub_items.append({
-                "description": f"Pour & finish labour ({total_pour_hrs:.1f} hrs)",
+                "description": f"Pour & Finish Labour (approx. {total_pour_hrs:.1f} hrs)",
                 "price_cents": None,
             })
 
-        # Equipment + site clean
+        # No quantity
         sub_items.append({
-            "description": "Equipment & site clean-up",
+            "description": "Equipment Clean-Up & Site Restoration",
             "price_cents": None,
         })
 
         groups.append({
             "id": str(uuid4()),
-            "category": "Pour & Finish",
+            "category": "Concrete Placement & Finishing",
             "sub_items": sub_items,
             "total_cents": pour_total,
             "show_sub_prices": False,
@@ -443,7 +457,7 @@ def generate_customer_line_items(
         })
         sort_order += 1
 
-    # === 5. TRAVEL (only if shown) ===
+    # === 5. SITE MOBILISATION & TRAVEL ===
     travel_cents = calculator_result.get("travel_cents", 0)
     show_travel = calculator_result.get("show_travel", False)
 
@@ -451,10 +465,10 @@ def generate_customer_line_items(
         distance_km = calculator_input.get("distance_km", 0)
         groups.append({
             "id": str(uuid4()),
-            "category": "Travel",
+            "category": "Site Mobilisation & Travel",
             "sub_items": [
                 {
-                    "description": f"Site travel ({distance_km}km from base)",
+                    "description": f"Site Travel & Mobilisation (approx. {distance_km}km from base)",
                     "price_cents": None,
                 },
             ],

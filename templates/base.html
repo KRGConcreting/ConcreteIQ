@@ -18,7 +18,7 @@
 
     <!-- Design System v4 -->
     <link rel="stylesheet" href="/static/css/design-system.css?v=4.1">
-    <link rel="stylesheet" href="/static/css/components.css?v=4.1">
+    <link rel="stylesheet" href="/static/css/components.css?v=4.2">
     <link rel="stylesheet" href="/static/css/animations.css?v=4.1">
 
     <!-- Legacy Design System (backward compat) -->
@@ -410,7 +410,7 @@
     <div x-data="quickMessagePanel()" x-cloak>
         <!-- Floating Action Button -->
         <button @click="open = !open"
-                class="fixed z-40 w-14 h-14 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center fab-ring hover:scale-105" style="bottom: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, var(--brand-secondary), #d4691f); box-shadow: 0 8px 20px rgba(232,122,46,0.35);"
+                class="z-40 w-14 h-14 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center fab-ring hover:scale-105" style="position: fixed; bottom: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, var(--brand-secondary), #d4691f); box-shadow: 0 8px 20px rgba(232,122,46,0.35);"
                 :class="{ 'rotate-45 scale-90': open }"
                 title="Send Quick Message">
             <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

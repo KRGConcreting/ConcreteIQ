@@ -1340,7 +1340,7 @@ input[type="checkbox"]:checked {
 
 /* FAB */
 .fab-ring {
-    position: relative;
+    /* position handled inline — do not set here */
 }
 
 .fab-ring::before {
