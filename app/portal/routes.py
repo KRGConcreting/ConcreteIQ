@@ -22,6 +22,7 @@ from app.quotes import service
 from app.quotes.service import generate_portal_token, hash_portal_token
 from app.quotes.pdf import generate_quote_pdf, generate_invoice_pdf
 from app.core.security import decrypt_customer_pii
+from app.core.auth import verify_csrf
 from app.invoices import service as invoice_service
 from app.payments import service as payment_service
 
@@ -143,51 +144,9 @@ async def customer_dashboard(
     })
 
 
-@router.get("/my/{phone_last4}", name="portal:lookup")
-async def customer_lookup(
-    request: Request,
-    phone_last4: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Customer lookup — find customer by last 4 digits of phone.
-    Then redirect to their dashboard.
-    This is a simple identity check (not full auth).
-    """
-    # Validate: must be exactly 4 digits
-    if not phone_last4.isdigit() or len(phone_last4) != 4:
-        raise HTTPException(400, "Please provide the last 4 digits of your phone number")
-
-    # Search all customers whose phone ends with these 4 digits
-    result = await db.execute(select(Customer))
-    all_customers = result.scalars().all()
-
-    matched = None
-    for cust in all_customers:
-        decrypt_customer_pii(cust)
-        phone = (cust.phone or "").replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-        if phone and phone[-4:] == phone_last4:
-            matched = cust
-            break
-
-    if not matched:
-        raise HTTPException(404, "No customer found with that phone number")
-
-    # Ensure customer has a portal access token
-    if not matched.portal_access_token:
-        raw_token, hashed_token = generate_portal_token()
-        matched.portal_access_token = hashed_token
-        await db.commit()
-        # Redirect using the raw token
-        return RedirectResponse(url=f"/p/dashboard/{raw_token}", status_code=303)
-
-    # Customer already has a token — but we only have the hash, not the raw token.
-    # Generate a new token so we can redirect with it.
-    raw_token, hashed_token = generate_portal_token()
-    matched.portal_access_token = hashed_token
-    await db.commit()
-
-    return RedirectResponse(url=f"/p/dashboard/{raw_token}", status_code=303)
+# /p/my/{phone_last4} endpoint REMOVED — Security audit (Mar 2026).
+# Only 10,000 combinations (0000-9999), loaded ALL customers, decrypted ALL PII.
+# Customers access their portal via the secure token link sent in their email/SMS.
 
 
 # =============================================================================
@@ -276,7 +235,7 @@ async def view_quote(
     })
 
 
-@router.post("/{token}/accept", name="portal:accept_quote")
+@router.post("/{token}/accept", name="portal:accept_quote", dependencies=[Depends(verify_csrf)])
 async def accept_quote_endpoint(
     request: Request,
     token: str,
@@ -334,7 +293,7 @@ async def accept_quote_endpoint(
     }
 
 
-@router.post("/{token}/decline", name="portal:decline_quote")
+@router.post("/{token}/decline", name="portal:decline_quote", dependencies=[Depends(verify_csrf)])
 async def decline_quote_endpoint(
     request: Request,
     token: str,
@@ -380,7 +339,7 @@ async def decline_quote_endpoint(
     }
 
 
-@router.post("/{token}/select-date", name="portal:select_date")
+@router.post("/{token}/select-date", name="portal:select_date", dependencies=[Depends(verify_csrf)])
 async def select_date_endpoint(
     request: Request,
     token: str,
@@ -535,7 +494,7 @@ async def select_date_page(
     })
 
 
-@router.post("/{token}/confirm-date", name="portal:confirm_date")
+@router.post("/{token}/confirm-date", name="portal:confirm_date", dependencies=[Depends(verify_csrf)])
 async def confirm_date_endpoint(
     request: Request,
     token: str,
@@ -760,7 +719,7 @@ async def view_amendment(
     })
 
 
-@router.post("/amendment/{token}/accept", name="portal:accept_amendment")
+@router.post("/amendment/{token}/accept", name="portal:accept_amendment", dependencies=[Depends(verify_csrf)])
 async def accept_amendment_endpoint(
     request: Request,
     token: str,
@@ -830,7 +789,7 @@ async def accept_amendment_endpoint(
     }
 
 
-@router.post("/amendment/{token}/decline", name="portal:decline_amendment")
+@router.post("/amendment/{token}/decline", name="portal:decline_amendment", dependencies=[Depends(verify_csrf)])
 async def decline_amendment_endpoint(
     request: Request,
     token: str,
@@ -1017,7 +976,7 @@ async def download_invoice_pdf(
     )
 
 
-@router.post("/invoice/{token}/pay", name="portal:pay_invoice")
+@router.post("/invoice/{token}/pay", name="portal:pay_invoice", dependencies=[Depends(verify_csrf)])
 async def create_payment_session(
     request: Request,
     token: str,

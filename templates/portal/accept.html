@@ -319,7 +319,7 @@ function acceptQuote() {
             try {
                 const response = await fetch('/p/{{ token }}/accept', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/csrf_token=([^;]+)/)||[])[1]||'' },
                     body: JSON.stringify({
                         signer_name: this.signerName.trim(),
                         signature_data: signatureData,

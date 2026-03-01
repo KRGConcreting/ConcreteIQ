@@ -776,6 +776,8 @@ function integrationsPage() {
 
             // Build form data based on service
             const formData = new FormData();
+            // Include CSRF token for double-submit verification
+            formData.append('csrf_token', (document.cookie.match(/csrf_token=([^;]+)/)||[])[1]||'');
             if (service === 'xero') {
                 formData.append('xero_client_id', this.credentials.xero_client_id);
                 formData.append('xero_client_secret', this.credentials.xero_client_secret);

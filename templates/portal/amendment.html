@@ -330,7 +330,7 @@ function amendmentPortal() {
             try {
                 const response = await fetch('/p/amendment/{{ token }}/accept', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/csrf_token=([^;]+)/)||[])[1]||'' },
                     body: JSON.stringify({
                         signature_data: this.signaturePad.toDataURL(),
                         signature_name: this.signerName.trim(),
@@ -359,7 +359,7 @@ function amendmentPortal() {
             try {
                 const response = await fetch('/p/amendment/{{ token }}/decline', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': (document.cookie.match(/csrf_token=([^;]+)/)||[])[1]||'' },
                     body: JSON.stringify({
                         reason: this.declineReason.trim() || null,
                     }),

@@ -86,7 +86,6 @@ app = FastAPI(
 
 
 # Global exception handler to log tracebacks in development
-import logging
 import traceback
 
 logger = logging.getLogger("concreteiq")

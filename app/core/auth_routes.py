@@ -208,9 +208,15 @@ async def login_2fa_submit(
     return response
 
 
-@router.get("/logout")
+@router.post("/logout")
 async def logout(request: Request):
-    """Logout."""
+    """Logout — POST only to prevent CSRF via link/img tags."""
     response = RedirectResponse(url="/login", status_code=302)
     clear_session(response)
     return response
+
+
+@router.get("/logout")
+async def logout_get(request: Request):
+    """GET /logout — redirect to dashboard (use POST to actually log out)."""
+    return RedirectResponse(url="/dashboard", status_code=302)

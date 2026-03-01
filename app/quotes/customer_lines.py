@@ -82,7 +82,7 @@ def generate_customer_line_items(
         # Concrete delivery — hide km unless >50km
         concrete_distance = calculator_input.get("concrete_distance_km", 0)
         if concrete_distance and concrete_distance > 0:
-            if concrete_distance > 50:
+            if concrete_distance > 45:
                 sub_items.append({
                     "description": f"Concrete Delivery Radius Charge (approx. {concrete_distance}km)",
                     "price_cents": None,

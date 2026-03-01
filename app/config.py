@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Dev default is bcrypt hash of "admin". Production MUST use a bcrypt hash
     # generated via: python -c "import bcrypt; print(bcrypt.hashpw(b'YOUR_PASSWORD', bcrypt.gensalt()).decode())"
     admin_password: str = "$2b$12$47nrlise.haCQ8a2EuJiDOvgmq2rmYuJ43CDc7BVJLehUwzN.GZTi"
-    session_expire_hours: int = 168  # 7 days
+    session_expire_hours: int = 24  # 24 hours (was 168/7 days — reduced per security audit)
 
     # PII Encryption (Fernet key — generate via: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
     encryption_key: str | None = None
@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     google_calendar_id: str = ""  # Calendar ID to create events in
     google_credentials_json: str = ""  # Service account JSON (base64 encoded)
     google_review_url: str = "https://g.page/r/Cd-0sbGF_o_nEAE/review"  # Google reviews link
+
+    # Webhook authentication (shared secret for Postmark/ClickSend/Vonage callbacks)
+    webhook_secret: str | None = None
 
     # Redis (for Celery background tasks)
     redis_url: str = "redis://localhost:6379/0"

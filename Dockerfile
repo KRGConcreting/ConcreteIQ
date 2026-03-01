@@ -24,4 +24,6 @@ EXPOSE ${PORT}
 RUN useradd -m appuser
 USER appuser
 
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 2
+# Single worker — in-memory rate limiting requires single process.
+# Single-user app, async handles concurrency fine.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1

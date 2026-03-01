@@ -2,19 +2,24 @@
 Webhook endpoints - Stripe, Postmark, Vonage.
 
 CRITICAL SECURITY:
-1. Verify webhook signatures before processing
+1. Verify webhook signatures / auth tokens before processing
 2. Check idempotency BEFORE processing
 3. Record event BEFORE processing
 4. Return 200 even on processing errors (prevents retries)
+5. Enforce payload size limits (1 MB max)
 
-NO AUTHENTICATION - webhooks are verified by signature.
+Authentication:
+- Stripe: verified by stripe-signature header (HMAC)
+- Postmark/ClickSend/Vonage: verified by WEBHOOK_SECRET bearer token or query param
 """
 
+import hmac
 import logging
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.models import CommunicationLog, Customer, EmailLog, SMSLog
 from app.payments import service as payment_service
@@ -23,6 +28,48 @@ from app.core.dates import sydney_now
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Maximum webhook payload size: 1 MB
+MAX_PAYLOAD_BYTES = 1_048_576
+
+
+def _verify_webhook_token(request: Request) -> bool:
+    """
+    Verify webhook authentication via Bearer token or ?token= query param.
+
+    Returns True if WEBHOOK_SECRET is not configured (fail-open for dev),
+    or if the provided token matches.
+    """
+    secret = settings.webhook_secret
+    if not secret:
+        # Not configured — warn but allow (backward-compatible for dev)
+        logger.warning("WEBHOOK_SECRET not set — webhook authentication disabled")
+        return True
+
+    # Check Authorization header first
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        return hmac.compare_digest(token, secret)
+
+    # Fallback: check query parameter ?token=
+    token_param = request.query_params.get("token", "")
+    if token_param:
+        return hmac.compare_digest(token_param, secret)
+
+    return False
+
+
+async def _read_body_limited(request: Request, max_bytes: int = MAX_PAYLOAD_BYTES) -> bytes:
+    """Read request body with size enforcement."""
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > max_bytes:
+        raise HTTPException(413, "Payload too large")
+
+    body = await request.body()
+    if len(body) > max_bytes:
+        raise HTTPException(413, "Payload too large")
+    return body
 
 
 @router.post("/stripe")
@@ -43,8 +90,8 @@ async def stripe_webhook(
     Event types handled:
     - checkout.session.completed: Creates Payment record, updates Invoice
     """
-    # Get raw body and signature
-    payload = await request.body()
+    # Enforce payload size limit
+    payload = await _read_body_limited(request)
     signature = request.headers.get("stripe-signature")
 
     if not signature:
@@ -81,6 +128,10 @@ async def postmark_webhook(
     """
     Handle Postmark email tracking webhooks.
 
+    Authentication: Bearer token via WEBHOOK_SECRET.
+    Configure in Postmark webhook settings:
+      URL: https://app.krgconcreting.au/webhooks/postmark?token=YOUR_SECRET
+
     Event types:
     - Delivery: Email delivered
     - Open: Email opened
@@ -91,6 +142,14 @@ async def postmark_webhook(
     Postmark sends JSON with a RecordType field indicating the event type.
     Updates both CommunicationLog and EmailLog tables.
     """
+    # Authenticate webhook
+    if not _verify_webhook_token(request):
+        logger.warning(f"Postmark webhook auth failed from {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(403, "Invalid webhook token")
+
+    # Enforce payload size limit
+    await _read_body_limited(request)
+
     try:
         payload = await request.json()
     except Exception:
@@ -208,6 +267,10 @@ async def clicksend_webhook(
     """
     Handle SMS delivery webhooks (Vonage DLR or ClickSend).
 
+    Authentication: Bearer token via WEBHOOK_SECRET.
+    Configure in provider webhook settings:
+      URL: https://app.krgconcreting.au/webhooks/clicksend?token=YOUR_SECRET
+
     Vonage sends delivery receipts with:
     - messageId: The provider message ID
     - status: delivered, expired, failed, rejected, accepted, buffered, unknown
@@ -217,6 +280,14 @@ async def clicksend_webhook(
     - message_id: The provider message ID
     - status: Delivered, Undelivered
     """
+    # Authenticate webhook
+    if not _verify_webhook_token(request):
+        logger.warning(f"ClickSend webhook auth failed from {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(403, "Invalid webhook token")
+
+    # Enforce payload size limit
+    await _read_body_limited(request)
+
     try:
         payload = await request.json()
     except Exception:
@@ -295,6 +366,10 @@ async def vonage_inbound_sms(
     """
     Handle inbound SMS from Vonage.
 
+    Authentication: Bearer token via WEBHOOK_SECRET.
+    Configure in Vonage dashboard:
+      URL: https://app.krgconcreting.au/webhooks/vonage/inbound?token=YOUR_SECRET
+
     Vonage sends inbound messages with:
     - msisdn: Sender phone number
     - to: Your virtual number
@@ -306,6 +381,14 @@ async def vonage_inbound_sms(
     Tries to match the sender to an existing customer by phone number.
     Creates a CommunicationLog entry with direction='inbound'.
     """
+    # Authenticate webhook
+    if not _verify_webhook_token(request):
+        logger.warning(f"Vonage inbound webhook auth failed from {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(403, "Invalid webhook token")
+
+    # Enforce payload size limit
+    await _read_body_limited(request)
+
     try:
         # Vonage can send JSON or form-encoded
         content_type = request.headers.get("content-type", "")
