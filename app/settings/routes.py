@@ -561,9 +561,9 @@ async def preview_email_template(template_name: str, request: Request):
         "invoice_url": "#",
         "review_url": "#",
         # Bank details
-        "bank_name": "Commonwealth Bank",
-        "bank_bsb": "062-000",
-        "bank_account": "1234 5678",
+        "bank_name": "Great Southern Bank",
+        "bank_bsb": "",
+        "bank_account": "",
         # Booking confirmed: payment schedule
         "payments": [
             SamplePaymentScheduleItem("Booking Deposit (30%)", 247500),
@@ -974,9 +974,9 @@ async def preview_template(
         "paid_formatted": "$0.00",
         "balance_formatted": "$5,775.00",
         "due_date_formatted": "15 Feb 2026",
-        "bank_name": "Commonwealth Bank",
-        "bank_bsb": "062-000",
-        "bank_account": "1234 5678",
+        "bank_name": "Great Southern Bank",
+        "bank_bsb": "",
+        "bank_account": "",
         # Payment receipt specific
         "amount_formatted": "$5,250.00",
         "payment_date_formatted": "1 Feb 2026",
@@ -1040,9 +1040,12 @@ async def preview_pdf_template(
         address=business_address,
         abn=business_abn,
         license=business.get("license") or "123456C",
-        bank_name=business.get("bank_name") or "Commonwealth Bank",
-        bsb=business.get("bank_bsb") or "062-000",
-        account=business.get("bank_account") or "1234 5678",
+        bank_name=business.get("bank_name") or "Great Southern Bank",
+        bank_account_name=business.get("bank_account_name") or "",
+        bank_bsb=business.get("bank_bsb") or "",
+        bsb=business.get("bank_bsb") or "",
+        bank_account=business.get("bank_account") or "",
+        account=business.get("bank_account") or "",
     )
 
     sample_customer = SimpleNamespace(

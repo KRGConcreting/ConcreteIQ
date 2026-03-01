@@ -284,9 +284,10 @@ DEFAULTS = {
     "business.website": "www.krgconcreting.au",
 
     # Bank Details
-    "business.bank_name": "Commonwealth Bank",
-    "business.bank_bsb": "062-530",
+    "business.bank_name": "Great Southern Bank",
+    "business.bank_bsb": "",
     "business.bank_account": "",
+    "business.bank_account_name": "",
 
     # =========================================================================
     # SMS - Vonage

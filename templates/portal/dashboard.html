@@ -436,15 +436,15 @@
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">Account</span>
-                        <span class="font-medium text-slate-700">{{ business.trading_as }}</span>
+                        <span class="font-medium text-slate-700">{{ business.bank_account_name or business.trading_as }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">BSB</span>
-                        <span class="font-mono font-medium text-slate-700">{{ business.bsb }}</span>
+                        <span class="font-mono font-medium text-slate-700">{{ business.bank_bsb or business.bsb }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">Account No.</span>
-                        <span class="font-mono font-medium text-slate-700">{{ business.account }}</span>
+                        <span class="font-mono font-medium text-slate-700">{{ business.bank_account or business.account }}</span>
                     </div>
                 </div>
             </div>

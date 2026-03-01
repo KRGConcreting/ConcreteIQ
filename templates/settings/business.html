@@ -115,11 +115,11 @@
                 <p>Displayed on invoices for bank transfer payments</p>
             </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">Bank Name</label>
                 <input type="text" x-model="business.bank_name"
-                       placeholder="e.g. Commonwealth Bank"
+                       placeholder="e.g. Great Southern Bank"
                        class="input-field">
             </div>
             <div>
@@ -132,6 +132,12 @@
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">Account Number</label>
                 <input type="text" x-model="business.bank_account"
                        placeholder="XXXX XXXX"
+                       class="input-field">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">Account Name</label>
+                <input type="text" x-model="business.bank_account_name"
+                       placeholder="e.g. JOHN SMITH"
                        class="input-field">
             </div>
         </div>

@@ -437,19 +437,19 @@
             <div class="bank-title">Payment Details</div>
             <div class="bank-row">
                 <span class="bank-label">Bank</span>
-                <span class="bank-value">{{ business.bank_name or 'Commonwealth Bank' }}</span>
+                <span class="bank-value">{{ business.bank_name or 'Great Southern Bank' }}</span>
             </div>
             <div class="bank-row">
                 <span class="bank-label">Account Name</span>
-                <span class="bank-value">{{ business.trading_as or business.name }}</span>
+                <span class="bank-value">{{ business.bank_account_name or business.trading_as or business.name }}</span>
             </div>
             <div class="bank-row">
                 <span class="bank-label">BSB</span>
-                <span class="bank-value">{{ business.bsb or '062-000' }}</span>
+                <span class="bank-value">{{ business.bank_bsb or business.bsb or '' }}</span>
             </div>
             <div class="bank-row">
                 <span class="bank-label">Account No</span>
-                <span class="bank-value">{{ business.account or '1234 5678' }}</span>
+                <span class="bank-value">{{ business.bank_account or business.account or '' }}</span>
             </div>
             <div class="bank-row">
                 <span class="bank-label">Reference</span>

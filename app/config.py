@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     bank_name: str = "Great Southern Bank"
     bank_bsb: str = ""
     bank_account: str = ""
+    bank_account_name: str = ""
 
     # App URL (override in production, e.g. https://app.krgconcreting.au)
     app_url: str = "http://localhost:8010"

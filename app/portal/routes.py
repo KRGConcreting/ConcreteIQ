@@ -134,7 +134,10 @@ async def customer_dashboard(
             "email": settings.business_email,
             "abn": settings.abn,
             "bank_name": settings.bank_name,
+            "bank_account_name": getattr(settings, 'bank_account_name', ''),
+            "bank_bsb": settings.bank_bsb,
             "bsb": settings.bank_bsb,
+            "bank_account": settings.bank_account,
             "account": settings.bank_account,
         },
     })
@@ -932,7 +935,10 @@ async def view_invoice(
             "phone": settings.business_phone,
             "email": settings.business_email,
             "bank_name": settings.bank_name,
+            "bank_account_name": getattr(settings, 'bank_account_name', ''),
+            "bank_bsb": settings.bank_bsb,
             "bsb": settings.bank_bsb,
+            "bank_account": settings.bank_account,
             "account": settings.bank_account,
         },
         "token": token,
@@ -993,7 +999,10 @@ async def download_invoice_pdf(
         "email": settings.business_email,
         "license": settings.licence_number,
         "bank_name": settings.bank_name,
+        "bank_account_name": getattr(settings, 'bank_account_name', ''),
+        "bank_bsb": settings.bank_bsb,
         "bsb": settings.bank_bsb,
+        "bank_account": settings.bank_account,
         "account": settings.bank_account,
     }
 

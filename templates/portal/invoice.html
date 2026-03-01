@@ -277,15 +277,15 @@
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">Account Name</span>
-                        <span class="font-medium text-slate-700">{{ business.trading_as or business.name }}</span>
+                        <span class="font-medium text-slate-700">{{ business.bank_account_name or business.trading_as or business.name }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">BSB</span>
-                        <span class="font-mono font-medium text-slate-700">{{ business.bsb }}</span>
+                        <span class="font-mono font-medium text-slate-700">{{ business.bank_bsb or business.bsb }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">Account Number</span>
-                        <span class="font-mono font-medium text-slate-700">{{ business.account }}</span>
+                        <span class="font-mono font-medium text-slate-700">{{ business.bank_account or business.account }}</span>
                     </div>
                     <div class="flex justify-between text-sm border-t border-slate-200 pt-3 mt-1">
                         <span class="text-slate-500">Reference</span>
