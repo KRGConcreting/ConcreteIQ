@@ -23,7 +23,7 @@ from app.core.dates import sydney_now
 _serializer = URLSafeTimedSerializer(settings.secret_key)
 
 # Cookie settings
-SESSION_COOKIE_NAME = "session"
+SESSION_COOKIE_NAME = "ciq_session"
 SESSION_MAX_AGE = settings.session_expire_hours * 3600  # Convert to seconds
 
 
