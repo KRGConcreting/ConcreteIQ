@@ -4,7 +4,10 @@ Quotes routes — Calculator and CRUD.
 Follow the pattern from app/customers/routes.py for full CRUD.
 """
 
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 from urllib.parse import quote as url_quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import Response
@@ -53,17 +56,27 @@ async def api_next_quote_number(
     return {"quote_number": quote_number}
 
 
+async def _get_google_places_key(db: AsyncSession) -> str:
+    """Get Google Places API key from DB settings, falling back to env var."""
+    from app.settings import service as settings_service
+    integration_settings = await settings_service.get_settings_by_category(db, 'integrations')
+    key = integration_settings.get('google_places_api_key') or settings.google_places_api_key
+    if not key:
+        raise HTTPException(501, "Google Places API key not configured. Add it in Settings > Integrations > Google Maps.")
+    return key
+
+
 @router.get("/api/places/autocomplete")
 async def api_places_autocomplete(
     q: str = Query("", min_length=2),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Proxy Google Places Autocomplete (New) for address suggestions.
 
     Returns list of place predictions restricted to Australia.
     """
-    if not settings.google_places_api_key:
-        raise HTTPException(501, "Google Places API key not configured")
+    api_key = await _get_google_places_key(db)
 
     import httpx
     url = "https://maps.googleapis.com/maps/api/place/autocomplete/json"
@@ -71,7 +84,7 @@ async def api_places_autocomplete(
         "input": q,
         "components": "country:au",
         "types": "address",
-        "key": settings.google_places_api_key,
+        "key": api_key,
     }
     try:
         async with httpx.AsyncClient() as client:
@@ -101,8 +114,7 @@ async def api_places_details(
     Fetch lat/lng for a place_id, then calculate driving distances
     from business base and concrete yard.
     """
-    if not settings.google_places_api_key:
-        raise HTTPException(501, "Google Places API key not configured")
+    api_key = await _get_google_places_key(db)
 
     import httpx
 
@@ -111,7 +123,7 @@ async def api_places_details(
     details_params = {
         "place_id": place_id,
         "fields": "geometry,formatted_address",
-        "key": settings.google_places_api_key,
+        "key": api_key,
     }
     try:
         async with httpx.AsyncClient() as client:
@@ -139,7 +151,7 @@ async def api_places_details(
         "origins": f"{base_address}|{yard_address}",
         "destinations": f"{lat},{lng}",
         "units": "metric",
-        "key": settings.google_places_api_key,
+        "key": api_key,
     }
     distance_from_base = None
     distance_from_yard = None
@@ -505,7 +517,15 @@ async def api_get_pdf(
         "license": settings.licence_number,
     }
 
-    pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)
+    try:
+        pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)
+    except (RuntimeError, OSError) as e:
+        logger.error(f"PDF generation failed for quote {quote.quote_number}: {e}")
+        return Response(
+            content=f"PDF generation is temporarily unavailable. WeasyPrint requires GTK/Pango libraries. Error: {e}",
+            media_type="text/plain",
+            status_code=503,
+        )
 
     return Response(
         content=pdf_bytes,

@@ -284,6 +284,11 @@ async def integrations_page(
         (integration_settings.get('stripe_publishable_key') or settings.stripe_publishable_key)
     )
 
+    # Check Google Maps/Places configuration
+    google_maps_configured = bool(
+        integration_settings.get('google_places_api_key') or settings.google_places_api_key
+    )
+
     # Check Vonage SMS configuration
     sms_settings = await settings_service.get_settings_by_category(db, 'sms')
     vonage_configured = bool(
@@ -315,6 +320,7 @@ async def integrations_page(
         "vonage_api_key": _mask(sms_settings.get('vonage_api_key') or ""),
         "vonage_api_secret": _mask_secret(sms_settings.get('vonage_api_secret') or ""),
         "vonage_from_number": sms_settings.get('vonage_from_number') or "",  # Phone numbers aren't secret
+        "google_places_api_key": _mask_secret(integration_settings.get('google_places_api_key') or settings.google_places_api_key or ""),
     }
 
     response = templates.TemplateResponse("settings/integrations.html", {
@@ -326,6 +332,7 @@ async def integrations_page(
         "resend_configured": resend_configured,
         "stripe_configured": stripe_configured,
         "vonage_configured": vonage_configured,
+        "google_maps_configured": google_maps_configured,
         "sms_enabled": sms_settings.get('enabled', False),
         "holiday_years": sorted(NSW_PUBLIC_HOLIDAYS.keys()),
         "masked_credentials": masked_credentials,
@@ -718,6 +725,7 @@ async def save_integration_credentials(
         "stripe": ["stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret"],
         "resend": ["resend_api_key"],
         "vonage": ["vonage_api_key", "vonage_api_secret", "vonage_from_number"],
+        "google_maps": ["google_places_api_key"],
     }
 
     if service not in credential_keys:
@@ -730,6 +738,7 @@ async def save_integration_credentials(
         "stripe": "integrations",
         "resend": "integrations",
         "vonage": "sms",
+        "google_maps": "integrations",
     }
     category = category_map.get(service, "integrations")
 
@@ -2152,4 +2161,119 @@ async def export_json(
             "Content-Disposition": f"attachment; filename*=UTF-8''{url_quote(f'concreteiq_export_{timestamp}.json')}",
         },
     )
+
+
+# =============================================================================
+# DATA MANAGEMENT
+# =============================================================================
+
+@router.get("/data-management", name="settings:data_management")
+async def data_management_page(request: Request):
+    """Data management page — reset test data."""
+    return templates.TemplateResponse("settings/data-management.html", {
+        "request": request,
+        "active_section": "data_management",
+    })
+
+
+@router.post("/reset-data")
+async def reset_test_data(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete ALL test/transactional data from the database.
+
+    Preserves system configuration: settings, workers, suppliers,
+    OAuth tokens, Xero mappings, earnings snapshots.
+
+    Resets quote/invoice number sequences back to 1.
+
+    Requires confirmation token to prevent accidental use.
+    """
+    try:
+        form = await request.form()
+    except Exception:
+        raise HTTPException(400, "Invalid request")
+
+    confirm = form.get("confirm_text", "").strip().upper()
+    if confirm != "RESET":
+        return JSONResponse({"success": False, "detail": "Type RESET to confirm"}, status_code=400)
+
+    from sqlalchemy import delete, update
+    from app.models import (
+        TimeEntry, JobAssignment, Payment, EmailLog, SMSLog,
+        CommunicationLog, Notification, ActivityLog, FollowUp,
+        ProgressUpdate, Reminder, PourResult, PourPlan, JobCosting,
+        Expense, Photo, QuoteAmendment, Invoice, Quote, Customer,
+        Sequence,
+    )
+
+    # FK-safe deletion order: leaf nodes first, root entities last
+    tables_to_clear = [
+        ("Time entries", TimeEntry),
+        ("Job assignments", JobAssignment),
+        ("Payments", Payment),
+        ("Email logs", EmailLog),
+        ("SMS logs", SMSLog),
+        ("Communication logs", CommunicationLog),
+        ("Notifications", Notification),
+        ("Activity logs", ActivityLog),
+        ("Follow-ups", FollowUp),
+        ("Progress updates", ProgressUpdate),
+        ("Reminders", Reminder),
+        ("Pour results", PourResult),
+        ("Pour plans", PourPlan),
+        ("Job costings", JobCosting),
+        ("Expenses", Expense),
+        ("Photos", Photo),
+        ("Quote amendments", QuoteAmendment),
+        ("Invoices", Invoice),
+        ("Quotes", Quote),
+        ("Customers", Customer),
+    ]
+
+    total_deleted = 0
+    details = []
+
+    try:
+        for label, model in tables_to_clear:
+            result = await db.execute(delete(model))
+            count = result.rowcount
+            total_deleted += count
+            if count > 0:
+                details.append(f"{label}: {count}")
+
+        # Reset sequences back to 1
+        await db.execute(
+            update(Sequence).values(current_value=0)
+        )
+        details.append("Sequences: reset to 1")
+
+        await db.commit()
+
+        # Log the reset action
+        try:
+            from app.security.service import log_security_event
+            await log_security_event(
+                db, "data_reset",
+                f"Test data reset: {total_deleted} records deleted",
+                ip_address=request.client.host if request.client else None,
+            )
+            await db.commit()
+        except Exception:
+            pass
+
+        logger.warning(f"TEST DATA RESET: {total_deleted} records deleted across {len(details)} tables")
+
+        return JSONResponse({
+            "success": True,
+            "total_deleted": total_deleted,
+            "details": details,
+        })
+
+    except Exception as e:
+        logger.error(f"Reset data failed: {e}")
+        await db.rollback()
+        return JSONResponse({"success": False, "detail": str(e)}, status_code=500)
 

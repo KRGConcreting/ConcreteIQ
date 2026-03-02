@@ -5,7 +5,11 @@ NO AUTHENTICATION REQUIRED - These routes use secure hashed tokens for access.
 The raw token is in the URL, we hash it and look up the entity.
 """
 
+import logging
+
 from urllib.parse import quote as url_quote
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import select
@@ -674,7 +678,11 @@ async def download_pdf(
         "license": settings.licence_number,
     }
 
-    pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)
+    try:
+        pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)
+    except (RuntimeError, OSError) as e:
+        logger.error(f"PDF generation failed for quote {quote.quote_number}: {e}")
+        raise HTTPException(503, "PDF generation is temporarily unavailable. Please contact KRG Concreting for a copy of your quote.")
 
     return Response(
         content=pdf_bytes,
@@ -986,7 +994,11 @@ async def download_invoice_pdf(
         "account": settings.bank_account,
     }
 
-    pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict)
+    try:
+        pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict)
+    except (RuntimeError, OSError) as e:
+        logger.error(f"PDF generation failed for invoice {invoice.invoice_number}: {e}")
+        raise HTTPException(503, "PDF generation is temporarily unavailable. Please contact KRG Concreting for a copy of your invoice.")
 
     return Response(
         content=pdf_bytes,

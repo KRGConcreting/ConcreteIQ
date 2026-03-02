@@ -1,0 +1,163 @@
+{% extends "settings/base.html" %}
+
+{% block title %}Data Management - Settings - ConcreteIQ{% endblock %}
+
+{% block settings_content %}
+<div class="space-y-6">
+
+    <div>
+        <h2 class="text-xl font-bold text-slate-900">Data Management</h2>
+        <p class="text-sm text-slate-500 mt-1">Reset test data and manage your database</p>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="border-2 border-red-200 rounded-2xl bg-red-50/50 p-6" x-data="resetDataForm()">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-red-900">Danger Zone</h3>
+                <p class="text-sm text-red-700 mt-1">Reset all test data — this permanently deletes all customers, quotes, invoices, payments, SMS/email logs, and notifications.</p>
+
+                <div class="mt-3 p-3 bg-white/60 rounded-lg border border-red-100">
+                    <p class="text-xs font-semibold text-slate-600 mb-1.5">What gets deleted:</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-0.5 text-xs text-slate-500">
+                        <span>&#8226; Customers</span>
+                        <span>&#8226; Quotes</span>
+                        <span>&#8226; Invoices</span>
+                        <span>&#8226; Payments</span>
+                        <span>&#8226; SMS &amp; Email logs</span>
+                        <span>&#8226; Notifications</span>
+                        <span>&#8226; Photos</span>
+                        <span>&#8226; Expenses</span>
+                        <span>&#8226; Job costings</span>
+                    </div>
+                    <p class="text-xs font-semibold text-emerald-600 mt-2">&#10003; Settings, API keys, workers &amp; sequences are preserved</p>
+                </div>
+
+                <button @click="showModal = true"
+                        class="mt-4 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                    Reset All Test Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <template x-teleport="body">
+            <div x-show="showModal" x-cloak
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                 @keydown.escape.window="showModal = false">
+                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showModal = false"></div>
+                <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10"
+                     x-show="showModal"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95">
+
+                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </div>
+
+                    <h3 class="text-lg font-bold text-slate-900 text-center mt-4">Are you sure?</h3>
+                    <p class="text-sm text-slate-500 text-center mt-2">
+                        This will <strong class="text-red-600">permanently delete</strong> all customers, quotes, invoices, payments, and communication logs. This cannot be undone.
+                    </p>
+
+                    <div class="mt-5">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">
+                            Type <span class="font-mono bg-red-100 text-red-700 px-1.5 py-0.5 rounded">RESET</span> to confirm
+                        </label>
+                        <input type="text" x-model="confirmText"
+                               placeholder="Type RESET here"
+                               class="w-full px-4 py-2.5 border-2 rounded-xl text-sm font-mono tracking-widest text-center transition-colors"
+                               :class="canConfirm ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-200 text-slate-700'"
+                               @keydown.enter="canConfirm && doReset()">
+                    </div>
+
+                    <div class="flex gap-3 mt-6">
+                        <button @click="showModal = false; confirmText = ''"
+                                class="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors">
+                            Cancel
+                        </button>
+                        <button @click="doReset()"
+                                :disabled="!canConfirm || resetting"
+                                class="flex-1 px-4 py-2.5 text-white text-sm font-semibold rounded-xl transition-all"
+                                :class="canConfirm && !resetting ? 'bg-red-600 hover:bg-red-700 shadow-sm' : 'bg-slate-300 cursor-not-allowed'">
+                            <span x-show="!resetting">Delete Everything</span>
+                            <span x-show="resetting" class="flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                </svg>
+                                Resetting...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+</div>
+
+<script>
+function resetDataForm() {
+    return {
+        showModal: false,
+        confirmText: '',
+        resetting: false,
+
+        get canConfirm() {
+            return this.confirmText.trim().toUpperCase() === 'RESET';
+        },
+
+        async doReset() {
+            if (!this.canConfirm || this.resetting) return;
+            this.resetting = true;
+
+            try {
+                const csrfToken = document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '';
+                const formData = new FormData();
+                formData.append('confirm_text', this.confirmText);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('/settings/reset-data', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken },
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.showModal = false;
+                    this.confirmText = '';
+
+                    if (window.showToast) {
+                        showToast('success', 'Data Reset Complete',
+                            `Deleted ${data.total_deleted} records. System is clean.`);
+                    } else {
+                        alert(`Reset complete! Deleted ${data.total_deleted} records.`);
+                    }
+                } else {
+                    alert(data.detail || 'Reset failed');
+                }
+            } catch (e) {
+                console.error('Reset error:', e);
+                alert('Network error — please try again');
+            } finally {
+                this.resetting = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock settings_content %}

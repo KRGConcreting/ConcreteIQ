@@ -4,7 +4,10 @@ Invoice routes - CRUD and PDF generation.
 Follows the established pattern from customers/routes.py.
 """
 
+import logging
 from datetime import date
+
+logger = logging.getLogger(__name__)
 from typing import Optional
 from urllib.parse import quote as url_quote
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, Form
@@ -826,7 +829,15 @@ async def api_get_pdf(
         "account": settings.bank_account,
     }
 
-    pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict)
+    try:
+        pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict)
+    except (RuntimeError, OSError) as e:
+        logger.error(f"PDF generation failed for invoice {invoice.invoice_number}: {e}")
+        return Response(
+            content=f"PDF generation is temporarily unavailable. WeasyPrint requires GTK/Pango libraries to be installed on the server. Error: {e}",
+            media_type="text/plain",
+            status_code=503,
+        )
 
     return Response(
         content=pdf_bytes,
@@ -888,7 +899,15 @@ async def api_get_receipt_pdf(
         "license": settings.licence_number,
     }
 
-    pdf_bytes = generate_receipt_pdf(payment_dict, invoice_dict, customer_dict, business_dict)
+    try:
+        pdf_bytes = generate_receipt_pdf(payment_dict, invoice_dict, customer_dict, business_dict)
+    except (RuntimeError, OSError) as e:
+        logger.error(f"PDF generation failed for receipt (payment {payment_id}): {e}")
+        return Response(
+            content=f"PDF generation is temporarily unavailable. WeasyPrint requires GTK/Pango libraries. Error: {e}",
+            media_type="text/plain",
+            status_code=503,
+        )
 
     filename = f"Receipt-{invoice.invoice_number}-{payment_id}.pdf"
     return Response(

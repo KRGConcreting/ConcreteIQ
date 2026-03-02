@@ -172,12 +172,31 @@ async def api_poll_notifications(
                     "title": n.title,
                     "message": n.message,
                     "priority": n.priority,
+                    "is_read": n.is_read,
                     "created_at": n.created_at.isoformat() if n.created_at else None,
                 })
+
+    # Always include recent items for the dropdown
+    recent_result = await db.execute(
+        select(Notification)
+        .order_by(Notification.created_at.desc())
+        .limit(5)
+    )
+    recent = []
+    for n in recent_result.scalars().all():
+        recent.append({
+            "id": n.id,
+            "type": n.type,
+            "title": n.title,
+            "message": n.message[:60] + ("..." if n.message and len(n.message) > 60 else ""),
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat() if n.created_at else None,
+        })
 
     return {
         "unread_count": unread_count,
         "notifications": new_notifications,
+        "recent": recent,
     }
 
 

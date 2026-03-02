@@ -92,6 +92,23 @@ import traceback
 logger = logging.getLogger("concreteiq")
 
 
+def _home_url_for_request(request: Request) -> str:
+    """Return the appropriate home URL based on request path context."""
+    path = request.url.path
+    if path.startswith("/p/"):
+        # Portal user — send them back to the portal page they came from, or just "/"
+        # Extract token from path like /p/{token}/pdf or /p/invoice/{token}/pdf
+        parts = path.strip("/").split("/")
+        if len(parts) >= 2 and parts[0] == "p":
+            if parts[1] == "invoice" and len(parts) >= 3:
+                return f"/p/invoice/{parts[2]}"
+            elif parts[1] == "dashboard" and len(parts) >= 3:
+                return f"/p/dashboard/{parts[2]}"
+            else:
+                return f"/p/{parts[1]}"
+    return "/dashboard"
+
+
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: StarletteHTTPException):
     return templates.TemplateResponse("error.html", {
@@ -99,6 +116,7 @@ async def not_found_handler(request: Request, exc: StarletteHTTPException):
         "status_code": 404,
         "title": "Page Not Found",
         "message": "The page you're looking for doesn't exist or has been moved.",
+        "home_url": _home_url_for_request(request),
     }, status_code=404)
 
 
@@ -109,6 +127,7 @@ async def server_error_handler(request: Request, exc: StarletteHTTPException):
         "status_code": 500,
         "title": "Server Error",
         "message": "Something went wrong on our end. Please try again.",
+        "home_url": _home_url_for_request(request),
     }, status_code=500)
 
 
@@ -124,6 +143,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         "status_code": 500,
         "title": "Server Error",
         "message": "Something went wrong on our end. Please try again.",
+        "home_url": _home_url_for_request(request),
     }, status_code=500)
 
 # Static files

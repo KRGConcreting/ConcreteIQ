@@ -202,8 +202,39 @@
                     <!-- Right: Actions -->
                     <div class="flex items-center gap-0.5">
                         <!-- Notifications -->
-                        <div class="relative" x-data="{ notifOpen: false }">
-                            <button @click="notifOpen = !notifOpen"
+                        <div class="relative" x-data="{
+                            notifOpen: false,
+                            items: [],
+                            loading: false,
+                            async fetchNotifs() {
+                                this.loading = true;
+                                try {
+                                    const r = await fetch('/notifications/api/poll');
+                                    if (r.ok) {
+                                        const data = await r.json();
+                                        this.items = data.recent || [];
+                                        /* Also update the badge */
+                                        const badge = document.getElementById('notification-badge');
+                                        if (badge) {
+                                            badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                                            if (data.unread_count > 0) {
+                                                badge.style.background = '#ef4444';
+                                                badge.style.color = '#fff';
+                                            } else {
+                                                badge.style.background = 'rgba(255,255,255,0.15)';
+                                                badge.style.color = 'rgba(255,255,255,0.35)';
+                                            }
+                                        }
+                                    }
+                                } catch(e) { console.error('Notification fetch error', e); }
+                                this.loading = false;
+                            },
+                            toggle() {
+                                this.notifOpen = !this.notifOpen;
+                                if (this.notifOpen) this.fetchNotifs();
+                            }
+                        }">
+                            <button @click="toggle()"
                                     @click.outside="notifOpen = false"
                                     class="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-all relative"
                                     title="Notifications">
@@ -225,23 +256,36 @@
                                  x-transition:leave-end="opacity-0 scale-95"
                                  x-cloak
                                  class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-elevated border border-slate-100 z-50 overflow-hidden">
-                                <div class="px-4 py-3 border-b border-slate-100">
+                                <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
                                     <h3 class="font-display font-semibold text-slate-900 text-sm">Notifications</h3>
+                                    <svg x-show="loading" class="w-4 h-4 animate-spin text-slate-400" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                    </svg>
                                 </div>
                                 <div class="max-h-80 overflow-y-auto">
-                                    {% if notifications and notifications|length > 0 %}
-                                    {% for notif in notifications[:5] %}
-                                    <a href="/notifications/{{ notif.id }}"
-                                       class="block px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors">
-                                        <p class="text-sm font-medium text-slate-900">{{ notif.title }}</p>
-                                        <p class="text-xs text-slate-500 mt-1">{{ notif.message|truncate(60) }}</p>
-                                    </a>
-                                    {% endfor %}
-                                    {% else %}
-                                    <div class="px-4 py-8 text-center text-slate-400 text-sm">
-                                        No new notifications
-                                    </div>
-                                    {% endif %}
+                                    <template x-if="items.length > 0">
+                                        <div>
+                                            <template x-for="n in items" :key="n.id">
+                                                <a :href="'/notifications/' + n.id"
+                                                   class="block px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
+                                                   :class="!n.is_read ? 'bg-orange-50/50' : ''">
+                                                    <div class="flex items-start gap-2">
+                                                        <span x-show="!n.is_read" class="mt-1.5 w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></span>
+                                                        <div class="min-w-0">
+                                                            <p class="text-sm font-medium text-slate-900" x-text="n.title"></p>
+                                                            <p class="text-xs text-slate-500 mt-1" x-text="n.message"></p>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template x-if="items.length === 0 && !loading">
+                                        <div class="px-4 py-8 text-center text-slate-400 text-sm">
+                                            No notifications yet
+                                        </div>
+                                    </template>
                                 </div>
                                 <a href="/notifications" class="block px-4 py-2.5 text-center text-xs font-semibold text-orange-600 hover:bg-orange-50 border-t border-slate-100 transition-colors">
                                     View all notifications

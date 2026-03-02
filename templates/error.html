@@ -85,7 +85,7 @@
         <h1 class="error-title">{{ title }}</h1>
         <p class="error-message">{{ message }}</p>
         <div class="error-actions">
-            <a href="/dashboard" class="btn-home">Go Home</a>
+            <a href="{{ home_url | default('/dashboard') }}" class="btn-home">Go Home</a>
         </div>
         <p class="brand">KRG Concreting &mdash; ConcreteIQ</p>
     </div>

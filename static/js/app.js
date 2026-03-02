@@ -650,6 +650,14 @@
                             self.lastCheck = last.created_at;
                         }
                     }
+
+                    // Sync recent items to the Alpine dropdown (if open)
+                    if (data.recent) {
+                        var dropdownEl = document.querySelector('[x-data*="notifOpen"]');
+                        if (dropdownEl && dropdownEl.__x) {
+                            dropdownEl.__x.$data.items = data.recent;
+                        }
+                    }
                 })
                 .catch(function() { /* silent fail — network hiccup */ })
                 .finally(function() { self._polling = false; });
