@@ -312,7 +312,7 @@ DEFAULTS = {
     "quotation.default_expiry_days": 30,
     "quotation.default_markup_tier": "Standard",
     "quotation.include_gst": True,
-    "quotation.terms_pdf_path": "/static/KRG_Terms_and_Conditions_v3.0.pdf",
+    "quotation.terms_pdf_path": "/static/documents/tcs/KRG_Terms_and_Conditions_v3.1.pdf",
     "quotation.show_line_items": True,
     "quotation.show_breakdown": False,
 

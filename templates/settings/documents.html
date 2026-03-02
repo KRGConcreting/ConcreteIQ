@@ -352,8 +352,177 @@ Any changes to the scope of work must be agreed in writing. Variations may resul
         </div>
     </div>
 
+    <!-- Portal Pages (Customer-Facing) -->
+    <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-5">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-violet">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>Portal Pages</h2>
+                <p>Customer-facing pages your clients see when viewing quotes, invoices, and signing</p>
+            </div>
+        </div>
+
+        <!-- Quote Journey -->
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Quote Journey</h3>
+        <div class="space-y-2 mb-6">
+            <!-- Quote View -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Quote View</p>
+                        <p class="text-xs text-slate-500">What the customer sees when they open their quote link</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/quote" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_quote')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <!-- Accept & Sign -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Accept & Sign</p>
+                        <p class="text-xs text-slate-500">Signature pad, T&Cs acceptance, and deposit info</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/accept" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_accept')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <!-- Date Selection -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Date Selection</p>
+                        <p class="text-xs text-slate-500">Interactive calendar for choosing a start date</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/select_date" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_select_date')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <!-- Success Page -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Success Page</p>
+                        <p class="text-xs text-slate-500">Confirmation after quote accepted and date selected</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/success" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_success')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <!-- Quote Expired -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Quote Expired</p>
+                        <p class="text-xs text-slate-500">Shown when a customer opens an expired quote link</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/expired" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_expired')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amendments & Invoices -->
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Amendments & Invoices</h3>
+        <div class="space-y-2 mb-6">
+            <!-- Amendment View -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Amendment View</p>
+                        <p class="text-xs text-slate-500">Quote variation with price impact and accept/decline</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/amendment" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_amendment')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+
+            <!-- Invoice View -->
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Invoice View</p>
+                        <p class="text-xs text-slate-500">Customer invoice with bank details and payment options</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/invoice" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_invoice')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Dashboard -->
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Customer Dashboard</h3>
+        <div class="space-y-2">
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-900">Customer Dashboard</p>
+                        <p class="text-xs text-slate-500">Unified view of all quotes, invoices, and payments for a customer</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/preview/portal/dashboard" target="_blank" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">Preview</a>
+                    <button @click="openEditor('portal_dashboard')" class="px-3 py-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 p-3.5 bg-violet-50 border border-violet-200 rounded-xl">
+            <p class="text-sm text-violet-800">
+                <strong>Tip:</strong> These are the actual pages your customers see. Preview them to make sure everything looks right before sending quotes.
+            </p>
+        </div>
+    </div>
+
     <!-- Email Templates -->
-    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-5">
+    <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-6">
         <div class="settings-section-header">
             <div class="settings-section-header-icon icon-bg-emerald">
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -880,6 +1049,14 @@ function documentsSettings() {
             'review_request': 'Review Request',
             'job_rescheduled': 'Job Rescheduled',
             'sealer_followup': 'Sealer Follow-up',
+            'portal_quote': 'Portal: Quote View',
+            'portal_accept': 'Portal: Accept & Sign',
+            'portal_select_date': 'Portal: Date Selection',
+            'portal_success': 'Portal: Success Page',
+            'portal_expired': 'Portal: Quote Expired',
+            'portal_amendment': 'Portal: Amendment View',
+            'portal_invoice': 'Portal: Invoice View',
+            'portal_dashboard': 'Portal: Customer Dashboard',
         },
         saving: false,
 

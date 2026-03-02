@@ -217,7 +217,7 @@ async def view_quote(
     # Get terms PDF path from settings (use default if not configured)
     from app.settings import service as settings_service
     quotation_settings = await settings_service.get_settings_by_category(db, 'quotation')
-    terms_pdf_path = quotation_settings.get('terms_pdf_path') or '/static/KRG_Terms_and_Conditions_v3.0.pdf'
+    terms_pdf_path = quotation_settings.get('terms_pdf_path') or '/static/documents/tcs/KRG_Terms_and_Conditions_v3.1.pdf'
 
     return templates.TemplateResponse("portal/quote.html", {
         "request": request,
@@ -423,7 +423,7 @@ async def accept_page(
     # Get terms PDF path
     from app.settings import service as settings_service
     quotation_settings = await settings_service.get_settings_by_category(db, 'quotation')
-    terms_pdf_path = quotation_settings.get('terms_pdf_path') or '/static/KRG_Terms_and_Conditions_v3.0.pdf'
+    terms_pdf_path = quotation_settings.get('terms_pdf_path') or '/static/documents/tcs/KRG_Terms_and_Conditions_v3.1.pdf'
 
     return templates.TemplateResponse("portal/accept.html", {
         "request": request,

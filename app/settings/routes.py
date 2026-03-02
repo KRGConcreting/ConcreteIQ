@@ -66,6 +66,15 @@ def _get_all_template_map():
         "payment_reminder_firm": TEMPLATES_DIR / "emails" / "payment_reminder_firm.html",
         "payment_reminder_final": TEMPLATES_DIR / "emails" / "payment_reminder_final.html",
         "review_request": TEMPLATES_DIR / "emails" / "review_request.html",
+        # Portal templates (8)
+        "portal_quote": TEMPLATES_DIR / "portal" / "quote.html",
+        "portal_accept": TEMPLATES_DIR / "portal" / "accept.html",
+        "portal_select_date": TEMPLATES_DIR / "portal" / "select_date.html",
+        "portal_success": TEMPLATES_DIR / "portal" / "success.html",
+        "portal_expired": TEMPLATES_DIR / "portal" / "expired.html",
+        "portal_amendment": TEMPLATES_DIR / "portal" / "amendment.html",
+        "portal_invoice": TEMPLATES_DIR / "portal" / "invoice.html",
+        "portal_dashboard": TEMPLATES_DIR / "portal" / "dashboard.html",
     }
 
 
@@ -89,6 +98,15 @@ TEMPLATE_DISPLAY_NAMES = {
     "payment_reminder_firm": "Firm Reminder Email",
     "payment_reminder_final": "Final Notice Email",
     "review_request": "Review Request Email",
+    # Portal pages
+    "portal_quote": "Portal: Quote View",
+    "portal_accept": "Portal: Accept & Sign",
+    "portal_select_date": "Portal: Date Selection",
+    "portal_success": "Portal: Success Page",
+    "portal_expired": "Portal: Quote Expired",
+    "portal_amendment": "Portal: Amendment View",
+    "portal_invoice": "Portal: Invoice View",
+    "portal_dashboard": "Portal: Customer Dashboard",
 }
 
 
@@ -847,13 +865,16 @@ async def upload_terms_pdf(
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="Empty file")
 
-    # Generate filename
+    # Generate filename — save into tcs/ subfolder
+    tcs_dir = STATIC_DIR / "documents" / "tcs"
+    tcs_dir.mkdir(parents=True, exist_ok=True)
+
     pdf_filename = "KRG_Terms_and_Conditions.pdf"
-    pdf_path = STATIC_DIR / pdf_filename
+    pdf_path = tcs_dir / pdf_filename
 
     # Create backup of existing file
     if pdf_path.exists():
-        backup_path = STATIC_DIR / "KRG_Terms_and_Conditions_backup.pdf"
+        backup_path = tcs_dir / "KRG_Terms_and_Conditions_backup.pdf"
         shutil.copy(pdf_path, backup_path)
 
     # Write new PDF
@@ -861,7 +882,7 @@ async def upload_terms_pdf(
         f.write(content)
 
     # Update setting
-    await settings_service.set_setting(db, 'quotation', 'terms_pdf_path', f"/static/{pdf_filename}")
+    await settings_service.set_setting(db, 'quotation', 'terms_pdf_path', f"/static/documents/tcs/{pdf_filename}")
 
     return {
         "success": True,
@@ -1226,6 +1247,306 @@ async def preview_pdf_template(
         return templates.TemplateResponse("settings/preview_error.html", {
             "request": request,
             "template_type": f"PDF: {template_type}",
+            "error": str(e),
+        })
+
+
+# =============================================================================
+# PORTAL PAGE PREVIEWS
+# =============================================================================
+
+@router.get("/preview/portal/{page_type}", name="settings:preview:portal")
+async def preview_portal_page(
+    page_type: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Preview a customer-facing portal page with sample data."""
+    from types import SimpleNamespace
+    from datetime import date, datetime
+
+    portal_template_map = {
+        "quote": "portal/quote.html",
+        "accept": "portal/accept.html",
+        "select_date": "portal/select_date.html",
+        "success": "portal/success.html",
+        "expired": "portal/expired.html",
+        "amendment": "portal/amendment.html",
+        "invoice": "portal/invoice.html",
+        "dashboard": "portal/dashboard.html",
+    }
+
+    if page_type not in portal_template_map:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid portal page type. Valid options: {', '.join(portal_template_map.keys())}"
+        )
+
+    # Get business settings
+    business = await settings_service.get_settings_by_category(db, 'business')
+    quotation = await settings_service.get_settings_by_category(db, 'quotation')
+
+    business_name = business.get("trading_as") or business.get("name") or "KRG Concreting"
+    business_phone = business.get("phone") or "0423 005 129"
+    business_email = business.get("email") or "kyle@krgconcreting.au"
+    business_abn = business.get("abn") or "76 993 685 401"
+
+    business_dict = {
+        "name": business.get("name") or "KRG Concreting",
+        "trading_as": business_name,
+        "phone": business_phone,
+        "email": business_email,
+        "abn": business_abn,
+        "bank_name": business.get("bank_name") or "Great Southern Bank",
+        "bank_account_name": business.get("bank_account_name") or "KYLE RICKY GYOLES",
+        "bank_bsb": business.get("bank_bsb") or "834472",
+        "bsb": business.get("bank_bsb") or "834472",
+        "bank_account": business.get("bank_account") or "491424410",
+        "account": business.get("bank_account") or "491424410",
+    }
+
+    terms_pdf_path = quotation.get('terms_pdf_path') or '/static/documents/tcs/KRG_Terms_and_Conditions_v3.1.pdf'
+
+    # Sample customer
+    sample_customer = SimpleNamespace(
+        id=1,
+        name="John Smith",
+        email="john.smith@example.com",
+        phone="0412 345 678",
+        address="45 Example Street",
+        city="Albury",
+        state="NSW",
+        postcode="2640",
+        portal_access_token="sample-dashboard-token",
+    )
+
+    # Sample quote
+    sample_quote = SimpleNamespace(
+        id=1,
+        quote_number="Q-2026-00042",
+        job_name="Driveway & Path",
+        job_address="45 Example Street, Albury NSW 2640",
+        job_suburb="Albury",
+        status="sent",
+        quote_date=date(2026, 2, 15),
+        expiry_date=date(2026, 3, 15),
+        total_cents=825000,
+        subtotal_cents=750000,
+        gst_cents=75000,
+        customer_id=1,
+        signed_at=None,
+        confirmed_start_date=None,
+        requested_start_date=None,
+        customer_line_items=[
+            SimpleNamespace(
+                category="Concrete Driveway",
+                total_cents=600000,
+                sub_items=[
+                    SimpleNamespace(description="Excavation & preparation", amount_cents=120000),
+                    SimpleNamespace(description="Formwork & steel reinforcement", amount_cents=180000),
+                    SimpleNamespace(description="Concrete supply & pour (25MPa)", amount_cents=200000),
+                    SimpleNamespace(description="Broom finish", amount_cents=100000),
+                ]
+            ),
+            SimpleNamespace(
+                category="Garden Path",
+                total_cents=150000,
+                sub_items=[
+                    SimpleNamespace(description="Excavation & base prep", amount_cents=50000),
+                    SimpleNamespace(description="Concrete supply & pour", amount_cents=60000),
+                    SimpleNamespace(description="Exposed aggregate finish", amount_cents=40000),
+                ]
+            ),
+        ],
+        line_items=[],
+        calculator_result={
+            "payments": [
+                {"name": "Deposit (30%)", "amount_cents": 247500, "percent": 0.30},
+                {"name": "Pre-pour (60%)", "amount_cents": 495000, "percent": 0.60},
+                {"name": "Final (10%)", "amount_cents": 82500, "percent": 0.10},
+            ]
+        },
+        notes="Includes removal of existing pavers. Weather dependent scheduling.",
+        scope_of_work="Supply and install new concrete driveway with broom finish and exposed aggregate garden path.",
+        inclusions="All labour, materials, concrete supply, formwork, and finishing.",
+        exclusions="Landscaping, fencing, plumbing or electrical works.",
+        created_at=datetime(2026, 2, 15, 10, 0, 0),
+    )
+
+    # Sample amendment
+    sample_amendment = SimpleNamespace(
+        id=1,
+        amendment_number="A-001",
+        quote_id=1,
+        title="Add Retaining Wall",
+        description="Customer requested a small retaining wall along the driveway edge to manage the slope. Includes excavation, formwork, steel reinforcement, and concrete pour with smooth finish.",
+        amount_cents=185000,
+        status="pending",
+        created_at=datetime(2026, 2, 20, 14, 30, 0),
+    )
+
+    # Sample invoice
+    sample_invoice = SimpleNamespace(
+        id=1,
+        invoice_number="INV-2026-00018",
+        quote_id=1,
+        customer_id=1,
+        status="sent",
+        total_cents=247500,
+        paid_cents=0,
+        due_date=date(2026, 3, 1),
+        description="Deposit (30%)",
+        notes="Payment due before works commence.",
+        created_at=datetime(2026, 2, 16, 9, 0, 0),
+    )
+
+    # Sample payments list
+    sample_payments = [
+        SimpleNamespace(
+            id=1,
+            invoice_id=1,
+            amount_cents=247500,
+            method="stripe",
+            reference="pi_3ABC123",
+            created_at=datetime(2026, 2, 17, 11, 30, 0),
+        ),
+    ]
+
+    # Build context based on page type
+    sample_context = {
+        "request": request,
+        "is_preview": True,
+    }
+
+    if page_type == "quote":
+        sample_context.update({
+            "quote": sample_quote,
+            "customer": sample_customer,
+            "business": business_dict,
+            "today": date.today(),
+            "token": "preview-sample-token",
+            "terms_pdf_path": terms_pdf_path,
+        })
+
+    elif page_type == "accept":
+        sample_context.update({
+            "quote": sample_quote,
+            "customer": sample_customer,
+            "token": "preview-sample-token",
+            "deposit_amount": 2475.00,
+            "deposit_percent": 30,
+            "terms_pdf_path": terms_pdf_path,
+            "business": business_dict,
+        })
+
+    elif page_type == "select_date":
+        sample_quote.signed_at = datetime(2026, 2, 18, 14, 0, 0)
+        sample_context.update({
+            "quote": sample_quote,
+            "customer": sample_customer,
+            "token": "preview-sample-token",
+            "busy_dates": [
+                date(2026, 3, 10).isoformat(),
+                date(2026, 3, 11).isoformat(),
+                date(2026, 3, 12).isoformat(),
+                date(2026, 3, 17).isoformat(),
+                date(2026, 3, 18).isoformat(),
+            ],
+            "deposit_amount": 2475.00,
+            "business": business_dict,
+        })
+
+    elif page_type == "success":
+        sample_quote.signed_at = datetime(2026, 2, 18, 14, 0, 0)
+        sample_quote.requested_start_date = date(2026, 3, 24)
+        sample_context.update({
+            "quote": sample_quote,
+            "customer": sample_customer,
+            "token": "preview-sample-token",
+            "deposit_amount": 2475.00,
+            "business": business_dict,
+        })
+
+    elif page_type == "expired":
+        sample_quote.status = "expired"
+        sample_quote.expiry_date = date(2026, 2, 1)
+        sample_context.update({
+            "quote": sample_quote,
+            "customer": sample_customer,
+            "business": business_dict,
+        })
+
+    elif page_type == "amendment":
+        sample_context.update({
+            "amendment": sample_amendment,
+            "quote": sample_quote,
+            "customer": sample_customer,
+            "token": "preview-sample-token",
+            "original_total": 825000,
+            "variation_amount": 185000,
+            "adjusted_total": 1010000,
+            "business": business_dict,
+        })
+
+    elif page_type == "invoice":
+        sample_context.update({
+            "invoice": sample_invoice,
+            "customer": sample_customer,
+            "payments": [],
+            "balance_cents": 247500,
+            "business": business_dict,
+            "token": "preview-sample-token",
+            "stripe_enabled": False,
+            "stripe_publishable_key": "",
+        })
+
+    elif page_type == "dashboard":
+        sample_quote2 = SimpleNamespace(
+            id=2,
+            quote_number="Q-2026-00038",
+            job_name="Patio Slab",
+            job_address="45 Example Street, Albury NSW 2640",
+            status="completed",
+            quote_date=date(2025, 11, 5),
+            total_cents=420000,
+            customer_id=1,
+            created_at=datetime(2025, 11, 5, 10, 0, 0),
+        )
+        sample_invoice2 = SimpleNamespace(
+            id=2,
+            invoice_number="INV-2025-00012",
+            quote_id=2,
+            customer_id=1,
+            status="paid",
+            total_cents=420000,
+            paid_cents=420000,
+            due_date=date(2025, 12, 1),
+            description="Full payment",
+            created_at=datetime(2025, 11, 10, 9, 0, 0),
+        )
+        sample_context.update({
+            "customer": sample_customer,
+            "quotes": [sample_quote, sample_quote2],
+            "invoices": [sample_invoice, sample_invoice2],
+            "payments": sample_payments,
+            "invoice_map": {1: sample_invoice, 2: sample_invoice2},
+            "total_quoted_cents": 1245000,
+            "total_invoiced_cents": 667500,
+            "total_paid_cents": 420000,
+            "outstanding_cents": 247500,
+            "today": date.today(),
+            "business": business_dict,
+        })
+
+    try:
+        response = templates.TemplateResponse(portal_template_map[page_type], sample_context)
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Content-Security-Policy"] = "frame-ancestors 'self';"
+        return response
+    except Exception as e:
+        return templates.TemplateResponse("settings/preview_error.html", {
+            "request": request,
+            "template_type": f"Portal: {page_type}",
             "error": str(e),
         })
 

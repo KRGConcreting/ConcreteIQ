@@ -179,19 +179,22 @@ async def generate_tc_pdf(
         from pathlib import Path
 
         static_dir = Path(__file__).resolve().parent.parent.parent / "static"
+        tcs_dir = static_dir / "documents" / "tcs"
+        tcs_dir.mkdir(parents=True, exist_ok=True)
+
         pdf_filename = "KRG_Terms_and_Conditions.pdf"
-        pdf_path = static_dir / pdf_filename
+        pdf_path = tcs_dir / pdf_filename
 
         # Backup existing
         if pdf_path.exists():
             import shutil
-            backup_path = static_dir / "KRG_Terms_and_Conditions_backup.pdf"
+            backup_path = tcs_dir / "KRG_Terms_and_Conditions_backup.pdf"
             shutil.copy(pdf_path, backup_path)
 
         pdf_path.write_bytes(pdf_bytes)
 
         # Update the setting
-        saved_path = f"/static/{pdf_filename}"
+        saved_path = f"/static/documents/tcs/{pdf_filename}"
         await settings_service.set_setting(db, "quotation", "terms_pdf_path", saved_path)
         await db.commit()
 
