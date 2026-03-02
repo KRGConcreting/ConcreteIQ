@@ -100,12 +100,13 @@ def calculate_stage_amount(quote_total_cents: int, stage: str) -> int:
     """
     split = calculate_payment_split(quote_total_cents)
 
-    if stage == "booking":
-        return split["booking"]  # 30%
+    # Support both canonical and legacy stage names
+    if stage in ("deposit", "booking"):
+        return split["deposit"]  # 30%
     elif stage == "prepour":
         return split["prepour"]  # 60%
-    elif stage == "completion":
-        return split["completion"]  # 10%
+    elif stage in ("final", "completion"):
+        return split["final"]  # 10%
     else:
         raise ValueError(f"Unknown stage: {stage}")
 
@@ -209,16 +210,18 @@ async def create_invoice_from_quote(
     Returns:
         tuple of (Invoice, raw_portal_token)
     """
-    if stage not in ("booking", "prepour", "completion"):
-        raise ValueError(f"Invalid stage: {stage}. Must be booking, prepour, or completion.")
+    if stage not in ("deposit", "booking", "prepour", "final", "completion"):
+        raise ValueError(f"Invalid stage: {stage}. Must be deposit, prepour, or final.")
 
     # Calculate amount for this stage (use subtotal ex-GST, not total inc-GST)
     subtotal_cents = calculate_stage_amount(quote.subtotal_cents, stage)
 
-    # Determine description
+    # Determine description (support both canonical and legacy names)
     stage_names = {
+        "deposit": "First Payment (30%)",
         "booking": "First Payment (30%)",
         "prepour": "Progress Payment (60%)",
+        "final": "Final Payment (10%)",
         "completion": "Final Payment (10%)",
     }
     description = f"{stage_names[stage]} - {quote.quote_number}"
@@ -436,6 +439,13 @@ async def record_payment(
     if amount_cents <= 0:
         raise ValueError("Payment amount must be positive")
 
+    # Guard against overpayment
+    balance = (invoice.total_cents or 0) - (invoice.paid_cents or 0)
+    if amount_cents > balance:
+        raise ValueError(
+            f"Payment of ${amount_cents/100:.2f} exceeds remaining balance of ${balance/100:.2f}"
+        )
+
     # Create payment record
     payment = Payment(
         invoice_id=invoice.id,
@@ -528,6 +538,12 @@ async def void_invoice(
     """Void an invoice. Also voids in Xero if synced."""
     if invoice.status == "paid":
         raise ValueError("Cannot void a fully paid invoice")
+
+    if (invoice.paid_cents or 0) > 0:
+        raise ValueError(
+            f"Cannot void invoice with ${invoice.paid_cents/100:.2f} in payments. "
+            "Refund or remove payments first."
+        )
 
     invoice.status = "voided"
 

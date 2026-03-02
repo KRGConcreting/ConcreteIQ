@@ -187,13 +187,13 @@ async def settings_email(
 ):
     """Email Configuration settings page."""
     email = await settings_service.get_settings_by_category(db, 'email')
-    # Check if Postmark is configured via DB or environment
-    pm_db_key = await settings_service.get_setting(db, 'integrations', 'postmark_api_key')
-    postmark_configured = bool(pm_db_key or settings.postmark_api_key)
+    # Check if Resend is configured via DB or environment
+    pm_db_key = await settings_service.get_setting(db, 'integrations', 'resend_api_key')
+    resend_configured = bool(pm_db_key or settings.resend_api_key)
     return templates.TemplateResponse("settings/email.html", {
         "request": request,
         "email": email,
-        "postmark_configured": postmark_configured,
+        "resend_configured": resend_configured,
         "active_section": "email",
     })
 
@@ -260,7 +260,7 @@ async def integrations_page(
     Shows status and configuration for all external integrations:
     - Xero (accounting)
     - Google Calendar
-    - Postmark (email)
+    - Resend (email)
     - Stripe (payments)
     """
     # Get Xero connection status
@@ -276,8 +276,8 @@ async def integrations_page(
         (integration_settings.get('google_credentials_json') or settings.google_credentials_json) and
         (integration_settings.get('google_calendar_id') or settings.google_calendar_id)
     )
-    postmark_configured = bool(
-        integration_settings.get('postmark_api_key') or settings.postmark_api_key
+    resend_configured = bool(
+        integration_settings.get('resend_api_key') or settings.resend_api_key
     )
     stripe_configured = bool(
         (integration_settings.get('stripe_secret_key') or settings.stripe_secret_key) and
@@ -311,7 +311,7 @@ async def integrations_page(
         "stripe_publishable_key": _mask(integration_settings.get('stripe_publishable_key') or ""),
         "stripe_secret_key": _mask_secret(integration_settings.get('stripe_secret_key') or settings.stripe_secret_key or ""),
         "stripe_webhook_secret": _mask_secret(integration_settings.get('stripe_webhook_secret') or settings.stripe_webhook_secret or ""),
-        "postmark_api_key": _mask_secret(integration_settings.get('postmark_api_key') or settings.postmark_api_key or ""),
+        "resend_api_key": _mask_secret(integration_settings.get('resend_api_key') or settings.resend_api_key or ""),
         "vonage_api_key": _mask(sms_settings.get('vonage_api_key') or ""),
         "vonage_api_secret": _mask_secret(sms_settings.get('vonage_api_secret') or ""),
         "vonage_from_number": sms_settings.get('vonage_from_number') or "",  # Phone numbers aren't secret
@@ -323,7 +323,7 @@ async def integrations_page(
         "xero_configured": xero_configured,
         "xero_connected": xero == "connected",
         "gcal_configured": gcal_configured,
-        "postmark_configured": postmark_configured,
+        "resend_configured": resend_configured,
         "stripe_configured": stripe_configured,
         "vonage_configured": vonage_configured,
         "sms_enabled": sms_settings.get('enabled', False),
@@ -525,7 +525,7 @@ async def test_email(
     if success:
         return {"success": True, "message": "Test email sent"}
 
-    # Return the actual Postmark error so the user can fix the issue
+    # Return the actual Resend error so the user can fix the issue
     detail = getattr(send_email, '_last_error', None) or "Unknown error"
     return {"success": False, "error": f"Failed to send email: {detail}"}
 
@@ -707,7 +707,7 @@ async def save_integration_credentials(
     """
     Save API credentials for an integration.
 
-    Supports: xero, google, stripe, postmark, vonage
+    Supports: xero, google, stripe, resend, vonage
     """
     form = await request.form()
 
@@ -716,7 +716,7 @@ async def save_integration_credentials(
         "xero": ["xero_client_id", "xero_client_secret"],
         "google": ["google_calendar_id", "google_credentials_json"],
         "stripe": ["stripe_publishable_key", "stripe_secret_key", "stripe_webhook_secret"],
-        "postmark": ["postmark_api_key"],
+        "resend": ["resend_api_key"],
         "vonage": ["vonage_api_key", "vonage_api_secret", "vonage_from_number"],
     }
 
@@ -728,7 +728,7 @@ async def save_integration_credentials(
         "xero": "integrations",
         "google": "integrations",
         "stripe": "integrations",
-        "postmark": "integrations",
+        "resend": "integrations",
         "vonage": "sms",
     }
     category = category_map.get(service, "integrations")

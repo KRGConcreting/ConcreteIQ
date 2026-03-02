@@ -299,7 +299,7 @@ DEFAULTS = {
     "sms.enabled": False,
 
     # =========================================================================
-    # EMAIL - Postmark
+    # EMAIL - Resend
     # =========================================================================
     "email.from_address": "quotes@krgconcreting.au",
     "email.from_name": "KRG Concreting",

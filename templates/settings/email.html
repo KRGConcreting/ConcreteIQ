@@ -20,7 +20,7 @@
         </button>
     </div>
 
-    <!-- Postmark Status -->
+    <!-- Resend Status -->
     <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-1">
         <div class="settings-section-header">
             <div class="settings-section-header-icon icon-bg-yellow">
@@ -29,13 +29,13 @@
                 </svg>
             </div>
             <div>
-                <h2>Postmark</h2>
+                <h2>Resend</h2>
                 <p>Email delivery service</p>
             </div>
         </div>
         <div class="flex items-center justify-between mt-1">
             <div></div>
-            {% if postmark_configured %}
+            {% if resend_configured %}
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-xl text-xs font-semibold">
                 <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                 Connected
@@ -48,17 +48,17 @@
             {% endif %}
         </div>
 
-        {% if not postmark_configured %}
+        {% if not resend_configured %}
         <div class="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
             <p class="text-sm text-amber-800">
-                Postmark is not configured. Set up your API credentials in
+                Resend is not configured. Set up your API credentials in
                 <a href="/settings/integrations" class="font-medium text-orange-600 hover:underline">Integrations</a>
                 to enable email sending.
             </p>
         </div>
         {% else %}
         <p class="mt-4 text-sm text-slate-600">
-            Postmark is connected. Emails will be delivered via Postmark.
+            Resend is connected. Emails will be delivered via Resend.
             <a href="/settings/integrations" class="text-orange-600 hover:underline">Manage in Integrations</a>
         </p>
         {% endif %}
@@ -91,7 +91,7 @@
                 <input type="email" x-model="email.from_address"
                        placeholder="quotes@example.com.au"
                        class="input-field">
-                <p class="text-xs text-slate-500 mt-1">Must be verified in Postmark</p>
+                <p class="text-xs text-slate-500 mt-1">Must be verified in Resend</p>
             </div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">Reply-To Address</label>

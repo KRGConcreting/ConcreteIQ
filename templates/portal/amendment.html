@@ -125,7 +125,8 @@
                 <div class="flex flex-col sm:flex-row gap-3 mt-6">
                     <button @click="submitAcceptance()"
                             :disabled="submitting"
-                            class="flex-1 px-6 py-3.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold text-base shadow-lg shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            class="flex-1 px-6 py-3.5 text-white rounded-xl font-bold text-base shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            style="background: linear-gradient(135deg, #E87A2E, #d4691a); box-shadow: 0 10px 15px -3px rgba(232,122,46,0.25);"
                         <template x-if="!submitting">
                             <span class="flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -264,7 +265,9 @@
     </div>
 
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 function amendmentPortal() {
     return {
@@ -382,4 +385,4 @@ function amendmentPortal() {
     };
 }
 </script>
-{% endblock %}
+{% endblock scripts %}

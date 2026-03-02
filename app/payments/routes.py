@@ -79,7 +79,7 @@ async def api_record_payment(
         raise HTTPException(400, "Invoice is already fully paid")
 
     # Validate payment amount doesn't exceed balance
-    balance = invoice.total_cents - invoice.paid_cents
+    balance = (invoice.total_cents or 0) - (invoice.paid_cents or 0)
     if data.amount_cents > balance:
         raise HTTPException(400, f"Payment amount exceeds balance due (${balance/100:.2f})")
 

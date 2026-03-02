@@ -1,5 +1,5 @@
 """
-Email service - Postmark integration for sending emails.
+Email service - Resend integration for sending emails.
 
 Emails fail gracefully - log errors but don't crash the app.
 """
@@ -30,15 +30,15 @@ def _ciq_logo_url() -> str:
 
 
 # =============================================================================
-# POSTMARK API CLIENT
+# RESEND API CLIENT
 # =============================================================================
 
-POSTMARK_API_URL = "https://api.postmarkapp.com/email"
+RESEND_API_URL = "https://api.resend.com/emails"
 
 
-async def _get_postmark_key(db: Optional[AsyncSession] = None) -> Optional[str]:
+async def _get_resend_key(db: Optional[AsyncSession] = None) -> Optional[str]:
     """
-    Get the Postmark API key — checks database first, then falls back to env var.
+    Get the Resend API key — checks database first, then falls back to env var.
 
     Credentials saved via Settings > Integrations go to the DB.
     Credentials set in .env are the fallback.
@@ -46,12 +46,12 @@ async def _get_postmark_key(db: Optional[AsyncSession] = None) -> Optional[str]:
     if db:
         try:
             from app.settings import service as settings_service
-            db_key = await settings_service.get_setting(db, "integrations", "postmark_api_key")
+            db_key = await settings_service.get_setting(db, "integrations", "resend_api_key")
             if db_key:
                 return db_key
         except Exception:
             pass
-    return settings.postmark_api_key or None
+    return settings.resend_api_key or None
 
 
 async def _get_email_settings(db: Optional[AsyncSession] = None) -> dict:
@@ -62,7 +62,7 @@ async def _get_email_settings(db: Optional[AsyncSession] = None) -> dict:
     Settings > Email page saves these to the 'email' category in the DB.
     """
     from_name = ""
-    from_address = settings.postmark_from_email or ""
+    from_address = settings.resend_from_email or ""
     reply_to = ""
 
     if db:
@@ -94,7 +94,7 @@ async def send_email(
     template_name: Optional[str] = None,
 ) -> bool:
     """
-    Send an email via Postmark API.
+    Send an email via Resend API.
 
     Args:
         to: Recipient email address
@@ -110,9 +110,9 @@ async def send_email(
         NEVER raises exceptions - fails gracefully.
     """
     # Get API key from DB (saved via UI) or env var fallback
-    api_key = await _get_postmark_key(db)
+    api_key = await _get_resend_key(db)
     if not api_key:
-        logger.warning("Postmark API key not configured - email not sent")
+        logger.warning("Resend API key not configured - email not sent")
         return False
 
     if not to:
@@ -135,34 +135,32 @@ async def send_email(
     if not text_body:
         text_body = f"Please view this email in an HTML-capable email client.\n\nSubject: {subject}"
 
-    # Prepare payload
+    # Prepare Resend payload
     payload = {
-        "From": from_field,
-        "To": to,
-        "Subject": subject,
-        "HtmlBody": html_body,
-        "TextBody": text_body,
-        "MessageStream": "outbound",
+        "from": from_field,
+        "to": [to],
+        "subject": subject,
+        "html": html_body,
+        "text": text_body,
     }
 
-    # Add ReplyTo if configured and different from From
+    # Add reply_to if configured and different from From
     if reply_to_addr and reply_to_addr != from_address:
-        payload["ReplyTo"] = reply_to_addr
+        payload["reply_to"] = [reply_to_addr]
 
     headers = {
-        "Accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "X-Postmark-Server-Token": api_key,
     }
 
-    postmark_message_id = None
-    postmark_error = None
+    message_id = None
+    send_error = None
     success = False
 
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                POSTMARK_API_URL,
+                RESEND_API_URL,
                 json=payload,
                 headers=headers,
                 timeout=30.0,
@@ -170,22 +168,22 @@ async def send_email(
 
             if response.status_code == 200:
                 data = response.json()
-                postmark_message_id = data.get("MessageID")
+                message_id = data.get("id")
                 success = True
-                logger.info(f"Email sent to {to}: {subject} (MessageID: {postmark_message_id})")
+                logger.info(f"Email sent to {to}: {subject} (ID: {message_id})")
             else:
                 try:
                     err_data = response.json()
-                    postmark_error = err_data.get("Message", response.text)
+                    send_error = err_data.get("message", response.text)
                 except Exception:
-                    postmark_error = response.text
-                logger.error(f"Postmark API error {response.status_code}: {postmark_error}")
+                    send_error = response.text
+                logger.error(f"Resend API error {response.status_code}: {send_error}")
 
     except httpx.TimeoutException:
-        postmark_error = "Request timed out connecting to Postmark"
-        logger.error(f"Postmark API timeout sending to {to}")
+        send_error = "Request timed out connecting to Resend"
+        logger.error(f"Resend API timeout sending to {to}")
     except Exception as e:
-        postmark_error = str(e)
+        send_error = str(e)
         logger.error(f"Email send error: {str(e)}")
 
     # Log to unified communication log
@@ -200,7 +198,7 @@ async def send_email(
                 to_address=to,
                 subject=subject,
                 template=template_name or "custom",
-                provider_message_id=postmark_message_id,
+                provider_message_id=message_id,
                 status="sent" if success else "failed",
                 sent_at=sydney_now() if success else None,
             )
@@ -209,9 +207,9 @@ async def send_email(
         except Exception as e:
             logger.error(f"Failed to log email: {str(e)}")
 
-    if not success and postmark_error:
+    if not success and send_error:
         # Store last error for callers that want more detail
-        send_email._last_error = postmark_error
+        send_email._last_error = send_error
     else:
         send_email._last_error = None
 
@@ -634,7 +632,7 @@ def send_email_sync(
     text_body: Optional[str] = None,
 ) -> bool:
     """
-    Send an email via Postmark API (synchronous).
+    Send an email via Resend API (synchronous).
 
     Used by Celery tasks that need synchronous execution.
     Does not log to database - Celery tasks should handle their own logging.
@@ -644,8 +642,8 @@ def send_email_sync(
     """
     import requests
 
-    if not settings.postmark_api_key:
-        logger.warning("Postmark API key not configured - email not sent")
+    if not settings.resend_api_key:
+        logger.warning("Resend API key not configured - email not sent")
         return False
 
     if not to:
@@ -656,23 +654,21 @@ def send_email_sync(
         text_body = f"Please view this email in an HTML-capable email client.\n\nSubject: {subject}"
 
     payload = {
-        "From": settings.postmark_from_email,
-        "To": to,
-        "Subject": subject,
-        "HtmlBody": html_body,
-        "TextBody": text_body,
-        "MessageStream": "outbound",
+        "from": settings.resend_from_email,
+        "to": [to],
+        "subject": subject,
+        "html": html_body,
+        "text": text_body,
     }
 
     headers = {
-        "Accept": "application/json",
+        "Authorization": f"Bearer {settings.resend_api_key}",
         "Content-Type": "application/json",
-        "X-Postmark-Server-Token": settings.postmark_api_key,
     }
 
     try:
         response = requests.post(
-            POSTMARK_API_URL,
+            RESEND_API_URL,
             json=payload,
             headers=headers,
             timeout=30,
@@ -680,11 +676,11 @@ def send_email_sync(
 
         if response.status_code == 200:
             data = response.json()
-            postmark_message_id = data.get("MessageID")
-            logger.info(f"Email sent to {to}: {subject} (MessageID: {postmark_message_id})")
+            message_id = data.get("id")
+            logger.info(f"Email sent to {to}: {subject} (ID: {message_id})")
             return True
         else:
-            logger.error(f"Postmark API error {response.status_code}: {response.text}")
+            logger.error(f"Resend API error {response.status_code}: {response.text}")
             return False
 
     except Exception as e:

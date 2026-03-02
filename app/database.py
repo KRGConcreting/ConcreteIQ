@@ -2,7 +2,7 @@
 
 from contextlib import contextmanager, asynccontextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from app.config import settings
@@ -30,6 +30,15 @@ engine = create_async_engine(
     settings.database_url,
     **engine_kwargs,
 )
+
+# Enable SQLite foreign keys and WAL mode on every new connection
+if is_sqlite:
+    @event.listens_for(engine.sync_engine, "connect")
+    def _sqlite_pragma_on_connect(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON")
+        cursor.execute("PRAGMA journal_mode = WAL")
+        cursor.close()
 
 # Session factory
 async_session_maker = async_sessionmaker(
@@ -63,6 +72,10 @@ async def get_async_session():
     async with async_session_maker() as session:
         try:
             yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
         finally:
             await session.close()
 
@@ -132,6 +145,15 @@ sync_engine = create_engine(
     echo=_sql_echo,
     pool_pre_ping=True if not is_sqlite else False,
 )
+
+# Enable SQLite foreign keys for sync engine too
+if is_sqlite:
+    @event.listens_for(sync_engine, "connect")
+    def _sqlite_pragma_on_connect_sync(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON")
+        cursor.execute("PRAGMA journal_mode = WAL")
+        cursor.close()
 
 # Sync session factory
 sync_session_maker = sessionmaker(

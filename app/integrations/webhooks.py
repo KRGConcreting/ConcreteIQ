@@ -1,5 +1,5 @@
 """
-Webhook endpoints - Stripe, Postmark, Vonage.
+Webhook endpoints - Stripe, Resend, Vonage.
 
 CRITICAL SECURITY:
 1. Verify webhook signatures / auth tokens before processing
@@ -10,7 +10,7 @@ CRITICAL SECURITY:
 
 Authentication:
 - Stripe: verified by stripe-signature header (HMAC)
-- Postmark/ClickSend/Vonage: verified by WEBHOOK_SECRET bearer token or query param
+- Resend/ClickSend/Vonage: verified by WEBHOOK_SECRET bearer token or query param
 """
 
 import hmac
@@ -117,34 +117,34 @@ async def stripe_webhook(
 
 
 # =============================================================================
-# POSTMARK EMAIL TRACKING
+# RESEND EMAIL TRACKING
 # =============================================================================
 
-@router.post("/postmark")
-async def postmark_webhook(
+@router.post("/resend")
+async def resend_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Handle Postmark email tracking webhooks.
+    Handle Resend email tracking webhooks (via Svix).
 
     Authentication: Bearer token via WEBHOOK_SECRET.
-    Configure in Postmark webhook settings:
-      URL: https://app.krgconcreting.au/webhooks/postmark?token=YOUR_SECRET
+    Configure in Resend dashboard → Webhooks:
+      URL: https://app.krgconcreting.au/webhooks/resend?token=YOUR_SECRET
 
-    Event types:
-    - Delivery: Email delivered
-    - Open: Email opened
-    - Click: Link clicked
-    - Bounce: Email bounced
-    - SpamComplaint: Marked as spam
+    Resend event types:
+    - email.delivered: Email delivered
+    - email.opened: Email opened
+    - email.clicked: Link clicked
+    - email.bounced: Email bounced
+    - email.complained: Marked as spam
 
-    Postmark sends JSON with a RecordType field indicating the event type.
-    Updates both CommunicationLog and EmailLog tables.
+    Resend sends JSON with a "type" field and "data.email_id" for tracking.
+    Updates both CommunicationLog and legacy EmailLog tables.
     """
     # Authenticate webhook
     if not _verify_webhook_token(request):
-        logger.warning(f"Postmark webhook auth failed from {request.client.host if request.client else 'unknown'}")
+        logger.warning(f"Resend webhook auth failed from {request.client.host if request.client else 'unknown'}")
         raise HTTPException(403, "Invalid webhook token")
 
     # Enforce payload size limit
@@ -155,11 +155,24 @@ async def postmark_webhook(
     except Exception:
         return {"received": True, "error": "Invalid JSON"}
 
-    record_type = payload.get("RecordType", "").lower()
-    message_id = payload.get("MessageID")
+    event_type = payload.get("type", "")
+    data = payload.get("data", {})
+    message_id = data.get("email_id")
 
     if not message_id:
-        return {"received": True, "error": "No MessageID"}
+        return {"received": True, "error": "No email_id"}
+
+    # Map Resend event types to our status
+    event_map = {
+        "email.delivered": "delivered",
+        "email.opened": "opened",
+        "email.clicked": "clicked",
+        "email.bounced": "bounced",
+        "email.complained": "spam",
+    }
+    status = event_map.get(event_type)
+    if not status:
+        return {"received": True, "event_type": event_type, "skipped": True}
 
     now = sydney_now()
     updated = 0
@@ -173,17 +186,13 @@ async def postmark_webhook(
     comm_log = result.scalar_one_or_none()
 
     if comm_log:
-        if record_type == "delivery":
-            comm_log.status = "delivered"
+        comm_log.status = status
+        if status == "delivered":
             comm_log.delivered_at = now
-        elif record_type == "open":
-            comm_log.status = "opened"
+        elif status == "opened":
             comm_log.opened_at = now
-        elif record_type == "click":
-            comm_log.status = "clicked"
+        elif status == "clicked":
             comm_log.clicked_at = now
-        elif record_type in ("bounce", "spamcomplaint"):
-            comm_log.status = "bounced" if record_type == "bounce" else "spam"
         updated += 1
 
     # Update legacy EmailLog
@@ -195,21 +204,17 @@ async def postmark_webhook(
     email_log = email_result.scalar_one_or_none()
 
     if email_log:
-        if record_type == "delivery":
-            email_log.status = "delivered"
+        email_log.status = status
+        if status == "delivered":
             email_log.delivered_at = now
-        elif record_type == "open":
-            email_log.status = "opened"
+        elif status == "opened":
             email_log.opened_at = now
-        elif record_type == "click":
-            email_log.status = "clicked"
+        elif status == "clicked":
             email_log.clicked_at = now
-        elif record_type in ("bounce", "spamcomplaint"):
-            email_log.status = "bounced" if record_type == "bounce" else "spam"
         updated += 1
 
     # Create in-app notifications for engagement events
-    if comm_log and record_type in ("open", "click", "bounce", "spamcomplaint"):
+    if comm_log and status in ("opened", "clicked", "bounced", "spam"):
         try:
             customer_name = "Customer"
             if comm_log.customer_id:
@@ -222,21 +227,21 @@ async def postmark_webhook(
                 notify_email_opened, notify_email_clicked, notify_email_bounced,
             )
 
-            if record_type == "open":
+            if status == "opened":
                 await notify_email_opened(
                     db, customer_name, subject,
                     customer_id=comm_log.customer_id,
                     quote_id=comm_log.quote_id,
                     invoice_id=comm_log.invoice_id,
                 )
-            elif record_type == "click":
+            elif status == "clicked":
                 await notify_email_clicked(
                     db, customer_name, subject,
                     customer_id=comm_log.customer_id,
                     quote_id=comm_log.quote_id,
                     invoice_id=comm_log.invoice_id,
                 )
-            elif record_type in ("bounce", "spamcomplaint"):
+            elif status in ("bounced", "spam"):
                 await notify_email_bounced(
                     db, customer_name, subject,
                     customer_id=comm_log.customer_id,
@@ -244,15 +249,15 @@ async def postmark_webhook(
                     invoice_id=comm_log.invoice_id,
                 )
         except Exception as e:
-            logger.error(f"Failed to create notification for {record_type}: {e}")
+            logger.error(f"Failed to create notification for {event_type}: {e}")
 
     if updated > 0:
         await db.commit()
-        logger.info(f"Postmark webhook: {record_type} for message {message_id}")
+        logger.info(f"Resend webhook: {event_type} for email {message_id}")
     else:
-        logger.debug(f"Postmark webhook: no matching log for message {message_id}")
+        logger.debug(f"Resend webhook: no matching log for email {message_id}")
 
-    return {"received": True, "record_type": record_type, "updated": updated}
+    return {"received": True, "event_type": event_type, "updated": updated}
 
 
 # =============================================================================

@@ -3,7 +3,7 @@ Email service tests.
 
 Run with: pytest tests/test_email.py -v
 
-Tests the Postmark email integration with mocked HTTP calls.
+Tests the Resend email integration with mocked HTTP calls.
 """
 
 import pytest
@@ -18,11 +18,11 @@ from datetime import date
 class TestEmailServiceCore:
     """Test email service core functionality."""
 
-    def test_postmark_api_url_configured(self):
-        """Postmark API URL is correct."""
-        from app.notifications.email import POSTMARK_API_URL
+    def test_resend_api_url_configured(self):
+        """Resend API URL is correct."""
+        from app.notifications.email import RESEND_API_URL
 
-        assert POSTMARK_API_URL == "https://api.postmarkapp.com/email"
+        assert RESEND_API_URL == "https://api.resend.com/emails"
 
     @pytest.mark.anyio
     async def test_send_email_returns_false_without_api_key(self):
@@ -30,7 +30,7 @@ class TestEmailServiceCore:
         from app.notifications.email import send_email
 
         with patch("app.notifications.email.settings") as mock_settings:
-            mock_settings.postmark_api_key = None
+            mock_settings.resend_api_key = None
 
             result = await send_email(
                 to="test@example.com",
@@ -46,7 +46,7 @@ class TestEmailServiceCore:
         from app.notifications.email import send_email
 
         with patch("app.notifications.email.settings") as mock_settings:
-            mock_settings.postmark_api_key = "test-key"
+            mock_settings.resend_api_key = "test-key"
 
             result = await send_email(
                 to="",
@@ -62,14 +62,14 @@ class TestEmailServiceCore:
         from app.notifications.email import send_email
 
         with patch("app.notifications.email.settings") as mock_settings:
-            mock_settings.postmark_api_key = "test-key"
-            mock_settings.postmark_from_email = "test@example.com"
+            mock_settings.resend_api_key = "test-key"
+            mock_settings.resend_from_email = "test@example.com"
 
             with patch("httpx.AsyncClient") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_response = MagicMock()
                 mock_response.status_code = 200
-                mock_response.json.return_value = {"MessageID": "test-123"}
+                mock_response.json.return_value = {"id": "test-123"}
                 mock_client.post.return_value = mock_response
                 mock_client.__aenter__.return_value = mock_client
                 mock_client_class.return_value = mock_client
@@ -88,13 +88,13 @@ class TestEmailServiceCore:
         from app.notifications.email import send_email
 
         with patch("app.notifications.email.settings") as mock_settings:
-            mock_settings.postmark_api_key = "test-key"
-            mock_settings.postmark_from_email = "test@example.com"
+            mock_settings.resend_api_key = "test-key"
+            mock_settings.resend_from_email = "test@example.com"
 
             with patch("httpx.AsyncClient") as mock_client_class:
                 mock_client = AsyncMock()
                 mock_response = MagicMock()
-                mock_response.status_code = 422  # Postmark error
+                mock_response.status_code = 422  # Resend error
                 mock_response.text = "Invalid email"
                 mock_client.post.return_value = mock_response
                 mock_client.__aenter__.return_value = mock_client
@@ -115,8 +115,8 @@ class TestEmailServiceCore:
         from app.notifications.email import send_email
 
         with patch("app.notifications.email.settings") as mock_settings:
-            mock_settings.postmark_api_key = "test-key"
-            mock_settings.postmark_from_email = "test@example.com"
+            mock_settings.resend_api_key = "test-key"
+            mock_settings.resend_from_email = "test@example.com"
 
             with patch("httpx.AsyncClient") as mock_client_class:
                 mock_client = AsyncMock()

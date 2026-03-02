@@ -439,7 +439,7 @@
         </div>
     </div>
 
-    <!-- Postmark -->
+    <!-- Resend -->
     <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
         <div class="flex items-start justify-between">
             <div class="settings-section-header !mb-0">
@@ -449,12 +449,12 @@
                     </svg>
                 </div>
                 <div>
-                    <h2>Postmark Email</h2>
+                    <h2>Resend Email</h2>
                     <p>Transactional email delivery service</p>
                 </div>
             </div>
 
-            {% if postmark_configured %}
+            {% if resend_configured %}
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                 <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                 Configured
@@ -472,9 +472,9 @@
                 Reliable email delivery for quotes, invoices, and notifications.
             </p>
 
-            {% if postmark_configured %}
+            {% if resend_configured %}
             <p class="text-sm text-green-700 mb-2">
-                Postmark is configured. Emails will be delivered via Postmark.
+                Resend is configured. Emails will be delivered via Resend.
             </p>
             <p class="text-sm text-slate-600 mb-4">
                 Configure email settings (from address, reply-to) in <a href="/settings/email" class="text-orange-600 hover:underline">Email Configuration</a>.
@@ -482,25 +482,25 @@
             {% endif %}
 
             <div class="space-y-4">
-                <button @click="showPostmarkCredentials = !showPostmarkCredentials"
+                <button @click="showResendCredentials = !showResendCredentials"
                         class="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1">
-                    <svg class="w-4 h-4 transition-transform" :class="showPostmarkCredentials ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 transition-transform" :class="showResendCredentials ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
-                    <span x-text="showPostmarkCredentials ? 'Hide credentials' : '{% if postmark_configured %}Update credentials{% else %}Configure credentials{% endif %}'"></span>
+                    <span x-text="showResendCredentials ? 'Hide credentials' : '{% if resend_configured %}Update credentials{% else %}Configure credentials{% endif %}'"></span>
                 </button>
 
-                <div x-show="showPostmarkCredentials" x-collapse class="space-y-4">
+                <div x-show="showResendCredentials" x-collapse class="space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Server API Token</label>
-                        <input type="password" x-model="credentials.postmark_api_key"
-                               @focus="if(credentials.postmark_api_key.startsWith('••••')) credentials.postmark_api_key = ''"
-                               placeholder="Enter your Postmark Server API Token"
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">API Key</label>
+                        <input type="password" x-model="credentials.resend_api_key"
+                               @focus="if(credentials.resend_api_key.startsWith('••••')) credentials.resend_api_key = ''"
+                               placeholder="Enter your Resend API Key"
                                class="input-field text-sm">
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <button @click="saveCredentials('postmark')"
+                        <button @click="saveCredentials('resend')"
                                 :disabled="saving"
                                 class="btn-v4 btn-v4-primary">
                             <span x-show="!saving">Save Credentials</span>
@@ -509,7 +509,7 @@
                     </div>
 
                     <p class="text-xs text-slate-600">
-                        Get your Server API Token from the <a href="https://account.postmarkapp.com/servers" target="_blank" class="text-orange-600 hover:underline">Postmark Dashboard</a>
+                        Get your API Key from the <a href="https://resend.com/api-keys" target="_blank" class="text-orange-600 hover:underline">Resend Dashboard</a>
                     </p>
                 </div>
             </div>
@@ -697,7 +697,7 @@ function integrationsPage() {
         showXeroCredentials: false,
         showGcalCredentials: false,
         showStripeCredentials: false,
-        showPostmarkCredentials: false,
+        showResendCredentials: false,
         showVonageCredentials: false,
 
         // NSW Public Holidays state
@@ -718,7 +718,7 @@ function integrationsPage() {
             stripe_publishable_key: '{{ masked_credentials.stripe_publishable_key }}',
             stripe_secret_key: '{{ masked_credentials.stripe_secret_key }}',
             stripe_webhook_secret: '{{ masked_credentials.stripe_webhook_secret }}',
-            postmark_api_key: '{{ masked_credentials.postmark_api_key }}',
+            resend_api_key: '{{ masked_credentials.resend_api_key }}',
             vonage_api_key: '{{ masked_credentials.vonage_api_key }}',
             vonage_api_secret: '{{ masked_credentials.vonage_api_secret }}',
             vonage_from_number: '{{ masked_credentials.vonage_from_number }}',
@@ -848,8 +848,8 @@ function integrationsPage() {
                 formData.append('stripe_publishable_key', this.credentials.stripe_publishable_key);
                 formData.append('stripe_secret_key', this.credentials.stripe_secret_key);
                 formData.append('stripe_webhook_secret', this.credentials.stripe_webhook_secret);
-            } else if (service === 'postmark') {
-                formData.append('postmark_api_key', this.credentials.postmark_api_key);
+            } else if (service === 'resend') {
+                formData.append('resend_api_key', this.credentials.resend_api_key);
             } else if (service === 'vonage') {
                 formData.append('vonage_api_key', this.credentials.vonage_api_key);
                 formData.append('vonage_api_secret', this.credentials.vonage_api_secret);

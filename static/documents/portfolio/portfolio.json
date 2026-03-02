@@ -1,0 +1,26 @@
+{
+  "sample_1.jpg": {
+    "title": "Exposed Aggregate Driveway",
+    "description": "Exposed aggregate finish"
+  },
+  "sample_2.jpg": {
+    "title": "Residential Driveway",
+    "description": "Broom finish"
+  },
+  "sample_3.jpg": {
+    "title": "Coloured Concrete Slab",
+    "description": "Charcoal coloured concrete"
+  },
+  "sample_4.jpg": {
+    "title": "Stamped Concrete Patio",
+    "description": "Ashlar slate pattern"
+  },
+  "sample_5.jpg": {
+    "title": "Side Pathway",
+    "description": "Plain finish with border"
+  },
+  "sample_6.jpg": {
+    "title": "Retaining Wall & Steps",
+    "description": "Formed concrete"
+  }
+}

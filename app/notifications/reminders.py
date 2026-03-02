@@ -444,8 +444,10 @@ async def _send_payment_reminder(
         logger.info(f"Customer {customer.id} has email notifications disabled")
         return True  # Mark as processed
 
-    # Build portal URL — generate a fresh raw token so the URL works.
-    # The DB stores the SHA-256 hash; the customer gets the raw token.
+    # Build portal URL — must generate a fresh token each time because the DB
+    # stores a one-way SHA-256 hash (raw token can't be recovered from hash).
+    # This invalidates previous portal links, but the customer always uses the
+    # latest link from their most recent email.
     from app.invoices.service import generate_portal_token
     raw_token, hashed_token = generate_portal_token()
     invoice.portal_token = hashed_token

@@ -125,9 +125,21 @@ def list_portfolio_photos() -> list[dict]:
     """
     List image files in the portfolio category for the customer-facing gallery.
 
-    Returns list of dicts with: filename, url, thumbnail (same as url for now).
+    Returns list of dicts with: filename, url, thumbnail, title, description.
     Only includes image files (jpg, jpeg, png, gif, webp).
+
+    Titles/descriptions can come from an optional ``portfolio.json`` metadata
+    file in the portfolio directory.  Format::
+
+        {
+          "my_photo.jpg": {"title": "Exposed Aggregate Driveway", "description": "Broom finish"},
+          "another.jpg": {"title": "Side Pathway"}
+        }
+
+    If no metadata exists for a file, the title is derived from the filename.
     """
+    import json
+
     _ensure_dirs()
     results = []
     portfolio_dir = DOCUMENTS_DIR / "portfolio"
@@ -135,20 +147,45 @@ def list_portfolio_photos() -> list[dict]:
     if not portfolio_dir.exists():
         return results
 
+    # Load optional metadata JSON
+    meta: dict = {}
+    meta_path = portfolio_dir / "portfolio.json"
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            meta = {}
+
     for f in sorted(portfolio_dir.iterdir()):
         if not f.is_file():
             continue
         if f.name.startswith(".") or f.name.startswith("~"):
+            continue
+        if f.name == "portfolio.json":
             continue
 
         ext = f.suffix.lower()
         if ext not in IMAGE_EXTENSIONS:
             continue
 
+        # Derive title from metadata or filename
+        file_meta = meta.get(f.name, {})
+        title = file_meta.get("title", "")
+        description = file_meta.get("description", "")
+
+        if not title:
+            # Convert filename to readable title: "Exposed_Aggregate-Driveway.jpg" → "Exposed Aggregate Driveway"
+            name_part = os.path.splitext(f.name)[0]
+            title = name_part.replace("_", " ").replace("-", " ").strip()
+            title = re.sub(r"\s+", " ", title)  # collapse multiple spaces
+            title = title.title()
+
         results.append({
             "filename": f.name,
             "url": f"/static/documents/portfolio/{f.name}",
             "thumbnail": f"/static/documents/portfolio/{f.name}",
+            "title": title,
+            "description": description,
         })
 
     return results

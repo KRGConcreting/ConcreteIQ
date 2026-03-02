@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings
 from app.database import init_db, get_db
@@ -91,14 +92,39 @@ import traceback
 logger = logging.getLogger("concreteiq")
 
 
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: StarletteHTTPException):
+    return templates.TemplateResponse("error.html", {
+        "request": request,
+        "status_code": 404,
+        "title": "Page Not Found",
+        "message": "The page you're looking for doesn't exist or has been moved.",
+    }, status_code=404)
+
+
+@app.exception_handler(500)
+async def server_error_handler(request: Request, exc: StarletteHTTPException):
+    return templates.TemplateResponse("error.html", {
+        "request": request,
+        "status_code": 500,
+        "title": "Server Error",
+        "message": "Something went wrong on our end. Please try again.",
+    }, status_code=500)
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     tb = traceback.format_exception(type(exc), exc, exc.__traceback__)
     logger.error(f"Unhandled exception on {request.method} {request.url.path}:\n{''.join(tb)}")
-    from starlette.responses import PlainTextResponse
     if settings.environment == "development":
+        from starlette.responses import PlainTextResponse
         return PlainTextResponse(f"Internal Server Error:\n{''.join(tb)}", status_code=500)
-    return PlainTextResponse("Internal Server Error", status_code=500)
+    return templates.TemplateResponse("error.html", {
+        "request": request,
+        "status_code": 500,
+        "title": "Server Error",
+        "message": "Something went wrong on our end. Please try again.",
+    }, status_code=500)
 
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -287,6 +313,6 @@ async def api_config(request: Request):
             "xero": bool(settings.xero_client_id),
             "gcal": bool(settings.google_client_id),
             "stripe": bool(settings.stripe_secret_key),
-            "postmark": bool(settings.postmark_api_key),
+            "resend": bool(settings.resend_api_key),
         }
     }

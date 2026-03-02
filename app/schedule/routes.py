@@ -13,6 +13,7 @@ from app.database import get_db
 from app.core.auth import require_login, verify_csrf
 from app.core.templates import templates
 from app.core.dates import sydney_now
+from app.core.security import decrypt_customer_pii
 from app.models import Quote, Customer, ActivityLog, Worker, JobAssignment, PourPlan
 
 router = APIRouter(dependencies=[Depends(require_login), Depends(verify_csrf)])
@@ -47,6 +48,7 @@ async def schedule_page(
             select(Customer).where(Customer.id.in_(customer_ids))
         )
         for c in cust_result.scalars().all():
+            decrypt_customer_pii(c)
             customers[c.id] = c
 
     return templates.TemplateResponse("schedule/index.html", {
@@ -99,6 +101,7 @@ async def get_calendar_events(
             select(Customer).where(Customer.id.in_(customer_ids))
         )
         for c in cust_result.scalars().all():
+            decrypt_customer_pii(c)
             customers[c.id] = c
 
     # Build event list
@@ -211,7 +214,6 @@ async def reschedule_job(
     try:
         customer = await db.get(Customer, quote.customer_id)
         if customer:
-            from app.core.security import decrypt_customer_pii
             decrypt_customer_pii(customer)
             if customer.email:
                 from app.notifications.email import send_job_rescheduled_email

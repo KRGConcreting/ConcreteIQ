@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     stripe_secret_key: str | None = None
     stripe_publishable_key: str | None = None
     stripe_webhook_secret: str | None = None
-    postmark_api_key: str | None = None
-    postmark_from_email: str = "quotes@krgconcreting.au"
+    resend_api_key: str | None = None
+    resend_from_email: str = "quotes@krgconcreting.au"
     xero_client_id: str | None = None
     xero_client_secret: str | None = None
     xero_redirect_uri: str = ""  # e.g., https://app.krgconcreting.au/integrations/xero/callback
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     google_credentials_json: str = ""  # Service account JSON (base64 encoded)
     google_review_url: str = "https://g.page/r/Cd-0sbGF_o_nEAE/review"  # Google reviews link
 
-    # Webhook authentication (shared secret for Postmark/ClickSend/Vonage callbacks)
+    # Webhook authentication (shared secret for Resend/ClickSend/Vonage callbacks)
     webhook_secret: str | None = None
 
     # Proxy trust (set True when behind a reverse proxy like Railway/nginx)

@@ -22,21 +22,21 @@ def dollars_to_cents(dollars: float | Decimal | str) -> int:
     return int(cents.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
 
-def format_money(cents: int) -> str:
+def format_money(cents: int | None) -> str:
     """
     Format cents as dollar string.
     Example: 334210 -> '$3,342.10'
     """
-    dollars = cents / 100
+    dollars = (cents or 0) / 100
     return f"${dollars:,.2f}"
 
 
-def format_money_no_symbol(cents: int) -> str:
+def format_money_no_symbol(cents: int | None) -> str:
     """
     Format cents as dollar string without symbol.
     Example: 334210 -> '3,342.10'
     """
-    dollars = cents / 100
+    dollars = (cents or 0) / 100
     return f"{dollars:,.2f}"
 
 
@@ -70,25 +70,27 @@ def calculate_percentage(total_cents: int, percentage: int) -> int:
 
 
 # Payment split percentages (KRG standard)
+# Canonical stage names: deposit, prepour, final
+# (legacy code may also use "booking" for deposit and "completion" for final)
 PAYMENT_SPLIT = {
-    "booking": 30,    # Progress payment on acceptance
+    "deposit": 30,    # First payment on acceptance
     "prepour": 60,    # Pre-pour payment
-    "completion": 10, # Final payment
+    "final": 10,      # Final payment on completion
 }
 
 
 def calculate_payment_split(total_cents: int) -> dict[str, int]:
     """
     Calculate 30/60/10 payment split.
-    Returns dict with booking, prepour, completion amounts.
+    Returns dict with deposit, prepour, final amounts.
     """
-    booking = calculate_percentage(total_cents, PAYMENT_SPLIT["booking"])
+    deposit = calculate_percentage(total_cents, PAYMENT_SPLIT["deposit"])
     prepour = calculate_percentage(total_cents, PAYMENT_SPLIT["prepour"])
-    # Completion is remainder to avoid rounding issues
-    completion = total_cents - booking - prepour
-    
+    # Final is remainder to avoid rounding issues
+    final = total_cents - deposit - prepour
+
     return {
-        "booking": booking,
+        "deposit": deposit,
         "prepour": prepour,
-        "completion": completion,
+        "final": final,
     }

@@ -100,7 +100,7 @@ async def calculate_take_home(
     revenue_inc_gst_cents = revenue_result.scalar() or 0
 
     # GST is 1/11th of the inc GST amount (Australian GST = 10%)
-    gst_collected_cents = revenue_inc_gst_cents // 11
+    gst_collected_cents = round(revenue_inc_gst_cents / 11)
     revenue_ex_gst_cents = revenue_inc_gst_cents - gst_collected_cents
 
     # Get quote IDs for payments in this period (to link expenses and labour)
@@ -416,7 +416,7 @@ def calculate_take_home_sync(
     revenue_inc_gst_cents = revenue_result.scalar() or 0
 
     # GST is 1/11th of the inc GST amount
-    gst_collected_cents = revenue_inc_gst_cents // 11
+    gst_collected_cents = round(revenue_inc_gst_cents / 11)
     revenue_ex_gst_cents = revenue_inc_gst_cents - gst_collected_cents
 
     # Get quote IDs for payments in this period

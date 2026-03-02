@@ -219,69 +219,72 @@
     </div>
     {% endif %}
 
-    <!-- Portfolio Gallery (showcases business work) -->
-    <div x-data="portfolioGallery()" x-init="loadPortfolio()" x-show="photos.length > 0" x-cloak class="portal-card animate-fade-in-up delay-3">
-        <div class="px-6 py-4 sm:px-8 border-b border-slate-100">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, rgba(232,122,46,0.15), rgba(232,122,46,0.05));">
-                    <svg class="w-5 h-5" style="color: #E87A2E;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-900 font-display">See Our Work</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Recent projects by {{ business.trading_as }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="px-6 py-5 sm:px-8">
-            <!-- Scrollable photo strip -->
-            <div class="relative">
-                <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide" style="-webkit-overflow-scrolling: touch; scrollbar-width: none;">
-                    <template x-for="(photo, idx) in photos" :key="photo.filename">
-                        <div @click="openLightbox(idx)"
-                             class="flex-shrink-0 w-44 h-44 sm:w-52 sm:h-52 relative group cursor-pointer rounded-xl overflow-hidden bg-slate-100 snap-start">
-                            <img :src="photo.url"
-                                 :alt="photo.filename"
-                                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                 loading="lazy">
-                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-            <p class="text-xs text-slate-400 mt-3 text-center" x-text="photos.length + ' photos'"></p>
+    <!-- Portfolio Gallery — "See Our Work" carousel -->
+    <div x-data="portfolioGallery()" x-init="loadPortfolio()" x-show="photos.length > 0" x-cloak
+         class="rounded-2xl overflow-hidden animate-fade-in-up delay-3 shadow-lg" style="background-color: #1e293b;">
+
+        <!-- Header -->
+        <div class="px-6 py-5 sm:px-8 text-center" style="background-color: #1e293b;">
+            <h3 class="text-xl font-bold text-white font-display">See Our Work</h3>
+            <p class="text-sm text-slate-400 mt-1">Quality concrete work across the Albury-Wodonga region</p>
         </div>
 
-        <!-- Lightbox -->
-        <div x-show="lightboxOpen"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             @click="lightboxOpen = false"
-             @keydown.escape.window="lightboxOpen = false"
-             @keydown.arrow-left.window="prevPhoto()"
-             @keydown.arrow-right.window="nextPhoto()"
-             x-cloak
-             class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-            <button @click="lightboxOpen = false" class="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-            <button @click.stop="prevPhoto()" class="absolute left-4 text-white/80 hover:text-white p-2 z-10">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            </button>
-            <button @click.stop="nextPhoto()" class="absolute right-14 text-white/80 hover:text-white p-2 z-10">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            </button>
-            <div @click.stop class="max-w-4xl max-h-[85vh] flex flex-col items-center">
-                <img :src="photos[currentIndex]?.url"
-                     :alt="photos[currentIndex]?.filename || 'Portfolio photo'"
-                     class="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl">
-                <p class="text-white/60 text-sm mt-3 text-center" x-text="(currentIndex + 1) + ' / ' + photos.length"></p>
+        <!-- Carousel -->
+        <div class="relative px-4 sm:px-6 pb-2"
+             @touchstart.passive="touchStart($event)"
+             @touchend.passive="touchEnd($event)">
+
+            <!-- Main Image -->
+            <div class="relative rounded-xl overflow-hidden bg-slate-700" style="aspect-ratio: 16/10;">
+                <template x-for="(photo, idx) in photos" :key="photo.filename">
+                    <div x-show="currentIndex === idx"
+                         x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0"
+                         x-transition:enter-end="opacity-100"
+                         x-transition:leave="transition ease-in duration-200"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="absolute inset-0">
+                        <img :src="photo.url"
+                             :alt="photo.title || 'Portfolio photo'"
+                             class="w-full h-full object-cover"
+                             loading="lazy">
+                    </div>
+                </template>
+
+                <!-- Title Overlay (bottom-left) -->
+                <div class="absolute bottom-0 left-0 right-0 px-5 pb-4 pt-16"
+                     style="background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);">
+                    <p class="text-white font-bold text-base sm:text-lg leading-tight"
+                       x-text="photos[currentIndex]?.title || ''"></p>
+                    <p class="text-white/70 text-sm mt-0.5"
+                       x-show="photos[currentIndex]?.description"
+                       x-text="photos[currentIndex]?.description || ''"></p>
+                </div>
+
+                <!-- Nav Arrows -->
+                <button @click.stop="prev()" x-show="photos.length > 1"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/80 hover:bg-black/60 hover:text-white transition-all z-10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button @click.stop="next()" x-show="photos.length > 1"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/80 hover:bg-black/60 hover:text-white transition-all z-10">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>
             </div>
+        </div>
+
+        <!-- Dot Indicators + Counter -->
+        <div class="px-6 py-4 flex flex-col items-center gap-2" x-show="photos.length > 1">
+            <div class="flex items-center gap-1.5 flex-wrap justify-center max-w-sm">
+                <template x-for="(photo, idx) in photos" :key="'dot-'+idx">
+                    <button @click="goTo(idx)"
+                            class="w-2.5 h-2.5 rounded-full transition-all duration-200"
+                            :style="currentIndex === idx ? 'background-color: #E87A2E; transform: scale(1.2);' : 'background-color: rgba(255,255,255,0.3);'">
+                    </button>
+                </template>
+            </div>
+            <p class="text-slate-400 text-xs" x-text="(currentIndex + 1) + ' / ' + photos.length"></p>
         </div>
     </div>
 
@@ -513,29 +516,55 @@
 function portfolioGallery() {
     return {
         photos: [],
-        lightboxOpen: false,
         currentIndex: 0,
+        autoplayTimer: null,
+        touchStartX: 0,
 
         async loadPortfolio() {
             try {
                 const resp = await fetch('/p/portfolio/photos');
                 if (resp.ok) {
                     this.photos = await resp.json();
+                    if (this.photos.length > 1) this.startAutoplay();
                 }
             } catch (e) { console.error('Failed to load portfolio:', e); }
         },
 
-        openLightbox(idx) {
-            this.currentIndex = idx;
-            this.lightboxOpen = true;
-        },
-
-        nextPhoto() {
+        next() {
             this.currentIndex = (this.currentIndex + 1) % this.photos.length;
+            this.resetAutoplay();
         },
 
-        prevPhoto() {
+        prev() {
             this.currentIndex = (this.currentIndex - 1 + this.photos.length) % this.photos.length;
+            this.resetAutoplay();
+        },
+
+        goTo(idx) {
+            this.currentIndex = idx;
+            this.resetAutoplay();
+        },
+
+        startAutoplay() {
+            this.autoplayTimer = setInterval(() => {
+                this.currentIndex = (this.currentIndex + 1) % this.photos.length;
+            }, 5000);
+        },
+
+        resetAutoplay() {
+            if (this.autoplayTimer) clearInterval(this.autoplayTimer);
+            if (this.photos.length > 1) this.startAutoplay();
+        },
+
+        touchStart(e) {
+            this.touchStartX = e.touches[0].clientX;
+        },
+
+        touchEnd(e) {
+            const diff = this.touchStartX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) {
+                diff > 0 ? this.next() : this.prev();
+            }
         },
     };
 }

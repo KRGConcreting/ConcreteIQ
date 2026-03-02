@@ -60,7 +60,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-concreteiq}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-concreteiq}
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set}
       - REDIS_URL=redis://redis:6379/0
-      - POSTMARK_API_KEY=${POSTMARK_API_KEY:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
       - ENVIRONMENT=${ENVIRONMENT:-production}
     depends_on:
       db:
