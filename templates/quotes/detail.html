@@ -34,9 +34,15 @@
                 'pour_stage': 'Pour Stage',
                 'pending_completion': 'Pending Completion',
             } %}
+            {% if quote.signed_at and quote.status in ['sent', 'viewed'] %}
+            <span class="badge px-3 py-1 text-sm bg-amber-50 text-amber-700 border border-amber-200">
+                Signed
+            </span>
+            {% else %}
             <span class="badge px-3 py-1 text-sm {{ status_colors.get(quote.status, 'bg-slate-50 text-slate-600 border border-slate-200') }}">
                 {{ status_labels.get(quote.status, quote.status|title) }}
             </span>
+            {% endif %}
             {% if quote.quote_type and quote.quote_type != 'calculator' %}
             {% set type_styles = {'labour': 'bg-blue-50 text-blue-700 border border-blue-200', 'custom': 'bg-green-50 text-green-700 border border-green-200'} %}
             <span class="badge px-3 py-1 text-sm {{ type_styles.get(quote.quote_type, 'bg-slate-50 text-slate-600 border border-slate-200') }}">
@@ -87,9 +93,9 @@
                 id="prepourBtn"
                 class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
-            Send Pre-Pour Invoice (60%)
+            Move to Pour Stage
         </button>
         {% endif %}
         {% if quote.status == 'pour_stage' %}
@@ -97,9 +103,9 @@
                 id="finalBtn"
                 class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
             </svg>
-            Send Final Invoice (10%)
+            Mark Job Complete
         </button>
         {% endif %}
         {% if quote.status in ['sent', 'viewed', 'expired'] %}
@@ -169,6 +175,37 @@
         </a>
         {% endif %}
     </div>
+
+    <!-- Signed — Awaiting Deposit Payment -->
+    {% if quote.signed_at and quote.status in ['sent', 'viewed'] %}
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+            </svg>
+            <div class="flex-1">
+                <p class="font-medium text-amber-800">Quote Signed — Awaiting Payment</p>
+                <p class="text-amber-700 text-sm mt-1">
+                    {{ quote.signature_name }} signed on {{ quote.signed_at.strftime('%d %b %Y at %H:%M') }}.
+                    The invoice has been sent — once a payment is recorded, you can confirm the booking date.
+                </p>
+                {% if invoices %}
+                <div class="mt-2">
+                    {% for inv in invoices if inv.status not in ['paid', 'voided'] %}
+                    <a href="/invoices/{{ inv.id }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        Record Payment on {{ inv.invoice_number }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Booking Info Banner for Accepted Quotes -->
     {% if quote.status == 'accepted' %}
@@ -1412,54 +1449,54 @@ function hideConfirmBookingModal() {
 }
 
 function sendPrepourInvoice() {
-    if (!confirm('Send the 60% pre-pour invoice to the customer? This will move the job to Pour Stage.')) return;
+    if (!confirm('Move this job to Pour Stage?')) return;
 
     const btn = document.getElementById('prepourBtn');
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.textContent = 'Updating...';
 
     fetch('/quotes/api/{{ quote.id }}/send-prepour-invoice', { method: 'POST' })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                alert('Pre-pour invoice sent! Job moved to Pour Stage.');
+                alert('Job moved to Pour Stage.');
                 window.location.reload();
             } else {
                 alert('Failed: ' + formatErrorDetail(data.detail, 'Unknown error'));
                 btn.disabled = false;
-                btn.textContent = 'Send Pre-Pour Invoice (60%)';
+                btn.textContent = 'Move to Pour Stage';
             }
         })
         .catch(err => {
             alert('Error: ' + err.message);
             btn.disabled = false;
-            btn.textContent = 'Send Pre-Pour Invoice (60%)';
+            btn.textContent = 'Move to Pour Stage';
         });
 }
 
 function sendFinalInvoice() {
-    if (!confirm('Send the 10% final invoice to the customer? This will move the job to Pending Completion.')) return;
+    if (!confirm('Mark this job as complete? This will move it to Pending Completion.')) return;
 
     const btn = document.getElementById('finalBtn');
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.textContent = 'Updating...';
 
     fetch('/quotes/api/{{ quote.id }}/send-final-invoice', { method: 'POST' })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                alert('Final invoice sent! Job moved to Pending Completion.');
+                alert('Job marked complete. Moved to Pending Completion.');
                 window.location.reload();
             } else {
                 alert('Failed: ' + formatErrorDetail(data.detail, 'Unknown error'));
                 btn.disabled = false;
-                btn.textContent = 'Send Final Invoice (10%)';
+                btn.textContent = 'Mark Job Complete';
             }
         })
         .catch(err => {
             alert('Error: ' + err.message);
             btn.disabled = false;
-            btn.textContent = 'Send Final Invoice (10%)';
+            btn.textContent = 'Mark Job Complete';
         });
 }
 

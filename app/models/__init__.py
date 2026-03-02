@@ -269,9 +269,10 @@ class Invoice(Base):
 
     # Description
     description: Mapped[Optional[str]] = mapped_column(String(255))
-    stage: Mapped[Optional[str]] = mapped_column(String(20))  # booking, prepour, completion, variation, manual
+    stage: Mapped[Optional[str]] = mapped_column(String(20))  # progress, variation, manual (legacy: booking, prepour, completion)
     stage_percent: Mapped[Optional[int]] = mapped_column(Integer)  # 30, 60, 10 etc for progress payment tracking
     line_items: Mapped[Optional[list]] = mapped_column(JSON)
+    payment_schedule: Mapped[Optional[list]] = mapped_column(JSON)  # [{label, percent, amount_cents, due},...] milestones for single-invoice model
     
     # Amounts (ALL IN CENTS)
     subtotal_cents: Mapped[int] = mapped_column(Integer, default=0)

@@ -90,44 +90,20 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
                     </svg>
                 </div>
-                <div><h3 class="font-display font-semibold text-slate-900">Revenue by Payment Stage</h3></div>
+                <div><h3 class="font-display font-semibold text-slate-900">Revenue by Invoice Type</h3></div>
             </div>
             <div class="space-y-4 mt-4">
-                {% set total_stage = stats.by_stage.booking + stats.by_stage.prepour + stats.by_stage.completion + stats.by_stage.variation + stats.by_stage.manual + stats.by_stage.other %}
+                {% set total_stage = stats.by_stage.progress + stats.by_stage.variation + stats.by_stage.manual + stats.by_stage.other %}
                 {% if total_stage == 0 %}{% set total_stage = 1 %}{% endif %}
 
                 <div>
                     <div class="flex justify-between text-sm mb-1">
-                        <span class="text-slate-600">Booking (30%)</span>
-                        <span class="font-display font-medium">{{ stats.by_stage.booking | money }}</span>
+                        <span class="text-slate-600">Job Invoices</span>
+                        <span class="font-display font-medium">{{ stats.by_stage.progress | money }}</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-4">
                         <div class="bg-blue-500 h-4 rounded-full"
-                             style="width: {{ (stats.by_stage.booking / total_stage * 100) | int }}%">
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-slate-600">Pre-Pour (60%)</span>
-                        <span class="font-display font-medium">{{ stats.by_stage.prepour | money }}</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-4">
-                        <div class="bg-green-500 h-4 rounded-full"
-                             style="width: {{ (stats.by_stage.prepour / total_stage * 100) | int }}%">
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-slate-600">Completion (10%)</span>
-                        <span class="font-display font-medium">{{ stats.by_stage.completion | money }}</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-4">
-                        <div class="bg-yellow-500 h-4 rounded-full"
-                             style="width: {{ (stats.by_stage.completion / total_stage * 100) | int }}%">
+                             style="width: {{ (stats.by_stage.progress / total_stage * 100) | int }}%">
                         </div>
                     </div>
                 </div>

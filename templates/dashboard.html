@@ -432,20 +432,20 @@
             <p class="text-red-100 text-xs uppercase tracking-wider font-semibold">Outstanding</p>
             <p class="text-2xl font-display font-bold mt-1 group-hover:scale-105 transition-transform origin-left">${{ '{:,.0f}'.format(payment_stats.outstanding_total_cents / 100) }}</p>
         </a>
-        <a href="/invoices?status=awaiting_deposit" class="p-4 rounded-xl bg-amber-50 border border-amber-200/60 hover:bg-amber-100 hover:-translate-y-0.5 transition-all group">
-            <p class="text-amber-600 text-xs uppercase tracking-wide font-semibold">1st Payments</p>
-            <p class="text-2xl font-display font-bold text-amber-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.awaiting_deposit_count }}</p>
+        <a href="/invoices?status=unpaid" class="p-4 rounded-xl bg-amber-50 border border-amber-200/60 hover:bg-amber-100 hover:-translate-y-0.5 transition-all group">
+            <p class="text-amber-600 text-xs uppercase tracking-wide font-semibold">Unpaid</p>
+            <p class="text-2xl font-display font-bold text-amber-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.unpaid_count }}</p>
             <p class="text-xs text-amber-500 mt-1">awaiting payment</p>
         </a>
-        <a href="/invoices?status=awaiting_prepour" class="p-4 rounded-xl bg-blue-50 border border-blue-200/60 hover:bg-blue-100 hover:-translate-y-0.5 transition-all group">
-            <p class="text-blue-600 text-xs uppercase tracking-wide font-semibold">Pre-Pour</p>
-            <p class="text-2xl font-display font-bold text-blue-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.awaiting_prepour_count }}</p>
-            <p class="text-xs text-blue-500 mt-1">awaiting payment</p>
+        <a href="/invoices?status=partial" class="p-4 rounded-xl bg-blue-50 border border-blue-200/60 hover:bg-blue-100 hover:-translate-y-0.5 transition-all group">
+            <p class="text-blue-600 text-xs uppercase tracking-wide font-semibold">Partial</p>
+            <p class="text-2xl font-display font-bold text-blue-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.partial_count }}</p>
+            <p class="text-xs text-blue-500 mt-1">partially paid</p>
         </a>
-        <a href="/invoices?status=awaiting_final" class="p-4 rounded-xl bg-purple-50 border border-purple-200/60 hover:bg-purple-100 hover:-translate-y-0.5 transition-all group">
-            <p class="text-purple-600 text-xs uppercase tracking-wide font-semibold">Final</p>
-            <p class="text-2xl font-display font-bold text-purple-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.awaiting_final_count }}</p>
-            <p class="text-xs text-purple-500 mt-1">awaiting payment</p>
+        <a href="/invoices?status=paid" class="p-4 rounded-xl bg-purple-50 border border-purple-200/60 hover:bg-purple-100 hover:-translate-y-0.5 transition-all group">
+            <p class="text-purple-600 text-xs uppercase tracking-wide font-semibold">Paid</p>
+            <p class="text-2xl font-display font-bold text-purple-700 mt-1 group-hover:scale-105 transition-transform origin-left">{{ payment_stats.paid_count }}</p>
+            <p class="text-xs text-purple-500 mt-1">fully paid</p>
         </a>
         <a href="/invoices?status=overdue" class="p-4 rounded-xl bg-red-50 border border-red-200/60 hover:bg-red-100 hover:-translate-y-0.5 transition-all group">
             <p class="text-red-600 text-xs uppercase tracking-wide font-semibold">Overdue</p>

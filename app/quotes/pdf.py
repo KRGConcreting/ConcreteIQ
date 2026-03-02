@@ -129,6 +129,7 @@ def generate_invoice_pdf(
     invoice: dict,
     customer: Optional[dict] = None,
     business: Optional[dict] = None,
+    payments: Optional[list] = None,
 ) -> bytes:
     """
     Generate PDF for an invoice.
@@ -137,6 +138,7 @@ def generate_invoice_pdf(
         invoice: Invoice data dict
         customer: Customer data dict
         business: Business info dict
+        payments: List of payment dicts (amount_cents, method, reference, payment_date)
 
     Returns:
         PDF bytes
@@ -153,6 +155,7 @@ def generate_invoice_pdf(
         invoice=invoice,
         customer=customer or {},
         business=business,
+        payments=payments or [],
         generated_at=sydney_now().strftime("%d %B %Y"),
         payment_terms_days=14,
         late_fee_percent=2,

@@ -678,17 +678,14 @@ async def api_create_progress_invoices(
         raise HTTPException(400, f"Invoices already exist for this quote ({len(existing)} found)")
 
     try:
-        from app.invoices.service import create_progress_invoices, send_invoice
-        invoices = await create_progress_invoices(db, quote, request)
+        from app.invoices.service import create_job_invoice, send_invoice
+        invoice = await create_job_invoice(db, quote, request)
+        invoices = [invoice]
 
-        # Send the first payment invoice immediately
-        deposit_invoice = next(
-            (inv for inv in invoices if inv.stage in ("deposit", "booking")),
-            None
-        )
+        # Send the invoice immediately
         raw_token = None
-        if deposit_invoice:
-            raw_token = await send_invoice(db, deposit_invoice, request)
+        if invoice and invoice.status == "draft":
+            raw_token = await send_invoice(db, invoice, request)
 
         await db.commit()
 

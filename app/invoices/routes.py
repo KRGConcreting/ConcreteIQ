@@ -318,13 +318,13 @@ async def api_create_invoice(
 async def api_create_from_quote(
     request: Request,
     quote_id: int,
-    stage: str = Query(..., pattern="^(booking|prepour|completion)$"),
+    stage: str = Query("progress", pattern="^(progress|variation|manual)$"),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
-    API: Create invoice from quote for specific stage.
+    API: Create invoice from quote.
 
-    Stage must be: booking (30%), prepour (60%), or completion (10%).
+    Creates a single job invoice for the full quote amount.
     """
     quote = await db.get(Quote, quote_id)
     if not quote:
@@ -334,22 +334,18 @@ async def api_create_from_quote(
         raise HTTPException(400, "Quote must be accepted to create invoices")
 
     try:
-        invoice, raw_token = await service.create_invoice_from_quote(
-            db, quote, stage, request
-        )
+        invoice = await service.create_job_invoice(db, quote, request)
         await db.commit()
         await db.refresh(invoice)
 
         return {
             "id": invoice.id,
             "invoice_number": invoice.invoice_number,
-            "stage": stage,
+            "stage": invoice.stage,
             "status": invoice.status,
             "subtotal_cents": invoice.subtotal_cents,
             "gst_cents": invoice.gst_cents,
             "total_cents": invoice.total_cents,
-            "portal_token": raw_token,
-            "portal_url": f"{settings.app_url}/p/invoice/{raw_token}",
         }
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -786,12 +782,21 @@ async def api_get_pdf(
     if customer:
         decrypt_customer_pii(customer)
 
+    # Get payments for the invoice
+    payments_result = await db.execute(
+        select(Payment)
+        .where(Payment.invoice_id == id)
+        .order_by(Payment.payment_date.asc())
+    )
+    payments = payments_result.scalars().all()
+
     invoice_dict = {
         "invoice_number": invoice.invoice_number,
         "issue_date": invoice.issue_date,
         "due_date": invoice.due_date,
         "description": invoice.description,
         "line_items": invoice.line_items or [],
+        "payment_schedule": invoice.payment_schedule or [],
         "subtotal_cents": invoice.subtotal_cents,
         "gst_cents": invoice.gst_cents,
         "total_cents": invoice.total_cents,
@@ -830,7 +835,16 @@ async def api_get_pdf(
     }
 
     try:
-        pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict)
+        payment_dicts = [
+            {
+                "amount_cents": p.amount_cents,
+                "method": p.method,
+                "reference": p.reference,
+                "payment_date": p.payment_date,
+            }
+            for p in payments
+        ]
+        pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict, payment_dicts)
     except (RuntimeError, OSError) as e:
         logger.error(f"PDF generation failed for invoice {invoice.invoice_number}: {e}")
         return Response(

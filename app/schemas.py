@@ -473,7 +473,7 @@ class InvoiceCreate(BaseModel):
     quote_id: Optional[int] = None
     
     description: Optional[str] = Field(None, max_length=255)
-    stage: Optional[str] = Field(None, pattern="^(booking|prepour|completion|variation|manual|deposit|final)$")
+    stage: Optional[str] = Field(None, pattern="^(progress|booking|prepour|completion|variation|manual|deposit|final)$")
     
     line_items: Optional[list] = None
     

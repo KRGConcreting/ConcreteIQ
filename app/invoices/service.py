@@ -517,15 +517,14 @@ async def record_payment(
     from app.notifications.service import notify_payment_received
     await notify_payment_received(db, payment, invoice)
 
-    # Check if this was a deposit payment — trigger workflow
-    if invoice.stage == "booking" and invoice.status == "paid":
-        from app.invoices.service import on_deposit_paid
-        await on_deposit_paid(db, invoice)
+    # Trigger payment milestone workflows
+    if invoice.quote_id:
+        was_first_payment = (invoice.paid_cents == amount_cents)  # This was the very first payment
+        if was_first_payment:
+            await on_first_payment(db, invoice)
 
-    # Check if this was the final payment — auto-complete the job
-    if invoice.stage in ("final", "completion") and invoice.status == "paid":
-        from app.invoices.service import on_final_paid
-        await on_final_paid(db, invoice)
+        if invoice.status == "paid":
+            await on_fully_paid(db, invoice)
 
     return payment
 
@@ -573,152 +572,161 @@ async def void_invoice(
 # PROGRESS PAYMENT FUNCTIONS
 # =============================================================================
 
-DEFAULT_PAYMENT_SCHEDULE = {
-    "deposit": {"percent": 30, "due": "on_acceptance"},
-    "prepour": {"percent": 60, "due": "before_pour"},
-    "final": {"percent": 10, "due": "on_completion"},
-}
-
-STAGE_SUFFIXES = {
-    "deposit": "A",
-    "prepour": "B",
-    "final": "C",
-}
+DEFAULT_PAYMENT_SCHEDULE = [
+    {"label": "Deposit", "percent": 30, "due": "on_acceptance"},
+    {"label": "Progress Payment", "percent": 60, "due": "before_pour"},
+    {"label": "Final Payment", "percent": 10, "due": "on_completion"},
+]
 
 
-def get_payment_schedule(quote: Quote) -> dict:
-    """Get the payment schedule for a quote, using defaults if not set."""
-    return quote.payment_schedule or DEFAULT_PAYMENT_SCHEDULE
+def get_payment_schedule(quote: Quote) -> list[dict]:
+    """Get the payment schedule for a quote, using defaults if not set.
+
+    Always returns the list-of-dicts format. Converts legacy dict format if needed.
+    """
+    schedule = quote.payment_schedule
+    if not schedule:
+        return DEFAULT_PAYMENT_SCHEDULE
+
+    # Convert legacy dict format to list format
+    if isinstance(schedule, dict):
+        label_map = {"deposit": "Deposit", "prepour": "Progress Payment", "final": "Final Payment"}
+        return [
+            {"label": label_map.get(stage, stage.title()), "percent": config["percent"], "due": config["due"]}
+            for stage, config in schedule.items()
+        ]
+
+    return schedule
 
 
+async def create_job_invoice(
+    db: AsyncSession,
+    quote: Quote,
+    request: Request = None,
+    ip_address: Optional[str] = None,
+) -> Invoice:
+    """
+    Create a SINGLE invoice for the full quote amount.
+
+    The invoice includes the full line items from the quote and a payment
+    schedule showing milestones (e.g. 30% deposit, 60% progress, 10% final).
+    Multiple payments are recorded against this one invoice.
+
+    Returns:
+        The created Invoice object
+    """
+    # Guard against duplicate invoice creation (e.g. double-click on sign button)
+    existing = await get_invoices_for_quote(db, quote.id)
+    if existing:
+        return existing[0]
+
+    # Use the full quote amounts
+    subtotal_cents = quote.subtotal_cents
+    gst_cents = calculate_gst(subtotal_cents)
+    total_cents = subtotal_cents + gst_cents
+
+    # Generate invoice number and portal token
+    invoice_number = await get_next_invoice_number(db)
+    raw_token, hashed_token = generate_portal_token()
+
+    description = f"Tax Invoice - {quote.quote_number}"
+
+    # Build line items from quote's customer-facing line items
+    line_items = []
+    if quote.customer_line_items:
+        for group in quote.customer_line_items:
+            line_items.append({
+                "description": group.get("category", "Item"),
+                "quantity": 1,
+                "unit": "lot",
+                "unit_price_cents": group.get("total_cents", 0),
+                "total_cents": group.get("total_cents", 0),
+            })
+    else:
+        # Fallback: single line item for full amount
+        line_items.append({
+            "description": description,
+            "quantity": 1,
+            "unit": "lot",
+            "unit_price_cents": subtotal_cents,
+            "total_cents": subtotal_cents,
+        })
+
+    # Build payment schedule with calculated amounts
+    schedule = get_payment_schedule(quote)
+    payment_schedule = []
+    running_total = 0
+    for i, milestone in enumerate(schedule):
+        percent = milestone["percent"]
+        if percent <= 0:
+            continue
+        # Last milestone gets remainder to avoid rounding issues
+        if i == len(schedule) - 1:
+            milestone_amount = subtotal_cents - running_total
+        else:
+            milestone_amount = int(round(subtotal_cents * percent / 100))
+            running_total += milestone_amount
+
+        milestone_gst = calculate_gst(milestone_amount)
+        payment_schedule.append({
+            "label": milestone.get("label", f"Payment {i+1}"),
+            "percent": percent,
+            "amount_cents": milestone_amount + milestone_gst,  # inc GST
+            "due": milestone.get("due", "on_acceptance"),
+        })
+
+    # Create invoice
+    invoice = Invoice(
+        invoice_number=invoice_number,
+        quote_id=quote.id,
+        customer_id=quote.customer_id,
+        description=description,
+        stage="progress",
+        line_items=line_items,
+        payment_schedule=payment_schedule,
+        subtotal_cents=subtotal_cents,
+        gst_cents=gst_cents,
+        total_cents=total_cents,
+        paid_cents=0,
+        status="draft",
+        issue_date=sydney_today(),
+        due_date=sydney_today() + timedelta(days=7),  # First payment due in 7 days
+        portal_token=hashed_token,
+    )
+    db.add(invoice)
+    await db.flush()
+
+    # Update quote's total_invoiced_cents
+    quote.total_invoiced_cents = total_cents
+
+    # Log activity
+    activity = ActivityLog(
+        action="invoice_created",
+        description=f"Created invoice {invoice_number} for {quote.quote_number} (${total_cents/100:,.2f} inc GST)",
+        entity_type="quote",
+        entity_id=quote.id,
+        ip_address=ip_address or (request.client.host if request and request.client else None),
+        extra_data={
+            "invoice_id": invoice.id,
+            "total_cents": total_cents,
+            "milestones": len(payment_schedule),
+        },
+    )
+    db.add(activity)
+
+    return invoice
+
+
+# Backward-compat alias (old code may call this)
 async def create_progress_invoices(
     db: AsyncSession,
     quote: Quote,
     request: Request = None,
     ip_address: Optional[str] = None,
 ) -> list[Invoice]:
-    """
-    Create all progress payment invoices for an accepted quote.
-
-    Creates invoices for deposit (30%), pre-pour (60%), and final (10%)
-    based on the quote's payment_schedule configuration.
-
-    Returns:
-        list of created Invoice objects
-    """
-    # Guard against duplicate invoice creation (e.g. double-click on sign button)
-    existing = await get_invoices_for_quote(db, quote.id)
-    if existing:
-        return existing
-
-    schedule = get_payment_schedule(quote)
-    invoices = []
-
-    for stage, config in schedule.items():
-        percent = config["percent"]
-        if percent <= 0:
-            continue
-
-        # Calculate amounts based on percentage
-        # Use subtotal (ex GST) for calculation, then add GST
-        subtotal_cents = int(round(quote.subtotal_cents * percent / 100))
-        gst_cents = calculate_gst(subtotal_cents)
-        total_cents = subtotal_cents + gst_cents
-
-        # Generate invoice number with stage suffix
-        base_number = await get_next_invoice_number(db)
-        suffix = STAGE_SUFFIXES.get(stage, "")
-        # Note: We use the base number since get_next_invoice_number already increments
-        # Just add suffix to differentiate stages visually
-
-        # Generate portal token
-        raw_token, hashed_token = generate_portal_token()
-
-        # Determine description
-        stage_names = {
-            "deposit": f"First Payment ({percent}%)",
-            "prepour": f"Progress Payment ({percent}%)",
-            "final": f"Final Payment ({percent}%)",
-        }
-        description = f"{stage_names.get(stage, stage.title())} - {quote.quote_number}"
-
-        # Determine due date based on schedule config
-        due_date = None
-        issue_date = None
-        initial_status = "draft"
-
-        if config["due"] == "on_acceptance":
-            # First payment: due 7 days from now, sent immediately
-            due_date = sydney_today() + timedelta(days=7)
-            issue_date = sydney_today()
-            initial_status = "draft"  # Will be sent separately
-        elif config["due"] == "before_pour":
-            # Pre-pour: due 3 days before pour date (set when scheduled)
-            if quote.confirmed_start_date:
-                due_date = quote.confirmed_start_date - timedelta(days=3)
-            # Leave as draft until job is scheduled
-        elif config["due"] == "on_completion":
-            # Final: due 7 days after completion (set when completed)
-            # Leave as draft until job is completed
-            pass
-        else:
-            # Numeric value = days from now
-            try:
-                days = int(config["due"])
-                due_date = sydney_today() + timedelta(days=days)
-            except (ValueError, TypeError):
-                due_date = sydney_today() + timedelta(days=7)
-
-        # Build line items
-        line_items = [{
-            "description": description,
-            "quantity": 1,
-            "unit": "each",
-            "unit_price_cents": subtotal_cents,
-            "total_cents": subtotal_cents,
-        }]
-
-        # Create invoice
-        invoice = Invoice(
-            invoice_number=base_number,
-            quote_id=quote.id,
-            customer_id=quote.customer_id,
-            description=description,
-            stage=stage,
-            stage_percent=percent,
-            line_items=line_items,
-            subtotal_cents=subtotal_cents,
-            gst_cents=gst_cents,
-            total_cents=total_cents,
-            paid_cents=0,
-            status=initial_status,
-            issue_date=issue_date,
-            due_date=due_date,
-            portal_token=hashed_token,
-        )
-        db.add(invoice)
-        invoices.append(invoice)
-
-    await db.flush()
-
-    # Update quote's total_invoiced_cents
-    quote.total_invoiced_cents = sum(inv.total_cents for inv in invoices)
-
-    # Log activity
-    activity = ActivityLog(
-        action="progress_invoices_created",
-        description=f"Created {len(invoices)} progress invoices for {quote.quote_number}",
-        entity_type="quote",
-        entity_id=quote.id,
-        ip_address=ip_address or (request.client.host if request and request.client else None),
-        extra_data={
-            "invoice_ids": [inv.id for inv in invoices],
-            "total_invoiced_cents": quote.total_invoiced_cents,
-        },
-    )
-    db.add(activity)
-
-    return invoices
+    """Backward-compatible wrapper — creates single invoice, returns as list."""
+    invoice = await create_job_invoice(db, quote, request, ip_address)
+    return [invoice]
 
 
 async def get_invoice_by_stage(
@@ -741,7 +749,7 @@ async def get_invoices_for_quote(
     quote_id: int,
 ) -> list[Invoice]:
     """Get all non-voided invoices for a quote, ordered by stage."""
-    stage_order = {"deposit": 1, "booking": 1, "prepour": 2, "final": 3, "completion": 3}
+    stage_order = {"progress": 0, "deposit": 1, "booking": 1, "prepour": 2, "final": 3, "completion": 3}
 
     result = await db.execute(
         select(Invoice)
@@ -778,14 +786,15 @@ async def get_invoices_by_payment_stage(
     page_size: int = 20,
 ) -> tuple[list[Invoice], int]:
     """
-    Get invoices filtered by payment stage status.
+    Get invoices filtered by payment status.
 
     stage_filter can be:
-    - 'awaiting_deposit': deposit invoices that are sent but not paid
-    - 'awaiting_prepour': prepour invoices that are sent but not paid
-    - 'awaiting_final': final/completion invoices that are sent but not paid
+    - 'awaiting_deposit' / 'unpaid': invoices sent but not yet paid at all
+    - 'awaiting_prepour' / 'partial': invoices that are partially paid
+    - 'awaiting_final': (legacy, returns empty) - no longer used
     - 'overdue': any invoice that is overdue
     - 'paid': any invoice that is paid
+    - 'draft': draft invoices
     - None: all invoices
     """
     offset = (page - 1) * page_size
@@ -794,34 +803,25 @@ async def get_invoices_by_payment_stage(
     query = select(Invoice).order_by(Invoice.created_at.desc())
     count_query = select(func.count(Invoice.id))
 
-    # Apply stage filters
-    if stage_filter == "awaiting_deposit":
+    # Apply status filters (remapped from old stage-based to status-based)
+    if stage_filter in ("awaiting_deposit", "unpaid"):
+        # Unpaid: sent/viewed invoices with no payments yet
         query = query.where(
-            Invoice.stage.in_(["deposit", "booking"]),
             Invoice.status.in_(["sent", "viewed"]),
+            Invoice.paid_cents == 0,
         )
         count_query = count_query.where(
-            Invoice.stage.in_(["deposit", "booking"]),
             Invoice.status.in_(["sent", "viewed"]),
+            Invoice.paid_cents == 0,
         )
-    elif stage_filter == "awaiting_prepour":
-        query = query.where(
-            Invoice.stage == "prepour",
-            Invoice.status.in_(["sent", "viewed"]),
-        )
-        count_query = count_query.where(
-            Invoice.stage == "prepour",
-            Invoice.status.in_(["sent", "viewed"]),
-        )
+    elif stage_filter in ("awaiting_prepour", "partial"):
+        # Partial: invoices with some payment but not fully paid
+        query = query.where(Invoice.status == "partial")
+        count_query = count_query.where(Invoice.status == "partial")
     elif stage_filter == "awaiting_final":
-        query = query.where(
-            Invoice.stage.in_(["final", "completion"]),
-            Invoice.status.in_(["sent", "viewed"]),
-        )
-        count_query = count_query.where(
-            Invoice.stage.in_(["final", "completion"]),
-            Invoice.status.in_(["sent", "viewed"]),
-        )
+        # Legacy: no longer applicable, return empty set
+        query = query.where(Invoice.id == -1)
+        count_query = count_query.where(Invoice.id == -1)
     elif stage_filter == "overdue":
         query = query.where(Invoice.status == "overdue")
         count_query = count_query.where(Invoice.status == "overdue")
@@ -906,45 +906,34 @@ async def on_quote_accepted(
     request: Request,
 ) -> list[Invoice]:
     """
-    Handle quote acceptance - create progress invoices.
-
-    This is called when a quote transitions to 'accepted' status.
-    Creates all progress invoices but only sends the first payment invoice.
+    Handle quote acceptance - create single job invoice and send it.
     """
-    # Create all progress invoices
-    invoices = await create_progress_invoices(db, quote, request)
+    invoice = await create_job_invoice(db, quote, request)
 
-    # Find and send the first payment invoice immediately
-    deposit_invoice = next(
-        (inv for inv in invoices if inv.stage in ("deposit", "booking")),
-        None
-    )
+    if invoice.status == "draft":
+        await send_invoice(db, invoice, request)
 
-    if deposit_invoice:
-        raw_token = await send_invoice(db, deposit_invoice, request)
-
-        # Notify about first payment invoice
         from app.models import Notification
         notification = Notification(
-            type="deposit_invoice_sent",
-            title="First Payment Invoice Sent",
-            message=f"First payment invoice for {quote.quote_number} sent to customer",
+            type="invoice_sent",
+            title="Invoice Sent",
+            message=f"Invoice for {quote.quote_number} sent to customer",
             quote_id=quote.id,
-            invoice_id=deposit_invoice.id,
+            invoice_id=invoice.id,
         )
         db.add(notification)
 
-    return invoices
+    return [invoice]
 
 
-async def on_deposit_paid(
+async def on_first_payment(
     db: AsyncSession,
     invoice: Invoice,
 ) -> None:
     """
-    Handle first payment received — auto-transitions quote to 'accepted' (awaiting date confirmation).
+    Handle first payment received — auto-transitions quote to 'accepted'.
 
-    Updates quote status and creates notification.
+    This is the first payment against the single job invoice.
     """
     if not invoice.quote_id:
         return
@@ -969,10 +958,11 @@ async def on_deposit_paid(
         decrypt_customer_pii(customer)
     customer_name = customer.name if customer else "Unknown"
 
+    paid_amount = invoice.paid_cents / 100
     notification = Notification(
-        type="deposit_received",
-        title="💰 First Payment Received — Ready to Confirm Date",
-        message=f"${invoice.total_cents/100:.2f} first payment received for {customer_name}. Confirm the start date to lock in the job.",
+        type="payment_received",
+        title="First Payment Received — Ready to Confirm Date",
+        message=f"${paid_amount:,.2f} received for {customer_name} ({quote.quote_number}). Confirm the start date to lock in the job.",
         quote_id=quote.id,
         invoice_id=invoice.id,
         priority="high",
@@ -981,13 +971,19 @@ async def on_deposit_paid(
 
     # Log activity
     activity = ActivityLog(
-        action="deposit_paid",
+        action="first_payment_received",
         description=f"First payment received for {quote.quote_number}. Status → accepted (awaiting date confirmation).",
         entity_type="quote",
         entity_id=quote.id,
-        extra_data={"invoice_id": invoice.id, "amount_cents": invoice.total_cents, "new_status": quote.status},
+        extra_data={"invoice_id": invoice.id, "paid_cents": invoice.paid_cents, "new_status": quote.status},
     )
     db.add(activity)
+
+
+# Backward-compat alias
+async def on_deposit_paid(db: AsyncSession, invoice: Invoice) -> None:
+    """Legacy alias for on_first_payment."""
+    await on_first_payment(db, invoice)
 
 
 async def on_job_scheduled(
@@ -998,44 +994,34 @@ async def on_job_scheduled(
     ip_address: Optional[str] = None,
 ) -> Optional[Invoice]:
     """
-    Send pre-pour invoice when job is scheduled.
-    Auto-transitions quote: confirmed → pour_stage.
+    Handle job scheduling — update due date and transition quote.
 
-    Args:
-        quote: The quote/job being scheduled
-        pour_date: The confirmed pour/start date
-        request: FastAPI request for logging (optional)
-        ip_address: Alternative to request for IP logging
+    With single-invoice model, we just update the due date on the existing
+    invoice (no separate prepour invoice to send).
     """
-    prepour_invoice = await get_invoice_by_stage(db, quote.id, "prepour")
+    invoices = await get_invoices_for_quote(db, quote.id)
+    invoice = invoices[0] if invoices else None
 
-    if prepour_invoice and prepour_invoice.status == "draft":
-        # Set due date to 3 days before pour
-        prepour_invoice.due_date = pour_date - timedelta(days=3)
-        prepour_invoice.issue_date = sydney_today()
+    if not invoice:
+        return None
 
-        # Send the invoice
-        await send_invoice(db, prepour_invoice, request=request, ip_address=ip_address)
+    # Auto-transition: confirmed → pour_stage
+    if quote.status == "confirmed":
+        quote.status = "pour_stage"
 
-        # Auto-transition: confirmed → pour_stage
-        if quote.status == "confirmed":
-            quote.status = "pour_stage"
+    # Log activity
+    _ip = ip_address or (request.client.host if request and request.client else None)
+    activity = ActivityLog(
+        action="job_scheduled",
+        description=f"Job scheduled for {quote.quote_number}. Pour date: {pour_date}. Status → pour_stage.",
+        entity_type="quote",
+        entity_id=quote.id,
+        ip_address=_ip,
+        extra_data={"invoice_id": invoice.id, "pour_date": str(pour_date), "new_status": quote.status},
+    )
+    db.add(activity)
 
-        # Log activity
-        _ip = ip_address or (request.client.host if request and request.client else None)
-        activity = ActivityLog(
-            action="prepour_invoice_sent",
-            description=f"Pre-pour invoice sent for {quote.quote_number}. Status → pour_stage.",
-            entity_type="quote",
-            entity_id=quote.id,
-            ip_address=_ip,
-            extra_data={"invoice_id": prepour_invoice.id, "pour_date": str(pour_date), "new_status": quote.status},
-        )
-        db.add(activity)
-
-        return prepour_invoice
-
-    return None
+    return invoice
 
 
 async def on_job_completed(
@@ -1045,52 +1031,36 @@ async def on_job_completed(
     ip_address: Optional[str] = None,
 ) -> Optional[Invoice]:
     """
-    Send final 10% invoice when job is marked complete.
-    Auto-transitions quote: pour_stage → pending_completion.
+    Handle job completion. With single-invoice model, just transitions the quote.
     """
-    final_invoice = await get_invoice_by_stage(db, quote.id, "final")
+    invoices = await get_invoices_for_quote(db, quote.id)
+    invoice = invoices[0] if invoices else None
 
-    # Also check for "completion" stage (legacy)
-    if not final_invoice:
-        final_invoice = await get_invoice_by_stage(db, quote.id, "completion")
+    # Auto-transition: pour_stage → pending_completion
+    if quote.status == "pour_stage":
+        quote.status = "pending_completion"
 
-    if final_invoice and final_invoice.status == "draft":
-        # Set due date to 7 days from now
-        final_invoice.due_date = sydney_today() + timedelta(days=7)
-        final_invoice.issue_date = sydney_today()
+    # Log activity
+    _ip = ip_address or (request.client.host if request and request.client else None)
+    activity = ActivityLog(
+        action="job_completed_stage",
+        description=f"Job marked complete for {quote.quote_number}. Status → pending_completion.",
+        entity_type="quote",
+        entity_id=quote.id,
+        ip_address=_ip,
+        extra_data={"invoice_id": invoice.id if invoice else None, "new_status": quote.status},
+    )
+    db.add(activity)
 
-        # Send the invoice
-        await send_invoice(db, final_invoice, request=request, ip_address=ip_address)
-
-        # Auto-transition: pour_stage → pending_completion
-        if quote.status == "pour_stage":
-            quote.status = "pending_completion"
-
-        # Log activity
-        _ip = ip_address or (request.client.host if request and request.client else None)
-        activity = ActivityLog(
-            action="final_invoice_sent",
-            description=f"Final invoice sent for {quote.quote_number}. Status → pending_completion.",
-            entity_type="quote",
-            entity_id=quote.id,
-            ip_address=_ip,
-            extra_data={"invoice_id": final_invoice.id, "new_status": quote.status},
-        )
-        db.add(activity)
-
-        return final_invoice
-
-    return None
+    return invoice
 
 
-async def on_final_paid(
+async def on_fully_paid(
     db: AsyncSession,
     invoice: Invoice,
 ) -> None:
     """
-    Handle final payment — auto-transitions quote to 'completed'.
-
-    Called when the final/completion stage invoice is fully paid.
+    Handle invoice fully paid — auto-transitions quote to 'completed'.
     """
     if not invoice.quote_id:
         return
@@ -1099,8 +1069,8 @@ async def on_final_paid(
     if not quote:
         return
 
-    # Auto-transition: pending_completion → completed
-    if quote.status == "pending_completion":
+    # Auto-transition to completed
+    if quote.status in ("pending_completion", "pour_stage", "confirmed", "accepted"):
         quote.status = "completed"
         quote.completed_date = sydney_today()
 
@@ -1117,7 +1087,7 @@ async def on_final_paid(
 
     notification = Notification(
         type="job_completed",
-        title="✅ Job Completed & Paid in Full",
+        title="Job Completed & Paid in Full",
         message=f"Job {quote.quote_number} for {customer_name} is fully paid and complete.",
         quote_id=quote.id,
         invoice_id=invoice.id,
@@ -1143,11 +1113,17 @@ async def on_final_paid(
                 db=db,
                 quote=quote,
                 customer=customer,
-                portal_url="",  # No outstanding invoice since fully paid
+                portal_url="",
             )
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"Failed to send job complete email: {e}")
+
+
+# Backward-compat alias
+async def on_final_paid(db: AsyncSession, invoice: Invoice) -> None:
+    """Legacy alias for on_fully_paid."""
+    await on_fully_paid(db, invoice)
 
 
 async def get_payment_summary_stats(db: AsyncSession) -> dict:
@@ -1164,26 +1140,24 @@ async def get_payment_summary_stats(db: AsyncSession) -> dict:
     )
     outstanding_total = (await db.execute(outstanding_query)).scalar() or 0
 
-    # Awaiting deposit count
-    deposit_count_query = select(func.count(Invoice.id)).where(
-        Invoice.stage.in_(["deposit", "booking"]),
+    # Unpaid invoices (sent but no payments yet)
+    unpaid_count_query = select(func.count(Invoice.id)).where(
         Invoice.status.in_(["sent", "viewed"]),
+        Invoice.paid_cents == 0,
     )
-    awaiting_deposit_count = (await db.execute(deposit_count_query)).scalar() or 0
+    unpaid_count = (await db.execute(unpaid_count_query)).scalar() or 0
 
-    # Awaiting pre-pour count
-    prepour_count_query = select(func.count(Invoice.id)).where(
-        Invoice.stage == "prepour",
-        Invoice.status.in_(["sent", "viewed"]),
+    # Partially paid invoices
+    partial_count_query = select(func.count(Invoice.id)).where(
+        Invoice.status == "partial",
     )
-    awaiting_prepour_count = (await db.execute(prepour_count_query)).scalar() or 0
+    partial_count = (await db.execute(partial_count_query)).scalar() or 0
 
-    # Awaiting final count
-    final_count_query = select(func.count(Invoice.id)).where(
-        Invoice.stage.in_(["final", "completion"]),
-        Invoice.status.in_(["sent", "viewed"]),
+    # Paid invoices
+    paid_count_query = select(func.count(Invoice.id)).where(
+        Invoice.status == "paid",
     )
-    awaiting_final_count = (await db.execute(final_count_query)).scalar() or 0
+    paid_count = (await db.execute(paid_count_query)).scalar() or 0
 
     # Overdue count
     overdue_count_query = select(func.count(Invoice.id)).where(
@@ -1193,8 +1167,8 @@ async def get_payment_summary_stats(db: AsyncSession) -> dict:
 
     return {
         "outstanding_total_cents": outstanding_total,
-        "awaiting_deposit_count": awaiting_deposit_count,
-        "awaiting_prepour_count": awaiting_prepour_count,
-        "awaiting_final_count": awaiting_final_count,
+        "unpaid_count": unpaid_count,
+        "partial_count": partial_count,
+        "paid_count": paid_count,
         "overdue_count": overdue_count,
     }

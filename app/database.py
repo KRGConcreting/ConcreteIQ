@@ -107,6 +107,8 @@ async def _run_safe_migrations():
         # PAYG withholding fields for workers
         ("workers", "claims_tax_free_threshold", "BOOLEAN DEFAULT TRUE"),
         ("workers", "pay_frequency", "VARCHAR(20) DEFAULT 'weekly'"),
+        # Single-invoice model: payment schedule milestones on invoice
+        ("invoices", "payment_schedule", "JSON"),
     ]
 
     async with engine.begin() as conn:

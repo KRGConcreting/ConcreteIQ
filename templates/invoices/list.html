@@ -31,7 +31,7 @@
 
     <!-- Summary Stats -->
     {% if stats %}
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in delay-1">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in delay-1" style="grid-template-columns: repeat(5, 1fr);">
         <!-- Outstanding Total - Gradient Hero Card -->
         <div class="card-enter card-enter-1 relative overflow-hidden bg-gradient-to-br from-red-500 via-red-500 to-orange-500 rounded-2xl p-5 text-white shadow-lg shadow-red-500/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-default group">
             <div class="absolute top-0 right-0 w-32 h-32 bg-white/8 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-700"></div>
@@ -50,25 +50,25 @@
             </div>
         </div>
 
-        <!-- Awaiting 1st Payment -->
-        <a href="?status=awaiting_deposit" class="stat-card stat-card-accent-blue card-enter hover:translate-y-[-2px] transition-all block">
-            <p class="stat-card-label">Awaiting 1st Payment</p>
-            <p class="stat-card-value text-amber-700">{{ stats.awaiting_deposit_count }}</p>
-            <p class="stat-card-meta">Deposit invoices</p>
+        <!-- Unpaid -->
+        <a href="?status=unpaid" class="stat-card stat-card-accent-blue card-enter hover:translate-y-[-2px] transition-all block">
+            <p class="stat-card-label">Unpaid</p>
+            <p class="stat-card-value text-amber-700">{{ stats.unpaid_count }}</p>
+            <p class="stat-card-meta">Awaiting payment</p>
         </a>
 
-        <!-- Awaiting Pre-Pour -->
-        <a href="?status=awaiting_prepour" class="stat-card stat-card-accent-orange card-enter hover:translate-y-[-2px] transition-all block">
-            <p class="stat-card-label">Awaiting Pre-Pour</p>
-            <p class="stat-card-value text-blue-700">{{ stats.awaiting_prepour_count }}</p>
-            <p class="stat-card-meta">Progress invoices</p>
+        <!-- Partially Paid -->
+        <a href="?status=partial" class="stat-card stat-card-accent-orange card-enter hover:translate-y-[-2px] transition-all block">
+            <p class="stat-card-label">Partial</p>
+            <p class="stat-card-value text-blue-700">{{ stats.partial_count }}</p>
+            <p class="stat-card-meta">Partially paid</p>
         </a>
 
-        <!-- Awaiting Final -->
-        <a href="?status=awaiting_final" class="stat-card stat-card-accent-green card-enter hover:translate-y-[-2px] transition-all block">
-            <p class="stat-card-label">Awaiting Final</p>
-            <p class="stat-card-value text-purple-700">{{ stats.awaiting_final_count }}</p>
-            <p class="stat-card-meta">Final invoices</p>
+        <!-- Paid -->
+        <a href="?status=paid" class="stat-card stat-card-accent-green card-enter hover:translate-y-[-2px] transition-all block">
+            <p class="stat-card-label">Paid</p>
+            <p class="stat-card-value text-green-700">{{ stats.paid_count }}</p>
+            <p class="stat-card-meta">Fully paid</p>
         </a>
 
         <!-- Overdue -->
@@ -106,17 +106,13 @@
                class="filter-pill {{ 'active' if not status_filter else '' }}">
                 All
             </a>
-            <a href="?view={{ view }}&status=awaiting_deposit"
-               class="filter-pill {{ 'active' if status_filter == 'awaiting_deposit' else '' }}">
-                1st Payments
+            <a href="?view={{ view }}&status=unpaid"
+               class="filter-pill {{ 'active' if status_filter == 'unpaid' else '' }}">
+                Unpaid
             </a>
-            <a href="?view={{ view }}&status=awaiting_prepour"
-               class="filter-pill {{ 'active' if status_filter == 'awaiting_prepour' else '' }}">
-                Pre-Pour
-            </a>
-            <a href="?view={{ view }}&status=awaiting_final"
-               class="filter-pill {{ 'active' if status_filter == 'awaiting_final' else '' }}">
-                Final
+            <a href="?view={{ view }}&status=partial"
+               class="filter-pill {{ 'active' if status_filter == 'partial' else '' }}">
+                Partial
             </a>
             <a href="?view={{ view }}&status=overdue"
                class="filter-pill {{ 'active' if status_filter == 'overdue' else '' }}">
@@ -125,6 +121,10 @@
             <a href="?view={{ view }}&status=paid"
                class="filter-pill {{ 'active' if status_filter == 'paid' else '' }}">
                 Paid
+            </a>
+            <a href="?view={{ view }}&status=draft"
+               class="filter-pill {{ 'active' if status_filter == 'draft' else '' }}">
+                Draft
             </a>
         </div>
     </div>
@@ -163,18 +163,12 @@
                                     <span class="badge {{ status_colors.get(invoice.status, 'bg-slate-50 text-slate-600 border border-slate-200') }} {{ 'badge-pulse' if invoice.status == 'overdue' else '' }}">
                                         {{ invoice.status|title }}
                                     </span>
-                                    {% if invoice.stage %}
-                                    {% set stage_colors = {
-                                        'deposit': 'bg-amber-50 text-amber-600 border border-amber-200',
-                                        'booking': 'bg-amber-50 text-amber-600 border border-amber-200',
-                                        'prepour': 'bg-blue-50 text-blue-600 border border-blue-200',
-                                        'final': 'bg-purple-50 text-purple-600 border border-purple-200',
-                                        'completion': 'bg-purple-50 text-purple-600 border border-purple-200',
-                                        'manual': 'bg-slate-50 text-slate-500 border border-slate-200',
-                                    } %}
-                                    {% set stage_labels = {'deposit': '1st Payment', 'booking': '1st Payment', 'prepour': 'Progress', 'final': 'Final', 'completion': 'Final', 'manual': 'Manual'} %}
-                                    <span class="badge {{ stage_colors.get(invoice.stage, 'bg-slate-50 text-slate-500 border border-slate-200') }}">
-                                        {% if invoice.stage_percent %}{{ invoice.stage_percent }}% {% endif %}{{ stage_labels.get(invoice.stage, invoice.stage|replace('_', ' ')|title) }}
+                                    {% if invoice.stage == 'manual' %}
+                                    <span class="badge bg-slate-50 text-slate-500 border border-slate-200">Manual</span>
+                                    {% endif %}
+                                    {% if invoice.paid_cents > 0 and invoice.paid_cents < invoice.total_cents %}
+                                    <span class="badge bg-amber-50 text-amber-600 border border-amber-200">
+                                        {{ ((invoice.paid_cents / invoice.total_cents) * 100)|int }}% paid
                                     </span>
                                     {% endif %}
                                 </div>

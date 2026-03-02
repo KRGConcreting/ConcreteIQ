@@ -803,31 +803,26 @@ async def sign_quote(
     quote.signature_ip = ip_address
     quote.signed_at = sydney_now()
 
-    # Create all progress invoices (first payment 30%, progress 60%, final 10%)
-    from app.invoices.service import create_progress_invoices, send_invoice
-    invoices = await create_progress_invoices(db, quote, ip_address=ip_address)
+    # Create single job invoice for the full amount and send it
+    from app.invoices.service import create_job_invoice, send_invoice
+    invoice = await create_job_invoice(db, quote, ip_address=ip_address)
 
-    # Send the first payment invoice immediately
-    deposit_invoice = next(
-        (inv for inv in invoices if inv.stage in ("deposit", "booking")),
-        None
-    )
-    deposit_invoice_number = ""
-    if deposit_invoice:
-        await send_invoice(db, deposit_invoice, ip_address=ip_address)
-        deposit_invoice_number = deposit_invoice.invoice_number
+    # Send the invoice immediately
+    invoice_number = ""
+    if invoice and invoice.status == "draft":
+        await send_invoice(db, invoice, ip_address=ip_address)
+        invoice_number = invoice.invoice_number
 
     # Log activity
     activity = ActivityLog(
         action="quote_signed",
-        description=f"Quote {quote.quote_number} signed by {signature_name}. First payment invoice {deposit_invoice_number} sent.",
+        description=f"Quote {quote.quote_number} signed by {signature_name}. Invoice {invoice_number} sent.",
         entity_type="quote",
         entity_id=quote.id,
         ip_address=ip_address,
         extra_data={
             "signer_name": signature_name,
-            "deposit_invoice_number": deposit_invoice_number,
-            "invoices_created": len(invoices),
+            "invoice_number": invoice_number,
         },
     )
     db.add(activity)
@@ -1034,7 +1029,7 @@ async def confirm_booking(
             from app.models import Invoice
             inv_result = await db.execute(
                 sa_select(Invoice)
-                .where(Invoice.quote_id == quote.id, Invoice.stage == "booking")
+                .where(Invoice.quote_id == quote.id, Invoice.status != "voided")
                 .limit(1)
             )
             booking_invoice = inv_result.scalars().first()

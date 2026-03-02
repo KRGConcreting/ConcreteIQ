@@ -168,8 +168,8 @@ async def notify_quote_accepted(
     return await create_notification(
         db=db,
         type="quote_accepted",
-        title="🎉 Quote Accepted!",
-        message=f"{customer_name} accepted {quote.quote_number} (${total:,.0f}). First payment invoice sent.",
+        title="Quote Signed!",
+        message=f"{customer_name} signed {quote.quote_number} (${total:,.0f}). Booking invoice sent — awaiting payment.",
         priority="high",
         customer_id=quote.customer_id,
         quote_id=quote.id,

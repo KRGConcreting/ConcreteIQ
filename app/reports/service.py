@@ -589,16 +589,18 @@ async def get_revenue_stats(
     )
 
     by_stage = {
-        "booking": 0,
-        "prepour": 0,
-        "completion": 0,
+        "progress": 0,
         "variation": 0,
         "manual": 0,
         "other": 0,
     }
+    # Legacy stages (booking/prepour/completion) roll into "progress"
+    legacy_progress = {"booking", "prepour", "completion", "deposit", "final"}
     for stage, amount in stage_result.all():
         if stage in by_stage:
             by_stage[stage] = int(amount or 0)
+        elif stage in legacy_progress:
+            by_stage["progress"] += int(amount or 0)
         else:
             by_stage["other"] += int(amount or 0)
 

@@ -43,8 +43,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                 </svg>
             </div>
-            <h2 class="text-2xl font-bold text-slate-900 font-display mb-2">Quote Accepted!</h2>
+            {% if quote.requested_start_date %}
+            <h2 class="text-2xl font-bold text-slate-900 font-display mb-2">Start Date Requested</h2>
+            <p class="text-slate-600">You've requested <strong>{{ quote.requested_start_date.strftime('%A, %d %B %Y') }}</strong>. You can change it below if needed.</p>
+            {% else %}
+            <h2 class="text-2xl font-bold text-slate-900 font-display mb-2">Quote Signed!</h2>
             <p class="text-slate-600">Now select your preferred start date to complete your booking</p>
+            {% endif %}
         </div>
 
         <!-- Signed Notice -->
@@ -83,8 +88,13 @@
     <!-- Calendar -->
     <div class="portal-card animate-fade-in-up delay-2">
         <div class="px-6 py-4 sm:px-8 border-b border-slate-100">
+            {% if quote.requested_start_date %}
+            <h3 class="text-lg font-semibold text-slate-900 font-display">Change Your Preferred Start Date</h3>
+            <p class="text-sm text-slate-500 mt-1">Currently requested: <strong>{{ quote.requested_start_date.strftime('%A, %d %B %Y') }}</strong></p>
+            {% else %}
             <h3 class="text-lg font-semibold text-slate-900 font-display">Select Your Preferred Start Date</h3>
             <p class="text-sm text-slate-500 mt-1">Choose when you'd like us to begin your project</p>
+            {% endif %}
         </div>
 
         <div class="px-6 py-6 sm:px-8">
@@ -176,7 +186,7 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
-                        Confirm Start Date
+                        {% if quote.requested_start_date %}Update Start Date{% else %}Confirm Start Date{% endif %}
                     </span>
                     <span x-show="isSubmitting" class="flex items-center justify-center gap-2">
                         <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -213,7 +223,7 @@
 function dateSelector() {
     return {
         currentDate: new Date(),
-        selectedDate: null,
+        selectedDate: {{ ("new Date('" + quote.requested_start_date.isoformat() + "T00:00:00')") if quote.requested_start_date else "null" }},
         busyDates: {{ busy_dates|tojson }},
         calendarDays: [],
         isSubmitting: false,

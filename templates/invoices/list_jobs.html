@@ -25,17 +25,17 @@
             <p class="text-red-100 text-xs uppercase tracking-wide">Outstanding</p>
             <p class="text-2xl font-bold mt-1">${{ '{:,.0f}'.format(stats.outstanding_total_cents / 100) }}</p>
         </div>
-        <a href="?view=list&status=awaiting_deposit" class="bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition-colors">
-            <p class="text-amber-600 text-xs uppercase tracking-wide">Awaiting 1st Payment</p>
-            <p class="text-2xl font-bold text-amber-700 mt-1">{{ stats.awaiting_deposit_count }}</p>
+        <a href="?view=list&status=unpaid" class="bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition-colors">
+            <p class="text-amber-600 text-xs uppercase tracking-wide">Unpaid</p>
+            <p class="text-2xl font-bold text-amber-700 mt-1">{{ stats.unpaid_count }}</p>
         </a>
-        <a href="?view=list&status=awaiting_prepour" class="bg-blue-50 border border-blue-200 rounded-xl p-4 hover:bg-blue-100 transition-colors">
-            <p class="text-blue-600 text-xs uppercase tracking-wide">Awaiting Pre-Pour</p>
-            <p class="text-2xl font-bold text-blue-700 mt-1">{{ stats.awaiting_prepour_count }}</p>
+        <a href="?view=list&status=partial" class="bg-blue-50 border border-blue-200 rounded-xl p-4 hover:bg-blue-100 transition-colors">
+            <p class="text-blue-600 text-xs uppercase tracking-wide">Partial</p>
+            <p class="text-2xl font-bold text-blue-700 mt-1">{{ stats.partial_count }}</p>
         </a>
-        <a href="?view=list&status=awaiting_final" class="bg-purple-50 border border-purple-200 rounded-xl p-4 hover:bg-purple-100 transition-colors">
-            <p class="text-purple-600 text-xs uppercase tracking-wide">Awaiting Final</p>
-            <p class="text-2xl font-bold text-purple-700 mt-1">{{ stats.awaiting_final_count }}</p>
+        <a href="?view=list&status=paid" class="bg-purple-50 border border-purple-200 rounded-xl p-4 hover:bg-purple-100 transition-colors">
+            <p class="text-purple-600 text-xs uppercase tracking-wide">Paid</p>
+            <p class="text-2xl font-bold text-purple-700 mt-1">{{ stats.paid_count }}</p>
         </a>
         <a href="?view=list&status=overdue" class="bg-red-50 border border-red-200 rounded-xl p-4 hover:bg-red-100 transition-colors">
             <p class="text-red-600 text-xs uppercase tracking-wide">Overdue</p>
