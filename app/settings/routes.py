@@ -532,6 +532,8 @@ async def preview_email_template(template_name: str, request: Request):
         "payment_reminder_firm": "emails/payment_reminder_firm.html",
         "payment_reminder_final": "emails/payment_reminder_final.html",
         "review_request": "emails/review_request.html",
+        "job_rescheduled": "emails/job_rescheduled.html",
+        "sealer_followup": "emails/sealer_followup.html",
     }
 
     if template_name not in template_map:
@@ -575,8 +577,14 @@ async def preview_email_template(template_name: str, request: Request):
         "request": request,
         # Business details
         "business_name": "KRG Concreting",
-        "business_phone": "0400 000 000",
+        "business_phone": "0423 005 129",
         "business_email": "admin@krgconcreting.com.au",
+        "business_abn": "76 993 685 401",
+        "business_licence": "374931C",
+        "business_address": "1/32 Whitton Drive, Thurgoona NSW 2640",
+        # Logos
+        "logo_url": "/static/images/KyleRGyoles_Concreting_Logo.png",
+        "ciq_logo_url": "/static/images/ConcreteIQ_Logo_Nav.png",
         # Object references used by templates
         "quote": SampleQuote(),
         "customer": SampleCustomer(),
@@ -598,7 +606,7 @@ async def preview_email_template(template_name: str, request: Request):
         "job_date_formatted": "Monday 10 March 2026",
         "expiry_date_formatted": "15 March 2026",
         # Status/conditional fields
-        "stage_label": "Booking Deposit (30%)",
+        "stage_label": "Deposit (30%)",
         "time_description": "tomorrow",
         "days_remaining": 3,
         "days_overdue": 7,
@@ -611,11 +619,12 @@ async def preview_email_template(template_name: str, request: Request):
         "review_url": "#",
         # Bank details
         "bank_name": "Great Southern Bank",
-        "bank_bsb": "",
-        "bank_account": "",
+        "bank_bsb": "834472",
+        "bank_account": "491424410",
+        "bank_account_name": "KYLE RICKY GYOLES",
         # Booking confirmed: payment schedule
         "payments": [
-            SamplePaymentScheduleItem("Booking Deposit (30%)", 247500),
+            SamplePaymentScheduleItem("Deposit (30%)", 247500),
             SamplePaymentScheduleItem("Pre-pour (60%)", 495000),
             SamplePaymentScheduleItem("Final (10%)", 82500),
         ],
@@ -624,6 +633,13 @@ async def preview_email_template(template_name: str, request: Request):
         "update_title": "Formwork & Steel Complete",
         "update_message": "Hi John,\n\nJust a quick update on your driveway project. We've completed the formwork and steel reinforcement today. Everything is looking great and we're on track for the concrete pour tomorrow morning.\n\nWe'll arrive around 6:30am with the concrete truck. Please ensure the area is clear and accessible.\n\nCheers,\nKRG Concreting",
         "photos": [],
+        # Job rescheduled fields
+        "old_date_formatted": "Monday 10 March 2026",
+        "new_date_formatted": "Thursday 13 March 2026",
+        "reason": "Due to forecast rain on Monday, we've moved your pour date to Thursday to ensure the best result.",
+        # Sealer followup fields
+        "years_since": 3,
+        "completed_date_formatted": "March 2023",
     }
 
     try:
@@ -965,8 +981,8 @@ async def preview_template(
     business = await settings_service.get_settings_by_category(db, 'business')
 
     business_name = business.get("trading_as") or business.get("name") or "KRG Concreting"
-    business_phone = business.get("phone") or "0400 000 000"
-    business_email = business.get("email") or "hello@example.com"
+    business_phone = business.get("phone") or "0423 005 129"
+    business_email = business.get("email") or "kyle@krgconcreting.au"
 
     # Create sample objects that match template expectations
     class SampleQuote:
@@ -1039,8 +1055,9 @@ async def preview_template(
         "balance_formatted": "$5,775.00",
         "due_date_formatted": "15 Feb 2026",
         "bank_name": "Great Southern Bank",
-        "bank_bsb": "",
-        "bank_account": "",
+        "bank_bsb": "834472",
+        "bank_account": "491424410",
+        "bank_account_name": "KYLE RICKY GYOLES",
         # Payment receipt specific
         "amount_formatted": "$5,250.00",
         "payment_date_formatted": "1 Feb 2026",
@@ -1090,10 +1107,10 @@ async def preview_pdf_template(
     business = await settings_service.get_settings_by_category(db, 'business')
 
     business_name = business.get("trading_as") or business.get("name") or "KRG Concreting"
-    business_phone = business.get("phone") or "0400 000 000"
-    business_email = business.get("email") or "hello@example.com"
-    business_address = business.get("address") or "123 Business St, Albury NSW 2640"
-    business_abn = business.get("abn") or "12 345 678 901"
+    business_phone = business.get("phone") or "0423 005 129"
+    business_email = business.get("email") or "kyle@krgconcreting.au"
+    business_address = business.get("address") or "1/32 Whitton Drive, Thurgoona NSW 2640"
+    business_abn = business.get("abn") or "76 993 685 401"
 
     # Create sample objects that match what the PDF templates expect
     sample_business = SimpleNamespace(
@@ -1103,7 +1120,7 @@ async def preview_pdf_template(
         email=business_email,
         address=business_address,
         abn=business_abn,
-        license=business.get("license") or "123456C",
+        license=business.get("license") or "374931C",
         bank_name=business.get("bank_name") or "Great Southern Bank",
         bank_account_name=business.get("bank_account_name") or "",
         bank_bsb=business.get("bank_bsb") or "",

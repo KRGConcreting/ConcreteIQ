@@ -17,7 +17,7 @@
         <tr>
             <td style="padding: 40px 20px;">
                 <!-- Container -->
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" align="center" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07); border-top: 4px solid #16a34a;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" align="center" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07); border-top: 4px solid #E87A2E;">
                     <!-- Header -->
                     <tr>
                         <td style="background: linear-gradient(160deg, #1a1a1a 0%, #242424 60%, #1a1a1a 100%); padding: 28px 40px; text-align: center;">
@@ -45,13 +45,13 @@
 
                             <!-- Greeting -->
                             <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151; line-height: 1.6;">Hi {{ customer.name }},</p>
-                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151; line-height: 1.6;">Great news — your concreting project is now complete! We hope you're thrilled with the result.</p>
+                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151; line-height: 1.6;">Great news — your concreting project is now complete! We hope you're happy with the result.</p>
 
                             <!-- Job Summary -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
                                 <tr>
-                                    <td style="background-color: #f0fdf4; border-radius: 12px; padding: 24px; border-left: 4px solid #16a34a;">
-                                        <p style="margin: 0 0 16px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #16a34a;">Job Summary</p>
+                                    <td style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border-left: 4px solid #E87A2E;">
+                                        <p style="margin: 0 0 16px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Job Summary</p>
                                         {% if quote.job_name %}
                                         <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151; font-weight: 600; line-height: 1.5;">{{ quote.job_name }}</p>
                                         {% endif %}
@@ -65,7 +65,7 @@
                                             </tr>
                                             <tr>
                                                 <td style="padding: 4px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">Paid</td>
-                                                <td style="padding: 4px 0; font-size: 14px; color: #16a34a; font-weight: 600; text-align: right; line-height: 1.5;">{{ paid_formatted }}</td>
+                                                <td style="padding: 4px 0; font-size: 14px; color: #E87A2E; font-weight: 600; text-align: right; line-height: 1.5;">{{ paid_formatted }}</td>
                                             </tr>
                                             {% if balance_cents > 0 %}
                                             <tr>
@@ -90,7 +90,7 @@
                                                     <span style="font-size: 16px;">&#128167;</span>
                                                 </td>
                                                 <td style="padding: 8px 0;">
-                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;"><strong>Curing Period:</strong> Keep the concrete moist for at least 7 days. Avoid heavy loads for 28 days while the concrete reaches full strength.</p>
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;"><strong>First 7 Days:</strong> Keep the concrete moist &mdash; lightly hose it down morning and afternoon, especially in hot or windy weather. Avoid walking on it for at least 24-48 hours.</p>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -98,7 +98,15 @@
                                                     <span style="font-size: 16px;">&#128187;</span>
                                                 </td>
                                                 <td style="padding: 8px 0;">
-                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;"><strong>Sealing:</strong> We recommend sealing your concrete 28 days after the pour to protect the finish and extend its life.</p>
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;"><strong>7-28 Days:</strong> Concrete continues to gain strength. Avoid heavy vehicles, sharp impacts, or dragging items across the surface. Light foot traffic is fine after 48 hours.</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 8px 0; vertical-align: top; width: 30px;">
+                                                    <span style="font-size: 16px;">&#128274;</span>
+                                                </td>
+                                                <td style="padding: 8px 0;">
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;"><strong>After 28 Days:</strong> Your concrete has reached full strength. We recommend sealing the surface to protect the finish and extend its life. Sealed concrete is easier to clean and resists staining.</p>
                                                 </td>
                                             </tr>
                                             {% if balance_cents > 0 %}
@@ -121,7 +129,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
                                 <tr>
                                     <td>
-                                        <a href="{{ portal_url }}" target="_blank" style="display: block; width: 100%; text-align: center; background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">Pay Final Invoice — {{ balance_formatted }}</a>
+                                        <a href="{{ portal_url }}" target="_blank" style="display: block; width: 100%; text-align: center; background-color: #E87A2E; color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">Pay Final Invoice — {{ balance_formatted }}</a>
                                     </td>
                                 </tr>
                             </table>
@@ -133,14 +141,14 @@
                                 <tr>
                                     <td style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 14px 18px;">
                                         <p style="margin: 0 0 8px 0; font-size: 14px; color: #92400e; font-weight: 600; line-height: 1.5;">Happy with the result?</p>
-                                        <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">We'd love a quick Google review — it helps other homeowners find quality concreters. <a href="{{ review_url }}" style="color: #E87A2E; font-weight: 600; text-decoration: underline;">Leave a review</a></p>
+                                        <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.5;">A Google review makes a real difference for a small business like ours. <a href="{{ review_url }}" style="color: #E87A2E; font-weight: 600; text-decoration: underline;">Leave a review</a></p>
                                     </td>
                                 </tr>
                             </table>
                             {% endif %}
 
                             <!-- Closing -->
-                            <p style="margin: 0 0 10px 0; font-size: 15px; color: #374151; line-height: 1.6;">Thank you for choosing {{ business_name }}. If you ever need concreting work in the future, or know someone who does, we'd love to help!</p>
+                            <p style="margin: 0 0 10px 0; font-size: 15px; color: #374151; line-height: 1.6;">Thank you for choosing {{ business_name }}. Know someone who needs concreting? We'd appreciate the referral.</p>
                             <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">Cheers,<br>{{ business_name }}</p>
                         </td>
                     </tr>
@@ -155,7 +163,8 @@
                             </p>
                             {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                            {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="14" style="height: 14px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
+                            <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>
                         </td>
                     </tr>
                 </table>

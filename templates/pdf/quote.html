@@ -172,34 +172,20 @@
 
         /* ── Validity Callout ── */
         .callout {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            background: linear-gradient(135deg, #fffbf5, #fff8f0);
-            border: 1px solid #fde6c8;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
             border-left: 4px solid #E87A2E;
             border-radius: 0 8px 8px 0;
             padding: 14px 18px;
             margin-bottom: 26px;
         }
-        .callout-icon {
-            font-size: 13pt;
-            line-height: 1;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
         .callout-text {
             font-size: 9.5pt;
-            color: #78350f;
+            color: #374151;
             font-weight: 500;
             line-height: 1.5;
         }
-        .callout-text strong { color: #451a03; font-weight: 700; }
-        .callout-sub {
-            font-size: 8.5pt;
-            color: #a16207;
-            margin-top: 3px;
-        }
+        .callout-text strong { color: #1a1a1a; font-weight: 700; }
 
         /* ══════════════════════════════════════════
            LINE ITEMS TABLE
@@ -356,7 +342,7 @@
         }
 
         /* ══════════════════════════════════════════
-           TERMS & CONDITIONS
+           TERMS LINK
            ══════════════════════════════════════════ */
         .terms-block {
             margin-bottom: 22px;
@@ -371,37 +357,11 @@
             color: #E87A2E;
             margin-bottom: 10px;
         }
-        .terms-list {
-            padding-left: 16px;
+        .terms-footnote {
             font-size: 8.5pt;
             color: #6b7280;
-            line-height: 1.7;
+            margin-top: 0;
         }
-        .terms-list li { margin-bottom: 2px; }
-        .terms-footnote {
-            font-size: 7.5pt;
-            color: #9ca3af;
-            font-style: italic;
-            margin-top: 8px;
-        }
-
-        /* ── Legal Box ── */
-        .legal-card {
-            background: #fafafa;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 18px 22px;
-            margin-bottom: 22px;
-        }
-        .legal-card .section-label { margin-bottom: 8px; }
-        .legal-text {
-            font-size: 8pt;
-            color: #6b7280;
-            line-height: 1.65;
-            margin-bottom: 5px;
-        }
-        .legal-text:last-child { margin-bottom: 0; }
-        .legal-text strong { color: #374151; }
 
         /* ── Signature ── */
         .sig-card {
@@ -509,7 +469,7 @@
         <!-- Customer & Site Address -->
         <div class="info-grid">
             <div class="info-col">
-                <div class="info-label">Prepared For</div>
+                <div class="info-label">Customer</div>
                 <div class="info-primary">{{ customer.name or 'Customer Name' }}</div>
                 {% if customer.email %}<div class="info-secondary">{{ customer.email }}</div>{% endif %}
                 {% if customer.phone %}<div class="info-secondary">{{ customer.phone }}</div>{% endif %}
@@ -553,13 +513,7 @@
 
         <!-- Validity Notice -->
         <div class="callout">
-            <div class="callout-icon">&#9888;</div>
-            <div>
-                <div class="callout-text"><strong>Valid Until:</strong> {{ quote.expiry_date.strftime('%d %B %Y') if quote.expiry_date else 'This quote is valid for 30 days from the date above' }}. Prices may change after this period.</div>
-                {% if business.license %}
-                <div class="callout-sub">Contractor Licence No. {{ business.license }}</div>
-                {% endif %}
-            </div>
+            <div class="callout-text"><strong>Validation Period:</strong> {{ quote.expiry_date.strftime('%d/%m/%Y') if quote.expiry_date else '30 days from date of issue' }} &mdash; Prices &amp; discounts associated with this quote may change after this period.</div>
         </div>
 
         <!-- Line Items -->
@@ -660,7 +614,7 @@
                 {% endfor %}
             {% else %}
             <div class="schedule-item">
-                <span class="name">Deposit (10% max under NSW law)</span>
+                <span class="name">Deposit</span>
                 <span class="value">{{ ((quote.total_cents or 0) * 0.1)|int|currency }}</span>
             </div>
             <div class="schedule-item">
@@ -674,36 +628,9 @@
             {% endif %}
         </div>
 
-        <!-- Terms & Conditions -->
+        <!-- Terms Link -->
         <div class="terms-block">
-            <div class="section-label">Terms &amp; Conditions</div>
-            <ol class="terms-list">
-                <li>Quote valid until {{ quote.expiry_date.strftime('%d %B %Y') if quote.expiry_date else '30 days from date of issue' }}.</li>
-                <li>Deposit required to secure a start date. Maximum deposit is 10% of the contract price per NSW legislation.</li>
-                <li>Progress payment due before concrete delivery.</li>
-                <li>Final payment due on completion of works.</li>
-                <li>All work carried out to Australian Standards AS 3600 and manufacturer specifications.</li>
-                <li>Standard workmanship warranty applies.</li>
-                <li>Additional work or variations will be quoted separately and require written approval.</li>
-                <li>All prices include GST{% if business.abn %} (ABN: {{ business.abn }}){% endif %}.</li>
-            </ol>
-            <p class="terms-footnote">Full terms and conditions available at: KRG_Terms_and_Conditions_v3.0.pdf</p>
-        </div>
-
-        <!-- Legal Notices -->
-        <div class="legal-card">
-            <div class="section-label">Important Legal Information</div>
-            <p class="legal-text">
-                <strong>Home Building Act 1989 (NSW):</strong> For residential building work valued over $5,000 (inc GST), a written contract is required. Work over $20,000 (inc GST) requires a contract that complies with the Home Building Act 1989. Tradespeople carrying out residential building work valued at more than $5,000 must be licensed by NSW Fair Trading.
-            </p>
-            <p class="legal-text">
-                <strong>Cooling-Off Period:</strong> For contracts over $20,000 (inc GST), the homeowner has a 5-business-day cooling-off period from the date of signing to withdraw from this contract.
-            </p>
-            <p class="legal-text">
-                <strong>Licence:</strong> {{ business.trading_as or business.name }}
-                {% if business.license %} &mdash; Contractor Licence No. {{ business.license }}{% endif %}
-                {% if business.abn %} &mdash; ABN: {{ business.abn }}{% endif %}
-            </p>
+            <p class="terms-footnote">Please see <a href="https://www.krgconcreting.au/terms" style="color: #E87A2E; text-decoration: none; font-weight: 600;">www.krgconcreting.au/terms</a> for full terms &amp; conditions.</p>
         </div>
 
         <!-- Signature (if signed) -->

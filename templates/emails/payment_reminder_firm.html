@@ -46,8 +46,8 @@
 
                 <!-- Greeting -->
                 <p style="color: #374151; font-size: 15px; margin: 0 0 8px 0;">Hi {{ customer.name }},</p>
-                <p style="color: #374151; font-size: 15px; margin: 0 0 24px 0;">Your payment for invoice <strong style="color: #1a1a1a;">{{ invoice.invoice_number }}</strong> is now <strong style="color: #dc2626;">{{ days_overdue }} days overdue</strong>. Please arrange payment at your earliest convenience to avoid any further action.</p>
-                <p style="color: #374151; font-size: 13px; margin: 12px 0 0 0; line-height: 1.6;"><strong style="color: #1a1a1a;">Please note:</strong> A late payment fee of 2% per month may apply to invoices that remain overdue, in accordance with our terms of trade.</p>
+                <p style="color: #374151; font-size: 15px; margin: 0 0 24px 0;">Your payment for invoice <strong style="color: #1a1a1a;">{{ invoice.invoice_number }}</strong> is now <strong style="color: #dc2626;">{{ days_overdue }} days overdue</strong>. Please arrange payment immediately.</p>
+
 
                 <!-- Section Label -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
@@ -146,7 +146,7 @@
                     </tr>
                 </table>
 
-                <p style="color: #374151; font-size: 14px; margin: 0;">If you are experiencing difficulties, please contact us immediately to discuss payment arrangements.</p>
+                <p style="color: #374151; font-size: 14px; margin: 0;">If you are experiencing difficulties, please contact us on <strong>{{ business_phone }}</strong> to discuss payment arrangements.</p>
 
                         </td>
                     </tr>
@@ -162,7 +162,8 @@
                             </p>
                             {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                            {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="14" style="height: 14px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
+                            <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>
                         </td>
                     </tr>
 

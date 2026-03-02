@@ -28,6 +28,7 @@ from app.notifications.service import (
     check_jobs_tomorrow,
     check_expiring_quotes,
     check_quote_followups,
+    check_sealer_followups,
 )
 
 router = APIRouter(dependencies=[Depends(require_login), Depends(verify_csrf)])
@@ -78,7 +79,22 @@ async def notification_detail(
         await db.commit()
 
     # Redirect to relevant page based on notification type
-    if notification.quote_id:
+    if notification.type == "inbound_sms":
+        # Redirect to SMS inbox conversation for the customer's phone
+        if notification.customer_id:
+            customer = await db.get(Customer, notification.customer_id)
+            if customer:
+                decrypt_customer_pii(customer)
+                if customer.phone:
+                    # Normalize phone for SMS inbox URL (strip spaces/dashes)
+                    phone = customer.phone.replace(" ", "").replace("-", "")
+                    if phone.startswith("0"):
+                        phone = "61" + phone[1:]
+                    return RedirectResponse(url=f"/sms-inbox/conversation/{phone}", status_code=302)
+        return RedirectResponse(url="/sms-inbox", status_code=302)
+    elif notification.type == "sealer_followup" and notification.quote_id:
+        return RedirectResponse(url=f"/quotes/{notification.quote_id}", status_code=302)
+    elif notification.quote_id:
         return RedirectResponse(url=f"/quotes/{notification.quote_id}", status_code=302)
     elif notification.invoice_id:
         return RedirectResponse(url=f"/invoices/{notification.invoice_id}", status_code=302)
@@ -201,6 +217,16 @@ async def api_check_quote_followups(
 ):
     """Check for quotes needing follow-up and create reminders. Run daily via cron."""
     count = await check_quote_followups(db)
+    await db.commit()
+    return {"success": True, "notifications_created": count}
+
+
+@router.post("/api/check-sealer-followups", name="notifications:check_sealer_followups")
+async def api_check_sealer_followups(
+    db: AsyncSession = Depends(get_db),
+):
+    """Check for completed jobs needing sealer maintenance (~3 years). Run daily via cron."""
+    count = await check_sealer_followups(db)
     await db.commit()
     return {"success": True, "notifications_created": count}
 

@@ -207,6 +207,25 @@ async def reschedule_job(
 
     await db.commit()
 
+    # Send reschedule email to customer (don't fail if email fails)
+    try:
+        customer = await db.get(Customer, quote.customer_id)
+        if customer:
+            from app.core.security import decrypt_customer_pii
+            decrypt_customer_pii(customer)
+            if customer.email:
+                from app.notifications.email import send_job_rescheduled_email
+                await send_job_rescheduled_email(
+                    db=db,
+                    quote=quote,
+                    customer=customer,
+                    old_date=old_date,
+                    new_date=new_date_parsed,
+                )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to send reschedule email: {e}")
+
     return {"success": True, "message": f"Job rescheduled to {new_date_parsed}"}
 
 

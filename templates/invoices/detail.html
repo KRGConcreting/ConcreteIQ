@@ -51,6 +51,26 @@
             Send to Customer
         </button>
         {% endif %}
+        {% if invoice.status in ['sent', 'viewed', 'partial', 'overdue'] %}
+        <button @click="resendInvoice()"
+                id="resendInvoiceBtn"
+                class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 shadow-sm hover:shadow-md transition-all">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Resend Invoice
+        </button>
+        {% endif %}
+        {% if invoice.status == 'paid' %}
+        <button @click="resendReceipt()"
+                id="resendReceiptBtn"
+                class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 shadow-sm hover:shadow-md transition-all">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Resend Receipt
+        </button>
+        {% endif %}
         {% if invoice.status not in ['paid', 'voided'] and stripe_enabled %}
         <button @click="createCheckout()"
                 class="btn-v4 btn-v4-secondary inline-flex items-center" style="--btn-accent: #7c3aed; border-color: #7c3aed33; color: #7c3aed;">
@@ -437,6 +457,58 @@ async function sendReminder(tier) {
         }
     } catch (err) {
         alert('Error: ' + err.message);
+    }
+}
+
+async function resendInvoice() {
+    if (!confirm('Resend this invoice to the customer via email?')) return;
+    const btn = document.getElementById('resendInvoiceBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    try {
+        const response = await fetch(`/invoices/api/${invoiceId}/resend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            alert('Invoice resent successfully!');
+            btn.textContent = 'Resent ✓';
+        } else {
+            alert('Failed: ' + (data.detail || 'Unknown error'));
+            btn.disabled = false;
+            btn.textContent = 'Resend Invoice';
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Resend Invoice';
+    }
+}
+
+async function resendReceipt() {
+    if (!confirm('Resend the payment receipt to the customer?')) return;
+    const btn = document.getElementById('resendReceiptBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    try {
+        const response = await fetch(`/invoices/api/${invoiceId}/resend-receipt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            alert('Receipt resent successfully!');
+            btn.textContent = 'Resent ✓';
+        } else {
+            alert('Failed: ' + (data.detail || 'Unknown error'));
+            btn.disabled = false;
+            btn.textContent = 'Resend Receipt';
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Resend Receipt';
     }
 }
 

@@ -546,6 +546,55 @@ async def api_send_quote(
         raise HTTPException(400, str(e))
 
 
+@router.post("/api/{id}/resend")
+async def api_resend_quote(
+    request: Request,
+    id: int,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    API: Resend quote email to customer.
+
+    Works for quotes in sent, viewed, or expired status.
+    Generates a fresh portal token and resends the email.
+    Does not change the quote status.
+    """
+    quote = await service.get_quote(db, id)
+    if not quote:
+        raise HTTPException(404, "Quote not found")
+
+    if quote.status not in ("sent", "viewed", "expired"):
+        raise HTTPException(400, f"Cannot resend a quote in '{quote.status}' status")
+
+    customer = await db.get(Customer, quote.customer_id)
+    if not customer:
+        raise HTTPException(400, "No customer linked to this quote")
+
+    # Generate fresh portal token
+    from app.quotes.service import generate_portal_token
+    raw_token, hashed_token = generate_portal_token()
+    quote.portal_token = hashed_token
+    portal_url = f"{settings.app_url}/p/{raw_token}"
+
+    # Send email
+    from app.notifications.email import send_quote_email
+    email_sent = await send_quote_email(db, quote, customer, portal_url)
+
+    # Log activity
+    activity = ActivityLog(
+        action="quote_resent",
+        description=f"Resent quote {quote.quote_number}",
+        entity_type="quote",
+        entity_id=quote.id,
+        ip_address=request.client.host if request.client else None,
+        extra_data={"email_sent": email_sent},
+    )
+    db.add(activity)
+    await db.commit()
+
+    return {"success": True, "email_sent": email_sent, "portal_url": portal_url}
+
+
 @router.post("/api/{id}/confirm-booking")
 async def api_confirm_booking(
     request: Request,
@@ -854,6 +903,44 @@ async def api_send_followup(
         "sms_sent": sms_result.get("success", False),
         "portal_url": portal_url,
     }
+
+
+@router.post("/api/{id}/send-sealer-followup")
+async def api_send_sealer_followup(
+    request: Request,
+    id: int,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    API: Send sealer maintenance follow-up email for a completed job.
+    """
+    quote = await service.get_quote(db, id)
+    if not quote:
+        raise HTTPException(404, "Quote not found")
+
+    if quote.status != "completed":
+        raise HTTPException(400, f"Can only send sealer follow-ups for completed jobs (current: {quote.status})")
+
+    customer = await db.get(Customer, quote.customer_id)
+    if not customer:
+        raise HTTPException(400, "No customer linked to this quote")
+
+    # Send email
+    from app.notifications.email import send_sealer_followup_email
+    email_sent = await send_sealer_followup_email(db, quote, customer)
+
+    # Log activity
+    activity = ActivityLog(
+        action="sealer_followup_sent",
+        description=f"Sent sealer follow-up for {quote.quote_number}",
+        entity_type="quote",
+        entity_id=quote.id,
+        ip_address=request.client.host if request.client else None,
+    )
+    db.add(activity)
+    await db.commit()
+
+    return {"success": True, "email_sent": email_sent}
 
 
 class ProgressUpdateRequest(BaseModel):

@@ -418,6 +418,111 @@ async def api_send_invoice(
         raise HTTPException(400, str(e))
 
 
+@router.post("/api/{id}/resend")
+async def api_resend_invoice(
+    request: Request,
+    id: int,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    API: Resend invoice email to customer.
+
+    Works for invoices in sent, viewed, partial, or overdue status.
+    Generates a fresh portal token and resends the email.
+    Does not change the invoice status.
+    """
+    invoice = await service.get_invoice(db, id)
+    if not invoice:
+        raise HTTPException(404, "Invoice not found")
+
+    if invoice.status not in ("sent", "viewed", "partial", "overdue"):
+        raise HTTPException(400, f"Cannot resend an invoice in '{invoice.status}' status")
+
+    customer = await db.get(Customer, invoice.customer_id)
+    if not customer:
+        raise HTTPException(400, "No customer linked to this invoice")
+    decrypt_customer_pii(customer)
+
+    # Generate fresh portal token
+    from app.invoices.service import generate_portal_token
+    raw_token, hashed_token = generate_portal_token()
+    invoice.portal_token = hashed_token
+    portal_url = f"{settings.app_url}/p/invoice/{raw_token}"
+
+    # Send email
+    from app.notifications.email import send_invoice_email
+    email_sent = await send_invoice_email(db, invoice, customer, portal_url)
+
+    # Log activity
+    activity = ActivityLog(
+        action="invoice_resent",
+        description=f"Resent invoice {invoice.invoice_number}",
+        entity_type="invoice",
+        entity_id=invoice.id,
+        ip_address=request.client.host if request.client else None,
+        extra_data={"email_sent": email_sent},
+    )
+    db.add(activity)
+    await db.commit()
+
+    return {"success": True, "email_sent": email_sent, "portal_url": portal_url}
+
+
+@router.post("/api/{id}/resend-receipt")
+async def api_resend_receipt(
+    request: Request,
+    id: int,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    API: Resend payment receipt email for the most recent payment on this invoice.
+
+    Works for invoices with at least one payment recorded.
+    """
+    invoice = await service.get_invoice(db, id)
+    if not invoice:
+        raise HTTPException(404, "Invoice not found")
+
+    customer = await db.get(Customer, invoice.customer_id)
+    if not customer:
+        raise HTTPException(400, "No customer linked to this invoice")
+    decrypt_customer_pii(customer)
+
+    # Get most recent payment
+    result = await db.execute(
+        select(Payment)
+        .where(Payment.invoice_id == invoice.id)
+        .order_by(Payment.paid_at.desc())
+        .limit(1)
+    )
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(400, "No payments recorded for this invoice")
+
+    # Get linked quote for context
+    quote = await db.get(Quote, invoice.quote_id) if invoice.quote_id else None
+
+    # Send receipt email
+    from app.notifications.email import send_payment_receipt_email
+    email_sent = await send_payment_receipt_email(
+        db, payment, invoice, customer, quote
+    )
+
+    # Log activity
+    activity = ActivityLog(
+        action="receipt_resent",
+        description=f"Resent receipt for payment on {invoice.invoice_number}",
+        entity_type="invoice",
+        entity_id=invoice.id,
+        ip_address=request.client.host if request.client else None,
+        extra_data={"email_sent": email_sent, "payment_id": payment.id},
+    )
+    db.add(activity)
+    await db.commit()
+
+    return {"success": True, "email_sent": email_sent}
+
+
 @router.post("/api/{id}/void")
 async def api_void_invoice(
     request: Request,

@@ -24,6 +24,11 @@ def _email_logo_url() -> str:
     return f"{settings.app_url}/static/images/KyleRGyoles_Concreting_Logo.png"
 
 
+def _ciq_logo_url() -> str:
+    """Public URL for ConcreteIQ logo in email footers."""
+    return f"{settings.app_url}/static/images/ConcreteIQ_Logo_Nav.png"
+
+
 # =============================================================================
 # POSTMARK API CLIENT
 # =============================================================================
@@ -261,6 +266,7 @@ async def send_quote_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render quote email template: {str(e)}")
@@ -360,6 +366,7 @@ async def send_amendment_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render amendment email template: {str(e)}")
@@ -466,6 +473,7 @@ async def send_invoice_email(
             bank_bsb=settings.bank_bsb,
             bank_account=settings.bank_account,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render invoice email template: {str(e)}")
@@ -570,6 +578,7 @@ async def send_payment_receipt_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render payment receipt template: {str(e)}")
@@ -747,6 +756,7 @@ def send_payment_reminder_email_sync(
             bank_bsb=settings.bank_bsb,
             bank_account=settings.bank_account,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render payment reminder template: {str(e)}")
@@ -829,6 +839,7 @@ def send_job_reminder_email_sync(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render job reminder template: {str(e)}")
@@ -912,6 +923,7 @@ async def send_review_request_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render review request template: {str(e)}")
@@ -998,6 +1010,7 @@ async def send_quote_followup_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render quote followup template: {str(e)}")
@@ -1087,6 +1100,7 @@ async def send_progress_update_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render progress update template: {str(e)}")
@@ -1155,6 +1169,7 @@ def send_review_request_email_sync(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render review request template: {str(e)}")
@@ -1249,6 +1264,7 @@ async def send_quote_expiry_warning_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render quote expiry warning template: {str(e)}")
@@ -1353,6 +1369,7 @@ async def send_job_complete_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render job complete template: {str(e)}")
@@ -1474,6 +1491,7 @@ async def send_booking_confirmed_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
         )
     except Exception as e:
         logger.error(f"Failed to render booking confirmed template: {str(e)}")
@@ -1521,4 +1539,193 @@ We're looking forward to getting started!
         quote_id=quote.id,
         customer_id=customer.id,
         template_name="booking_confirmed",
+    )
+
+
+# =============================================================================
+# JOB RESCHEDULED
+# =============================================================================
+
+async def send_job_rescheduled_email(
+    db: AsyncSession,
+    quote: Quote,
+    customer: Customer,
+    old_date,
+    new_date,
+    reason: str = None,
+) -> bool:
+    """
+    Send email to customer when their job is rescheduled.
+
+    Args:
+        quote: The quote/job being rescheduled
+        customer: The customer to notify
+        old_date: Previous start date
+        new_date: New start date
+        reason: Optional reason for the date change
+
+    Returns:
+        True if email sent successfully, False otherwise.
+    """
+    decrypt_customer_pii(customer)
+    if not customer.email:
+        logger.warning(f"Customer {customer.id} has no email - reschedule notification not sent")
+        return False
+
+    if not customer.notify_email:
+        logger.info(f"Customer {customer.id} has email notifications disabled")
+        return False
+
+    old_date_formatted = old_date.strftime("%A, %d %B %Y") if old_date else None
+    new_date_formatted = new_date.strftime("%A, %d %B %Y") if new_date else "To be confirmed"
+
+    subject = f"Date Change — {quote.quote_number} | {settings.trading_as}"
+
+    # Render HTML template
+    try:
+        html_content = templates.get_template("emails/job_rescheduled.html").render(
+            quote=quote,
+            customer=customer,
+            old_date_formatted=old_date_formatted,
+            new_date_formatted=new_date_formatted,
+            reason=reason,
+            business_name=settings.trading_as,
+            business_abn=settings.abn,
+            business_licence=settings.licence_number,
+            business_address=settings.business_address,
+            business_phone=settings.business_phone,
+            business_email=settings.business_email,
+            logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
+        )
+    except Exception as e:
+        logger.error(f"Failed to render job rescheduled template: {str(e)}")
+        return False
+
+    # Plain text version
+    text_content = f"""
+Hi {customer.name},
+
+Your job has been rescheduled to a new date.
+
+{f"Previous Date: {old_date_formatted}" if old_date_formatted else ""}
+New Date: {new_date_formatted}
+
+{f"Quote: {quote.quote_number}" if quote.quote_number else ""}
+{f"Project: {quote.job_name}" if quote.job_name else ""}
+{f"Location: {quote.job_address}" if quote.job_address else ""}
+
+{f"Note: {reason}" if reason else ""}
+
+Sorry for any inconvenience. If the new date doesn't work for you, please call us on {settings.business_phone} and we'll sort out a time that suits.
+
+{settings.trading_as}
+{settings.business_phone}
+""".strip()
+
+    return await send_email(
+        to=customer.email,
+        subject=subject,
+        html_body=html_content,
+        text_body=text_content,
+        db=db,
+        quote_id=quote.id,
+        customer_id=customer.id,
+        template_name="job_rescheduled",
+    )
+
+
+# =============================================================================
+# SEALER FOLLOW-UP (3-YEAR MAINTENANCE)
+# =============================================================================
+
+async def send_sealer_followup_email(
+    db: AsyncSession,
+    quote: Quote,
+    customer: Customer,
+) -> bool:
+    """
+    Send email to customer ~3 years after job completion reminding
+    them to get their concrete resealed.
+
+    Args:
+        quote: The original completed job/quote
+        customer: The customer to notify
+
+    Returns:
+        True if email sent successfully, False otherwise.
+    """
+    decrypt_customer_pii(customer)
+    if not customer.email:
+        logger.warning(f"Customer {customer.id} has no email - sealer follow-up not sent")
+        return False
+
+    if not customer.notify_email:
+        logger.info(f"Customer {customer.id} has email notifications disabled")
+        return False
+
+    # Calculate years since completion
+    from app.core.dates import sydney_now
+    now = sydney_now()
+    completed_at = quote.completed_at or quote.updated_at
+    if completed_at:
+        delta = now - completed_at
+        years_since = round(delta.days / 365)
+    else:
+        years_since = 3  # Default
+
+    completed_date_formatted = completed_at.strftime("%B %Y") if completed_at else None
+
+    subject = f"Time to Reseal Your Concrete | {settings.trading_as}"
+
+    # Render HTML template
+    try:
+        html_content = templates.get_template("emails/sealer_followup.html").render(
+            quote=quote,
+            customer=customer,
+            years_since=years_since,
+            completed_date_formatted=completed_date_formatted,
+            business_name=settings.trading_as,
+            business_abn=settings.abn,
+            business_licence=settings.licence_number,
+            business_address=settings.business_address,
+            business_phone=settings.business_phone,
+            business_email=settings.business_email,
+            logo_url=_email_logo_url(),
+            ciq_logo_url=_ciq_logo_url(),
+        )
+    except Exception as e:
+        logger.error(f"Failed to render sealer follow-up template: {str(e)}")
+        return False
+
+    # Plain text version
+    text_content = f"""
+Hi {customer.name},
+
+It's been about {years_since} years since we completed your concreting job{f" at {quote.job_address}" if quote.job_address else ""}. The sealer on your concrete is approaching the end of its lifespan and it's a good time to get it stripped and resealed.
+
+Why Reseal?
+- Protects against staining, moisture and UV damage
+- Restores the colour and finish to look like new
+- Extends the life of your concrete by years
+
+If you'd like a quote for a strip and reseal, give us a call on {settings.business_phone} or reply to this email.
+
+We recommend resealing every 3-5 years depending on exposure and foot traffic.
+
+Thanks for choosing {settings.trading_as} — we appreciate the ongoing support.
+
+{settings.trading_as}
+{settings.business_phone}
+""".strip()
+
+    return await send_email(
+        to=customer.email,
+        subject=subject,
+        html_body=html_content,
+        text_body=text_content,
+        db=db,
+        quote_id=quote.id,
+        customer_id=customer.id,
+        template_name="sealer_followup",
     )

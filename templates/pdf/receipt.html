@@ -20,7 +20,7 @@
         }
 
         .page-wrap {
-            border-top: 3px solid #16a34a;
+            border-top: 3px solid #E87A2E;
         }
 
         /* ══════════════════════════════════════════
@@ -64,7 +64,7 @@
         .doc-badge {
             font-size: 30pt;
             font-weight: 800;
-            color: #4ade80;
+            color: #E87A2E;
             letter-spacing: -0.02em;
             line-height: 1;
         }
@@ -85,7 +85,7 @@
 
         .accent-divider {
             height: 2px;
-            background: linear-gradient(90deg, #16a34a 0%, #4ade80 35%, rgba(74,222,128,0.15) 70%, transparent 100%);
+            background: linear-gradient(90deg, #E87A2E 0%, #f5a623 35%, rgba(245,166,35,0.15) 70%, transparent 100%);
         }
 
         /* Watermark */
@@ -96,7 +96,7 @@
             transform: translate(-50%, -50%) rotate(-18deg);
             font-size: 80pt;
             font-weight: 900;
-            color: rgba(22, 163, 74, 0.04);
+            color: rgba(232, 122, 46, 0.04);
             text-transform: uppercase;
             letter-spacing: 16px;
         }
@@ -119,7 +119,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 2.5px;
-            color: #16a34a;
+            color: #E87A2E;
             margin-bottom: 10px;
             padding-bottom: 8px;
             border-bottom: 1.5px solid #f0f0f0;
@@ -143,8 +143,8 @@
             text-align: center;
             padding: 42px 28px;
             margin-bottom: 32px;
-            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
-            border: 1.5px solid #bbf7d0;
+            background: linear-gradient(135deg, #fff7ed, #fffbf5);
+            border: 1.5px solid #fed7aa;
             border-radius: 14px;
             position: relative;
         }
@@ -156,7 +156,7 @@
             transform: translateX(-50%);
             width: 60px;
             height: 3px;
-            background: linear-gradient(90deg, #16a34a, #4ade80);
+            background: linear-gradient(90deg, #E87A2E, #f5a623);
             border-radius: 0 0 3px 3px;
         }
         .amount-tag {
@@ -164,13 +164,13 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 3px;
-            color: #16a34a;
+            color: #E87A2E;
             margin-bottom: 10px;
         }
         .amount-figure {
             font-size: 42pt;
             font-weight: 900;
-            color: #15803d;
+            color: #c2410c;
             font-family: 'Consolas', 'Courier New', monospace;
             letter-spacing: -1px;
         }
@@ -244,50 +244,28 @@
             font-size: 11pt;
             color: #1a1a1a;
         }
-        .summary-row.paid { color: #16a34a; }
-        .summary-row.paid .val { color: #16a34a; font-weight: 700; }
+        .summary-row.paid { color: #E87A2E; }
+        .summary-row.paid .val { color: #E87A2E; font-weight: 700; }
         .summary-row.balance { font-weight: 800; font-size: 11pt; }
 
         /* Success */
         .success-card {
             text-align: center;
             padding: 24px;
-            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
-            border: 1.5px solid #bbf7d0;
+            background: linear-gradient(135deg, #fff7ed, #fffbf5);
+            border: 1.5px solid #fed7aa;
             border-radius: 10px;
             margin-bottom: 26px;
         }
         .success-icon {
             font-size: 26pt;
-            color: #16a34a;
+            color: #E87A2E;
             margin-bottom: 6px;
         }
         .success-text {
             font-size: 11pt;
-            color: #15803d;
+            color: #9a3412;
             font-weight: 700;
-        }
-
-        /* Tax info */
-        .tax-card {
-            background: #fafafa;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 16px 22px;
-            margin-bottom: 22px;
-        }
-        .tax-label {
-            font-size: 7pt;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2.5px;
-            color: #E87A2E;
-            margin-bottom: 6px;
-        }
-        .tax-text {
-            font-size: 9pt;
-            color: #6b7280;
-            line-height: 1.6;
         }
 
         /* ══════════════════════════════════════════
@@ -299,7 +277,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-top: 2px solid #16a34a;
+            border-top: 2px solid #E87A2E;
         }
         .footer-biz {
             color: #E87A2E;
@@ -420,7 +398,7 @@
             <div class="summary-row total balance">
                 <span>Balance Remaining</span>
                 {% if invoice.balance_cents <= 0 %}
-                <span class="val" style="color: #16a34a;">Paid in Full</span>
+                <span class="val" style="color: #E87A2E;">Paid in Full</span>
                 {% else %}
                 <span class="val" style="color: #dc2626;">{{ invoice.balance_cents|currency }}</span>
                 {% endif %}
@@ -434,10 +412,6 @@
         </div>
         {% endif %}
 
-        <div class="tax-card">
-            <div class="tax-label">Tax Information</div>
-            <p class="tax-text">This receipt serves as proof of payment for taxation purposes. GST of ${{ '%.2f'|format((payment.amount_cents or 0) / 100 / 11) }} is included in the payment amount.{% if business.abn %} ABN: {{ business.abn }}{% endif %}</p>
-        </div>
     </div>
 
     <!-- ══════ FOOTER ══════ -->

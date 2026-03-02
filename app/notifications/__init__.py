@@ -36,6 +36,7 @@ from app.notifications.service import (
     check_jobs_tomorrow,
     check_expiring_quotes,
     check_quote_followups,
+    check_sealer_followups,
 )
 
 __all__ = [
@@ -74,4 +75,5 @@ __all__ = [
     "check_jobs_tomorrow",
     "check_expiring_quotes",
     "check_quote_followups",
+    "check_sealer_followups",
 ]

@@ -67,7 +67,7 @@
                             </table>
                             {% endif %}
                             <!-- Body Text -->
-                            <p style="margin: 0 0 12px 0; font-size: 15px; color: #374151;">If you have a moment, we'd really appreciate it if you could leave us a Google review. Your feedback helps other customers find quality tradespeople and helps us continue improving our service.</p>
+                            <p style="margin: 0 0 12px 0; font-size: 15px; color: #374151;">If you have a moment, we'd really appreciate it if you could leave us a Google review. Your feedback makes a real difference for a small business like ours.</p>
                             <!-- Small Centered Text -->
                             <p style="margin: 0 0 28px 0; text-align: center; font-size: 13px; color: #6b7280;">It only takes a minute and would mean a lot to our team!</p>
                             <!-- CTA Button -->
@@ -82,7 +82,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td style="background-color: #fff7ed; border-left: 4px solid #E87A2E; border-radius: 0 8px 8px 0; padding: 14px 18px; font-size: 13px; color: #9a3412;">
-                                        If you have any concerns or feedback you'd like to share privately, please don't hesitate to call us on <a href="tel:{{ business_phone }}" style="color: #E87A2E; font-weight: 700; text-decoration: none;">{{ business_phone }}</a>. We'd love to hear from you either way.
+                                        If you have any concerns or feedback you'd like to share privately, please call us on <a href="tel:{{ business_phone }}" style="color: #E87A2E; font-weight: 700; text-decoration: none;">{{ business_phone }}</a>.
                                     </td>
                                 </tr>
                             </table>
@@ -99,7 +99,8 @@
                             </p>
                             {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                            {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="14" style="height: 14px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
+                            <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>
                         </td>
                     </tr>
                 </table>

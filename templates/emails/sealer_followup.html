@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Following Up - Quote {{ quote.quote_number }}</title>
+    <title>Sealer Maintenance - {{ business_name }}</title>
     <!--[if mso]>
     <style type="text/css">
         body, table, td { font-family: 'Segoe UI', Arial, sans-serif !important; }
@@ -33,82 +33,104 @@
                     <tr>
                         <td style="padding: 32px 40px;">
                             <!-- Title -->
-                            <h1 style="margin: 0 0 6px 0; font-size: 24px; font-weight: 800; color: #1a1a1a; text-align: center; line-height: 1.3;">Your Quote is Waiting</h1>
-                            <p style="margin: 0 0 28px 0; font-size: 13px; color: #6b7280; text-align: center;">Quote {{ quote.quote_number }}</p>
+                            <h1 style="margin: 0 0 6px 0; font-size: 24px; font-weight: 800; color: #1a1a1a; text-align: center; line-height: 1.3;">Time to Reseal Your Concrete</h1>
+                            <p style="margin: 0 0 28px 0; font-size: 13px; color: #6b7280; text-align: center;">Maintenance Reminder</p>
 
                             <!-- Greeting -->
                             <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151; line-height: 1.6;">Hi {{ customer.name }},</p>
-                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151; line-height: 1.6;">We sent you a quote recently and wanted to follow up. Your quote is still available to view and accept online.</p>
+                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151; line-height: 1.6;">It's been about {{ years_since }} years since we completed your concreting job{% if quote.job_address %} at <strong>{{ quote.job_address }}</strong>{% endif %}. The sealer on your concrete is approaching the end of its lifespan and it's a good time to get it stripped and resealed.</p>
 
-                            <!-- Quote Summary Box -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
+                            <!-- Why Reseal Box -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
                                 <tr>
                                     <td style="background-color: #f9fafb; border-radius: 12px; padding: 24px; border-left: 4px solid #E87A2E;">
-                                        <p style="margin: 0 0 16px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Quote Summary</p>
+                                        <p style="margin: 0 0 16px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Why Reseal?</p>
 
                                         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                                            <!-- Quote number row -->
                                             <tr>
-                                                <td style="padding: 6px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">Quote</td>
-                                                <td style="padding: 6px 0; font-size: 14px; color: #374151; font-weight: 600; text-align: right; line-height: 1.5;">{{ quote.quote_number }}</td>
+                                                <td style="padding: 6px 0; vertical-align: top; width: 24px;">
+                                                    <span style="font-size: 14px;">&#128736;</span>
+                                                </td>
+                                                <td style="padding: 6px 0;">
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Protects against staining, moisture penetration and UV damage</p>
+                                                </td>
                                             </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; vertical-align: top;">
+                                                    <span style="font-size: 14px;">&#10024;</span>
+                                                </td>
+                                                <td style="padding: 6px 0;">
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Restores the colour and finish to look like new</p>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 6px 0; vertical-align: top;">
+                                                    <span style="font-size: 14px;">&#128170;</span>
+                                                </td>
+                                                <td style="padding: 6px 0;">
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Extends the life of your concrete by years</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            {% if quote.job_name or quote.job_address %}
+                            <!-- Original Job Details -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
+                                <tr>
+                                    <td style="background-color: #f9fafb; border-radius: 12px; padding: 24px;">
+                                        <p style="margin: 0 0 16px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Original Job</p>
+
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                             {% if quote.job_name %}
-                                            <!-- Project row -->
                                             <tr>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">Project</td>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #374151; font-weight: 600; text-align: right; line-height: 1.5;">{{ quote.job_name }}</td>
                                             </tr>
                                             {% endif %}
                                             {% if quote.job_address %}
-                                            <!-- Location row -->
                                             <tr>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">Location</td>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #374151; font-weight: 600; text-align: right; line-height: 1.5;">{{ quote.job_address }}</td>
                                             </tr>
                                             {% endif %}
-                                        </table>
-
-                                        <!-- Separator -->
-                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 12px 0;">
+                                            {% if completed_date_formatted %}
                                             <tr>
-                                                <td style="border-top: 2px solid #e2e8f0; font-size: 0; line-height: 0;">&nbsp;</td>
+                                                <td style="padding: 6px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">Completed</td>
+                                                <td style="padding: 6px 0; font-size: 14px; color: #374151; font-weight: 600; text-align: right; line-height: 1.5;">{{ completed_date_formatted }}</td>
                                             </tr>
-                                        </table>
-
-                                        <!-- Total row -->
-                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                                            <tr>
-                                                <td style="padding: 4px 0; font-size: 15px; color: #1a1a1a; font-weight: 700; line-height: 1.5;">Quote Total</td>
-                                                <td style="padding: 4px 0; font-size: 22px; font-weight: 800; color: #E87A2E; text-align: right; line-height: 1.3;">{{ total_formatted }}</td>
-                                            </tr>
+                                            {% endif %}
                                         </table>
                                     </td>
                                 </tr>
                             </table>
+                            {% endif %}
 
-                            <!-- Body text -->
-                            <p style="margin: 0 0 20px 0; font-size: 15px; color: #374151; line-height: 1.6;">Your quote is still available to view and accept online:</p>
+                            <!-- CTA -->
+                            <p style="margin: 0 0 20px 0; font-size: 15px; color: #374151; line-height: 1.6;">If you'd like a quote for a strip and reseal, give us a call or reply to this email. We'll come out, take a look, and give you a price.</p>
 
-                            <!-- CTA Button -->
+                            <!-- Call Button -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
                                 <tr>
                                     <td>
-                                        <a href="{{ portal_url }}" target="_blank" style="display: block; width: 100%; text-align: center; background-color: #E87A2E; background: linear-gradient(135deg, #E87A2E, #d4691f); color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">View Your Quote</a>
+                                        <a href="tel:{{ business_phone }}" style="display: block; width: 100%; text-align: center; background-color: #E87A2E; background: linear-gradient(135deg, #E87A2E, #d4691f); color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">Call {{ business_phone }}</a>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- Note Box -->
+                            <!-- Note -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
                                 <tr>
                                     <td style="background-color: #fff7ed; border-left: 4px solid #E87A2E; border-radius: 0 8px 8px 0; padding: 14px 18px;">
-                                        <p style="margin: 0; font-size: 13px; color: #9a3412; line-height: 1.5;">If the quote doesn't quite suit your needs, we're happy to adjust it. Give us a call on <strong>{{ business_phone }}</strong> and we'll work something out.</p>
+                                        <p style="margin: 0; font-size: 13px; color: #9a3412; line-height: 1.5;">We recommend resealing every 3-5 years depending on exposure and foot traffic. Regular maintenance keeps your concrete looking great and avoids costly repairs down the track.</p>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- Closing text -->
-                            <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">If you have any questions, please get in touch.</p>
+                            <!-- Closing -->
+                            <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">Thanks for choosing {{ business_name }} — we appreciate the ongoing support.</p>
                         </td>
                     </tr>
                     <!-- Footer -->

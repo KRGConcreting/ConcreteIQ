@@ -115,7 +115,7 @@
 
                             <!-- Closing text -->
                             <p style="margin: 0 0 10px 0; font-size: 15px; color: #374151; line-height: 1.6;">Click the button above to review the variation and accept or decline it with your digital signature.</p>
-                            <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">If you have any questions, please don't hesitate to get in touch.</p>
+                            <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">If you have any questions, please get in touch.</p>
                         </td>
                     </tr>
                     <!-- Footer -->
@@ -129,7 +129,8 @@
                             </p>
                             {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                            {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="14" style="height: 14px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
+                            <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>
                         </td>
                     </tr>
                 </table>

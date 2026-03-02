@@ -70,6 +70,11 @@ celery_app.conf.update(
             "task": "app.tasks.followups.check_quote_followups",
             "schedule": crontab(hour=18, minute=30),  # 6:30pm daily
         },
+        # Check for completed jobs needing sealer maintenance (~3 years) daily at 8am
+        "check-sealer-followups": {
+            "task": "app.tasks.followups.check_sealer_followups",
+            "schedule": crontab(hour=8, minute=0),  # 8am daily
+        },
         # Expire quotes past their expiry date daily at 12:30am
         "expire-old-quotes": {
             "task": "app.tasks.quotes.expire_old_quotes",

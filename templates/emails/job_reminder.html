@@ -38,7 +38,7 @@
                             </p>
                             <!-- Greeting -->
                             <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151;">Hi {{ customer.name }},</p>
-                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151;">This is a friendly reminder that your concreting job is scheduled for <strong style="color: #1a1a1a;">{{ time_description }}</strong>.</p>
+                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151;">Just a reminder that your concreting job is scheduled for <strong style="color: #1a1a1a;">{{ time_description }}</strong>.</p>
                             <!-- Date Highlight Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
                                 <tr>
@@ -51,7 +51,7 @@
                             <!-- Job Details Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
                                 <tr>
-                                    <td style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 24px;">
+                                    <td style="background-color: #f9fafb; border-radius: 12px; border-left: 4px solid #E87A2E; padding: 24px;">
                                         <p style="margin: 0 0 12px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Job Details</p>
                                         <!-- Quote Reference -->
                                         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 14px;">
@@ -98,7 +98,7 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Ensure the work area is clear of obstacles, vehicles, and personal items</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Ensure clear truck and equipment access to the work area</td>
                                             </tr>
                                         </table>
                                         <!-- Item 2 -->
@@ -107,7 +107,7 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Provide clear access for our truck and equipment</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Move vehicles, bins, and any items from the driveway and work zone</td>
                                             </tr>
                                         </table>
                                         <!-- Item 3 -->
@@ -116,7 +116,7 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Keep pets and children away from the work area</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Be home for the first 10-15 minutes so we can confirm scope and access</td>
                                             </tr>
                                         </table>
                                         <!-- Item 4 -->
@@ -125,7 +125,7 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E" width="18" height="18" alt="" style="display: block;">
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Mark any underground services (gas, water, electrical) if applicable</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Keep pets and children clear of the work area</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -139,17 +139,9 @@
                                     </td>
                                 </tr>
                             </table>
-                            <!-- Contact Box -->
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
-                                <tr>
-                                    <td style="background-color: #eff6ff; border-radius: 12px; padding: 20px; text-align: center;">
-                                        <p style="margin: 0 0 8px 0; font-size: 14px; color: #1e40af;">Questions or need to reschedule?</p>
-                                        <a href="tel:{{ business_phone }}" style="font-size: 20px; font-weight: 800; color: #1e40af; text-decoration: none;">{{ business_phone }}</a>
-                                    </td>
-                                </tr>
-                            </table>
+
                             <!-- Closing -->
-                            <p style="margin: 0; font-size: 15px; color: #374151;">We look forward to completing your job and delivering great results!</p>
+                            <p style="margin: 0; font-size: 15px; color: #374151;">See you {{ time_description }}.</p>
                         </td>
                     </tr>
                     <!-- Footer -->
@@ -163,7 +155,8 @@
                             </p>
                             {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                            {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="14" style="height: 14px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
+                            <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>
                         </td>
                     </tr>
                 </table>

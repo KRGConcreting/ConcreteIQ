@@ -98,11 +98,19 @@
                                 </tr>
                             </table>
                             {% endif %}
+                            <!-- Important Note -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                <tr>
+                                    <td style="background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; padding: 14px 18px; font-size: 13px; color: #991b1b;">
+                                        <strong>Important:</strong> If formwork is in place, please note that on pour day the concrete must be poured continuously and cannot be stopped mid-pour. Any changes to the scope or layout must be raised <strong>before</strong> the pour begins. Please review the area and let us know as soon as possible if anything needs adjusting.
+                                    </td>
+                                </tr>
+                            </table>
                             <!-- Note Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td style="background-color: #fff7ed; border-left: 4px solid #E87A2E; border-radius: 0 8px 8px 0; padding: 14px 18px; font-size: 13px; color: #9a3412;">
-                                        If you have any questions about your project, give us a call on <a href="tel:{{ business_phone }}" style="color: #E87A2E; font-weight: 700; text-decoration: none;">{{ business_phone }}</a>. We're always happy to chat!
+                                        If you have any questions about your project, give us a call on <a href="tel:{{ business_phone }}" style="color: #E87A2E; font-weight: 700; text-decoration: none;">{{ business_phone }}</a>.
                                     </td>
                                 </tr>
                             </table>
@@ -119,7 +127,8 @@
                             </p>
                             {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                            {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="14" style="height: 14px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
+                            <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>
                         </td>
                     </tr>
                 </table>

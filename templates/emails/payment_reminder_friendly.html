@@ -34,7 +34,7 @@
                         <td style="padding: 32px 40px;">
 
                 <!-- Title & Badge -->
-                <h1 style="font-size: 22px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px 0; text-align: center;">Friendly Payment Reminder</h1>
+                <h1 style="font-size: 22px; font-weight: 700; color: #1a1a1a; margin: 0 0 8px 0; text-align: center;">Payment Reminder</h1>
                 <p style="color: #6b7280; margin: 0 0 16px 0; font-size: 14px; text-align: center;">Invoice {{ invoice.invoice_number }}</p>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;"><tr><td style="text-align: center;">
                     <span style="display: inline-block; padding: 6px 18px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; background-color: #fff7ed; color: #c2410c;">PAYMENT DUE</span>
@@ -42,7 +42,7 @@
 
                 <!-- Greeting -->
                 <p style="color: #374151; font-size: 15px; margin: 0 0 8px 0;">Hi {{ customer.name }},</p>
-                <p style="color: #374151; font-size: 15px; margin: 0 0 24px 0;">Just a heads up &mdash; your payment for invoice <strong style="color: #1a1a1a;">{{ invoice.invoice_number }}</strong> is coming up soon. We wanted to send a friendly reminder so it doesn't slip through the cracks!</p>
+                <p style="color: #374151; font-size: 15px; margin: 0 0 24px 0;">Just a heads up &mdash; your payment for invoice <strong style="color: #1a1a1a;">{{ invoice.invoice_number }}</strong> is coming up soon. Please arrange payment by the due date below.</p>
 
                 <!-- Section Label -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;"><tr><td style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Payment Summary</td></tr></table>
@@ -113,7 +113,7 @@
                     <p style="margin: 0; font-size: 13px; color: #9a3412;">If you have already made this payment, please disregard this reminder. Bank transfers can take 1-2 business days to process.</p>
                 </td></tr></table>
 
-                <p style="color: #374151; font-size: 14px; margin: 0;">If you have any questions about this invoice, please don't hesitate to contact us.</p>
+                <p style="color: #374151; font-size: 14px; margin: 0;">If you have any questions about this invoice, please contact us.</p>
 
                         </td>
                     </tr>
@@ -129,7 +129,8 @@
                             </p>
                             {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
-                            <p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>
+                            {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="14" style="height: 14px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
+                            <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>
                         </td>
                     </tr>
 

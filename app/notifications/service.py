@@ -951,3 +951,62 @@ async def check_quote_followups(db: AsyncSession) -> int:
             count += 1
 
     return count
+
+
+# =============================================================================
+# SEALER FOLLOW-UP CHECK (3+ YEARS POST COMPLETION)
+# =============================================================================
+
+async def check_sealer_followups(db: AsyncSession) -> int:
+    """
+    Check for completed jobs where the concrete sealer is due for maintenance.
+    Creates a notification prompting to send a sealer follow-up email.
+
+    Jobs completed approximately 3 years ago (between 1080-1095 days) get flagged.
+    Run this daily via cron job.
+
+    Returns count of new notifications created.
+    """
+    today = sydney_today()
+    now = sydney_now()
+    count = 0
+
+    # Look for jobs completed ~3 years ago (1080-1095 day window = ~36 months)
+    target_date_start = today - timedelta(days=1095)  # 3 years
+    target_date_end = today - timedelta(days=1080)    # 2 years 11.5 months
+
+    result = await db.execute(
+        select(Quote)
+        .where(Quote.status == "completed")
+        .where(Quote.completed_at.isnot(None))
+        .where(func.date(Quote.completed_at) >= target_date_start)
+        .where(func.date(Quote.completed_at) <= target_date_end)
+    )
+    quotes = result.scalars().all()
+
+    for quote in quotes:
+        # Check if we already created a sealer follow-up notification for this quote
+        existing = await db.execute(
+            select(Notification)
+            .where(Notification.quote_id == quote.id)
+            .where(Notification.type == "sealer_followup")
+        )
+        if existing.scalar():
+            continue  # Already notified
+
+        customer = await db.get(Customer, quote.customer_id) if quote.customer_id else None
+        customer_name = customer.name if customer else "Customer"
+
+        await create_notification(
+            db=db,
+            type="sealer_followup",
+            title="🔧 Sealer Maintenance Due",
+            message=f"{customer_name}'s job ({quote.quote_number}) was completed ~3 years ago. "
+                    f"Time to send a reseal follow-up?",
+            priority="normal",
+            customer_id=quote.customer_id,
+            quote_id=quote.id,
+        )
+        count += 1
+
+    return count
