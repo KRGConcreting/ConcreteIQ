@@ -150,6 +150,23 @@ async def customer_dashboard(
 
 
 # =============================================================================
+# PORTFOLIO GALLERY (public — showcases business work)
+# =============================================================================
+
+@router.get("/portfolio/photos", name="portal:portfolio_photos")
+async def get_portfolio_photos() -> list:
+    """
+    Get portfolio photos uploaded via the document library.
+
+    Public endpoint — no token needed. Returns images from
+    static/documents/portfolio/ for display on quote portal pages.
+    """
+    from app.documents import service as doc_service
+
+    return doc_service.list_portfolio_photos()
+
+
+# =============================================================================
 # QUOTE PORTAL
 # =============================================================================
 
@@ -186,6 +203,7 @@ async def view_quote(
                 "trading_as": settings.trading_as,
                 "phone": settings.business_phone,
                 "email": settings.business_email,
+                "abn": settings.abn,
             },
         })
 
@@ -204,6 +222,7 @@ async def view_quote(
                 "trading_as": settings.trading_as,
                 "phone": settings.business_phone,
                 "email": settings.business_email,
+                "abn": settings.abn,
             },
         })
 
@@ -228,6 +247,7 @@ async def view_quote(
             "trading_as": settings.trading_as,
             "phone": settings.business_phone,
             "email": settings.business_email,
+            "abn": settings.abn,
         },
         "today": sydney_today(),
         "token": token,  # Pass raw token for form submissions
@@ -887,12 +907,13 @@ async def view_invoice(
         "invoice": invoice,
         "customer": customer,
         "payments": payments,
-        "balance_cents": invoice.total_cents - invoice.paid_cents,
+        "balance_cents": (invoice.total_cents or 0) - (invoice.paid_cents or 0),
         "business": {
             "name": settings.business_name,
             "trading_as": settings.trading_as,
             "phone": settings.business_phone,
             "email": settings.business_email,
+            "abn": settings.abn,
             "bank_name": settings.bank_name,
             "bank_account_name": getattr(settings, 'bank_account_name', ''),
             "bank_bsb": settings.bank_bsb,
@@ -932,7 +953,7 @@ async def download_invoice_pdf(
         "gst_cents": invoice.gst_cents,
         "total_cents": invoice.total_cents,
         "paid_cents": invoice.paid_cents,
-        "balance_cents": invoice.total_cents - invoice.paid_cents,
+        "balance_cents": (invoice.total_cents or 0) - (invoice.paid_cents or 0),
         "status": invoice.status,
         "notes": invoice.notes,
     }
@@ -994,7 +1015,7 @@ async def create_payment_session(
     if invoice.status in ("paid", "voided"):
         raise HTTPException(400, f"Invoice is {invoice.status}")
 
-    balance = invoice.total_cents - invoice.paid_cents
+    balance = (invoice.total_cents or 0) - (invoice.paid_cents or 0)
     if balance <= 0:
         raise HTTPException(400, "Invoice is already paid")
 

@@ -1665,16 +1665,16 @@ async def send_sealer_followup_email(
         return False
 
     # Calculate years since completion
-    from app.core.dates import sydney_now
-    now = sydney_now()
-    completed_at = quote.completed_at or quote.updated_at
-    if completed_at:
-        delta = now - completed_at
+    from app.core.dates import sydney_now, sydney_today
+    today = sydney_today()
+    completed = quote.completed_date  # Date field (not datetime)
+    if completed:
+        delta = today - completed
         years_since = round(delta.days / 365)
     else:
         years_since = 3  # Default
 
-    completed_date_formatted = completed_at.strftime("%B %Y") if completed_at else None
+    completed_date_formatted = completed.strftime("%B %Y") if completed else None
 
     subject = f"Time to Reseal Your Concrete | {settings.trading_as}"
 

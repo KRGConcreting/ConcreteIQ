@@ -7,6 +7,7 @@ Session stored in signed cookie.
 
 from datetime import datetime, timedelta
 from typing import Optional
+import hmac
 import secrets
 
 import bcrypt
@@ -193,16 +194,16 @@ async def verify_csrf(request: Request) -> None:
     if not cookie_token:
         raise HTTPException(status_code=403, detail="CSRF token missing")
     
-    # Check header first
+    # Check header first (constant-time comparison to prevent timing attacks)
     header_token = request.headers.get(CSRF_HEADER_NAME)
-    if header_token and header_token == cookie_token:
+    if header_token and hmac.compare_digest(header_token, cookie_token):
         return
-    
-    # Check form data
+
+    # Check form data (constant-time comparison)
     try:
         form = await request.form()
         form_token = form.get(CSRF_FORM_FIELD)
-        if form_token and form_token == cookie_token:
+        if form_token and hmac.compare_digest(form_token, cookie_token):
             return
     except Exception:
         pass
@@ -245,16 +246,23 @@ def clear_login_attempts(ip: str) -> None:
 
 
 def get_client_ip(request: Request) -> str:
-    """Get client IP from request, handling proxies."""
-    # Check X-Forwarded-For header
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    
-    # Check X-Real-IP header
-    real_ip = request.headers.get("X-Real-IP")
-    if real_ip:
-        return real_ip
-    
+    """
+    Get client IP from request, handling proxies.
+
+    Only trusts proxy headers when TRUST_PROXY_HEADERS is set in config
+    (e.g. when running behind Railway, nginx, or a load balancer).
+    This prevents IP spoofing via X-Forwarded-For in direct connections.
+    """
+    if getattr(settings, 'trust_proxy_headers', False):
+        # Check X-Forwarded-For header (trusted proxy environment)
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+
+        # Check X-Real-IP header
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip
+
     # Fall back to direct client
     return request.client.host if request.client else "unknown"

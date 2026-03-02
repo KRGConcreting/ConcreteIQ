@@ -978,9 +978,9 @@ async def check_sealer_followups(db: AsyncSession) -> int:
     result = await db.execute(
         select(Quote)
         .where(Quote.status == "completed")
-        .where(Quote.completed_at.isnot(None))
-        .where(func.date(Quote.completed_at) >= target_date_start)
-        .where(func.date(Quote.completed_at) <= target_date_end)
+        .where(Quote.completed_date.isnot(None))
+        .where(Quote.completed_date >= target_date_start)
+        .where(Quote.completed_date <= target_date_end)
     )
     quotes = result.scalars().all()
 

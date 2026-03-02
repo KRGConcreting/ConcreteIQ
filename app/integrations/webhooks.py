@@ -95,15 +95,15 @@ async def stripe_webhook(
     signature = request.headers.get("stripe-signature")
 
     if not signature:
-        # Return 200 to prevent Stripe retries — log the error instead
-        return {"received": True, "error": "Missing Stripe signature"}
+        # Return 400 for missing signature — Stripe won't retry 4xx errors
+        raise HTTPException(400, "Missing Stripe signature")
 
-    # Verify signature — return 200 even on failure to prevent Stripe retry storms
+    # Verify signature — return 400 for invalid (Stripe won't retry 4xx)
     try:
         event = await payment_service.verify_webhook_signature(payload, signature, db=db)
     except Exception as e:
         logger.warning(f"Stripe webhook signature verification failed: {e}")
-        return {"received": True, "error": "Signature verification failed"}
+        raise HTTPException(400, "Invalid webhook signature")
 
     # Process event with idempotency
     try:

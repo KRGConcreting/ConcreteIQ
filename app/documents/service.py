@@ -29,13 +29,17 @@ CATEGORIES = {
     "insurance": "Insurance",
     "datasheets": "Datasheets",
     "swms": "SWMS Templates",
+    "portfolio": "Portfolio",
     "other": "Other",
 }
+
+# Image extensions (subset used by portfolio gallery)
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 # Allowed upload extensions
 ALLOWED_EXTENSIONS = {
     ".pdf", ".doc", ".docx", ".xls", ".xlsx",
-    ".jpg", ".jpeg", ".png", ".gif",
+    ".jpg", ".jpeg", ".png", ".gif", ".webp",
     ".txt", ".csv",
 }
 
@@ -114,6 +118,39 @@ def list_documents(category: Optional[str] = None) -> list[dict]:
 
     # Sort by most recently modified
     results.sort(key=lambda x: x["uploaded_ts"], reverse=True)
+    return results
+
+
+def list_portfolio_photos() -> list[dict]:
+    """
+    List image files in the portfolio category for the customer-facing gallery.
+
+    Returns list of dicts with: filename, url, thumbnail (same as url for now).
+    Only includes image files (jpg, jpeg, png, gif, webp).
+    """
+    _ensure_dirs()
+    results = []
+    portfolio_dir = DOCUMENTS_DIR / "portfolio"
+
+    if not portfolio_dir.exists():
+        return results
+
+    for f in sorted(portfolio_dir.iterdir()):
+        if not f.is_file():
+            continue
+        if f.name.startswith(".") or f.name.startswith("~"):
+            continue
+
+        ext = f.suffix.lower()
+        if ext not in IMAGE_EXTENSIONS:
+            continue
+
+        results.append({
+            "filename": f.name,
+            "url": f"/static/documents/portfolio/{f.name}",
+            "thumbnail": f"/static/documents/portfolio/{f.name}",
+        })
+
     return results
 
 

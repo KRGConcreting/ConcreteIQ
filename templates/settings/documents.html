@@ -182,7 +182,7 @@ Any changes to the scope of work must be agreed in writing. Variations may resul
                 </div>
                 <div>
                     <h2>Document Library</h2>
-                    <p>Insurance certificates, datasheets, SWMS templates, and more</p>
+                    <p>Insurance certificates, datasheets, SWMS, portfolio photos, and more</p>
                 </div>
             </div>
             <button @click="uploadModalOpen = true"
@@ -877,6 +877,7 @@ Any changes to the scope of work must be agreed in writing. Variations may resul
                             <option value="insurance">Insurance</option>
                             <option value="datasheets">Datasheets</option>
                             <option value="swms">SWMS Templates</option>
+                            <option value="portfolio">Portfolio</option>
                             <option value="other">Other</option>
                         </select>
                     </div>
@@ -1074,6 +1075,7 @@ function documentsSettings() {
             insurance: "Insurance",
             datasheets: "Datasheets",
             swms: "SWMS Templates",
+            portfolio: "Portfolio",
             other: "Other",
         },
 

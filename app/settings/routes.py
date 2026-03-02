@@ -1335,26 +1335,30 @@ async def preview_portal_page(
         gst_cents=75000,
         customer_id=1,
         signed_at=None,
+        signature_name=None,
+        discount_cents=0,
         confirmed_start_date=None,
         requested_start_date=None,
         customer_line_items=[
             SimpleNamespace(
                 category="Concrete Driveway",
                 total_cents=600000,
+                show_sub_prices=True,
                 sub_items=[
-                    SimpleNamespace(description="Excavation & preparation", amount_cents=120000),
-                    SimpleNamespace(description="Formwork & steel reinforcement", amount_cents=180000),
-                    SimpleNamespace(description="Concrete supply & pour (25MPa)", amount_cents=200000),
-                    SimpleNamespace(description="Broom finish", amount_cents=100000),
+                    SimpleNamespace(description="Excavation & preparation", price_cents=120000),
+                    SimpleNamespace(description="Formwork & steel reinforcement", price_cents=180000),
+                    SimpleNamespace(description="Concrete supply & pour (25MPa)", price_cents=200000),
+                    SimpleNamespace(description="Broom finish", price_cents=100000),
                 ]
             ),
             SimpleNamespace(
                 category="Garden Path",
                 total_cents=150000,
+                show_sub_prices=True,
                 sub_items=[
-                    SimpleNamespace(description="Excavation & base prep", amount_cents=50000),
-                    SimpleNamespace(description="Concrete supply & pour", amount_cents=60000),
-                    SimpleNamespace(description="Exposed aggregate finish", amount_cents=40000),
+                    SimpleNamespace(description="Excavation & base prep", price_cents=50000),
+                    SimpleNamespace(description="Concrete supply & pour", price_cents=60000),
+                    SimpleNamespace(description="Exposed aggregate finish", price_cents=40000),
                 ]
             ),
         ],
@@ -1381,7 +1385,11 @@ async def preview_portal_page(
         title="Add Retaining Wall",
         description="Customer requested a small retaining wall along the driveway edge to manage the slope. Includes excavation, formwork, steel reinforcement, and concrete pour with smooth finish.",
         amount_cents=185000,
-        status="pending",
+        status="sent",
+        signature_name=None,
+        accepted_at=None,
+        declined_at=None,
+        decline_reason=None,
         created_at=datetime(2026, 2, 20, 14, 30, 0),
     )
 
@@ -1393,10 +1401,17 @@ async def preview_portal_page(
         customer_id=1,
         status="sent",
         total_cents=247500,
+        subtotal_cents=225000,
+        gst_cents=22500,
         paid_cents=0,
+        issue_date=date(2026, 2, 16),
         due_date=date(2026, 3, 1),
-        description="Deposit (30%)",
+        paid_date=None,
+        description="Deposit (30%) — Driveway & Path",
         notes="Payment due before works commence.",
+        line_items=[
+            SimpleNamespace(description="Deposit — Driveway & Path (30%)", quantity=1, unit="", total_cents=225000),
+        ],
         created_at=datetime(2026, 2, 16, 9, 0, 0),
     )
 
@@ -1441,6 +1456,7 @@ async def preview_portal_page(
 
     elif page_type == "select_date":
         sample_quote.signed_at = datetime(2026, 2, 18, 14, 0, 0)
+        sample_quote.signature_name = "John Smith"
         sample_context.update({
             "quote": sample_quote,
             "customer": sample_customer,

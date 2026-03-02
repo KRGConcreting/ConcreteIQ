@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     # Webhook authentication (shared secret for Postmark/ClickSend/Vonage callbacks)
     webhook_secret: str | None = None
 
+    # Proxy trust (set True when behind a reverse proxy like Railway/nginx)
+    trust_proxy_headers: bool = False
+
     # Redis (for Celery background tasks)
     redis_url: str = "redis://localhost:6379/0"
 
