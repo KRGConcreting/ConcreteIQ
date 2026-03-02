@@ -209,7 +209,8 @@
     }
 
 
-    /* ── Premium Sound Effects Module v2 ── */
+    /* ── Premium Sound Engine v3 ── */
+    /* High-end notification sounds with rich harmonics, stereo imaging, and lush reverb */
     var audioCtx = null;
     function getAudioCtx() {
         if (!audioCtx) {
@@ -219,163 +220,239 @@
         return audioCtx;
     }
 
-    /* Stereo convolution reverb — lush room tail */
-    function createReverb(ctx, decay, length) {
-        decay = decay || 2.2; length = length || 0.8;
-        var rate = ctx.sampleRate;
-        var len = rate * length;
-        var impulse = ctx.createBuffer(2, len, rate);
-        for (var ch = 0; ch < 2; ch++) {
-            var data = impulse.getChannelData(ch);
-            for (var i = 0; i < len; i++) {
-                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-            }
-        }
-        var conv = ctx.createConvolver();
-        conv.buffer = impulse;
-        return conv;
-    }
-
     var Sound = {
         enabled: localStorage.getItem('concreteiq_sounds') !== 'false',
+        _nodes: [],  /* Track nodes for cleanup */
 
-        /* Smooth note with ADSR-like envelope (slower attack, natural decay) */
-        _tone: function(ctx, freq, type, vol, start, dur, dest) {
-            var o = ctx.createOscillator();
+        /* ── Building Blocks ── */
+
+        /* Create a lush stereo reverb impulse response */
+        _reverb: function(ctx, decay, length) {
+            var rate = ctx.sampleRate;
+            var len = Math.floor(rate * length);
+            var impulse = ctx.createBuffer(2, len, rate);
+            for (var ch = 0; ch < 2; ch++) {
+                var data = impulse.getChannelData(ch);
+                for (var i = 0; i < len; i++) {
+                    /* Stereo decorrelation + exponential decay */
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+                }
+            }
+            var conv = ctx.createConvolver();
+            conv.buffer = impulse;
+            return conv;
+        },
+
+        /* Soft waveshaper for analog warmth */
+        _saturator: function(ctx) {
+            var ws = ctx.createWaveShaper();
+            var n = 256, curve = new Float32Array(n);
+            for (var i = 0; i < n; i++) {
+                var x = (i * 2) / n - 1;
+                curve[i] = (Math.PI + 3.5) * x / (Math.PI + 3.5 * Math.abs(x));
+            }
+            ws.curve = curve;
+            ws.oversample = '2x';
+            return ws;
+        },
+
+        /* Create master signal chain: saturation → compressor → reverb send */
+        _chain: function(ctx, reverbDecay, reverbLen, reverbMix) {
+            /* Reverb with pre-delay and high-cut */
+            var reverb = this._reverb(ctx, reverbDecay || 2.8, reverbLen || 1.2);
+            var reverbGain = ctx.createGain();
+            reverbGain.gain.value = reverbMix || 0.22;
+            var reverbHp = ctx.createBiquadFilter();
+            reverbHp.type = 'highpass'; reverbHp.frequency.value = 400;
+            var reverbLp = ctx.createBiquadFilter();
+            reverbLp.type = 'lowpass'; reverbLp.frequency.value = 6000;
+            reverbHp.connect(reverb); reverb.connect(reverbLp);
+            reverbLp.connect(reverbGain); reverbGain.connect(ctx.destination);
+
+            /* Subtle analog warmth */
+            var sat = this._saturator(ctx);
+
+            /* Gentle master compression */
+            var comp = ctx.createDynamicsCompressor();
+            comp.threshold.value = -18; comp.ratio.value = 4; comp.knee.value = 12;
+            comp.attack.value = 0.002; comp.release.value = 0.2;
+
+            sat.connect(comp);
+            comp.connect(ctx.destination);
+            comp.connect(reverbHp);
+
+            this._nodes.push(sat, comp, reverb, reverbGain, reverbHp, reverbLp);
+            return sat;  /* Entry point for all sounds */
+        },
+
+        /* Voice: fundamental + harmonics with natural decay, optional stereo pan */
+        _voice: function(ctx, freq, vol, start, dur, dest, pan) {
             var g = ctx.createGain();
-            o.connect(g); g.connect(dest || ctx.destination);
-            o.type = type || 'sine';
-            o.frequency.setValueAtTime(freq, start);
-            /* Smooth attack (15ms) → sustain (40%) → exponential release */
+            if (typeof pan === 'number') {
+                var p = ctx.createStereoPanner();
+                p.pan.value = pan;
+                g.connect(p); p.connect(dest);
+                this._nodes.push(p);
+            } else {
+                g.connect(dest);
+            }
+
+            /* Fundamental with smooth envelope */
+            var o = ctx.createOscillator();
+            o.type = 'sine'; o.frequency.value = freq;
+            o.connect(g);
             g.gain.setValueAtTime(0, start);
-            g.gain.linearRampToValueAtTime(vol, start + 0.015);
-            g.gain.setValueAtTime(vol * 0.85, start + dur * 0.4);
-            g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-            o.start(start); o.stop(start + dur + 0.05);
-            return o;
+            g.gain.linearRampToValueAtTime(vol, start + 0.008);
+            g.gain.setTargetAtTime(vol * 0.6, start + 0.008, dur * 0.15);
+            g.gain.setTargetAtTime(0.0001, start + dur * 0.5, dur * 0.25);
+            o.start(start); o.stop(start + dur + 0.1);
+
+            this._nodes.push(o, g);
+            return g;
         },
 
-        /* Rich bell — fundamental + inharmonic partials for metallic shimmer */
-        _bell: function(ctx, freq, vol, start, dur, dest) {
+        /* Crystal: bright layered tone with detuned chorus & inharmonic partials */
+        _crystal: function(ctx, freq, vol, start, dur, dest, pan) {
             /* Fundamental */
-            this._tone(ctx, freq, 'sine', vol, start, dur, dest);
-            /* 2nd partial (slightly sharp — bell-like inharmonicity) */
-            this._tone(ctx, freq * 2.02, 'sine', vol * 0.35, start, dur * 0.7, dest);
-            /* 3rd partial */
-            this._tone(ctx, freq * 3.01, 'sine', vol * 0.12, start, dur * 0.5, dest);
-            /* Detuned chorus for width */
-            this._tone(ctx, freq * 1.003, 'sine', vol * 0.2, start, dur * 0.9, dest);
-            this._tone(ctx, freq * 0.997, 'sine', vol * 0.2, start, dur * 0.9, dest);
+            this._voice(ctx, freq, vol, start, dur, dest, pan);
+            /* Chorus detuning for stereo width */
+            this._voice(ctx, freq * 1.002, vol * 0.3, start, dur * 0.9, dest, (pan || 0) - 0.3);
+            this._voice(ctx, freq * 0.998, vol * 0.3, start, dur * 0.9, dest, (pan || 0) + 0.3);
+            /* 2nd harmonic (slightly sharp for bell character) */
+            this._voice(ctx, freq * 2.01, vol * 0.18, start + 0.003, dur * 0.55, dest, pan);
+            /* 3rd harmonic (adds brightness) */
+            this._voice(ctx, freq * 3.005, vol * 0.06, start + 0.005, dur * 0.35, dest, pan);
+            /* Sub octave for warmth */
+            this._voice(ctx, freq * 0.5, vol * 0.12, start, dur * 0.7, dest, 0);
         },
 
-        /* Glass marimba — warm body with bright attack */
-        _marimba: function(ctx, freq, vol, start, dur, dest) {
-            this._tone(ctx, freq, 'sine', vol, start, dur, dest);
-            this._tone(ctx, freq * 4, 'sine', vol * 0.08, start, dur * 0.15, dest);
-            this._tone(ctx, freq * 2, 'sine', vol * 0.25, start, dur * 0.5, dest);
+        /* Chime: pure tone with long shimmering tail */
+        _chime: function(ctx, freq, vol, start, dur, dest, pan) {
+            this._voice(ctx, freq, vol, start, dur, dest, pan);
+            /* Detuned pair for shimmer */
+            this._voice(ctx, freq * 1.001, vol * 0.25, start, dur * 1.1, dest, -0.4);
+            this._voice(ctx, freq * 0.999, vol * 0.25, start, dur * 1.1, dest, 0.4);
+            /* Octave above, very soft for air */
+            this._voice(ctx, freq * 2, vol * 0.08, start + 0.01, dur * 0.5, dest, pan);
         },
+
+        /* Noise burst: filtered noise for transient texture (like a mallet striking) */
+        _transient: function(ctx, freq, vol, start, dur, dest) {
+            var bufSize = Math.floor(ctx.sampleRate * dur);
+            var buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+            var data = buf.getChannelData(0);
+            for (var i = 0; i < bufSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 8);
+            }
+            var src = ctx.createBufferSource();
+            src.buffer = buf;
+            var bp = ctx.createBiquadFilter();
+            bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = 2;
+            var g = ctx.createGain(); g.gain.value = vol;
+            src.connect(bp); bp.connect(g); g.connect(dest);
+            src.start(start);
+            this._nodes.push(src, bp, g);
+        },
+
+        /* ── Sound Playback ── */
 
         play: function(type) {
             if (!this.enabled) return;
             var ctx = getAudioCtx();
             if (!ctx) return;
-            var self = this;
+
+            this._nodes = [];
             var now = ctx.currentTime;
-
-            /* Reverb send bus */
-            var reverb = createReverb(ctx, 2.5, 0.9);
-            var reverbGain = ctx.createGain();
-            reverbGain.gain.value = 0.18;
-            reverb.connect(reverbGain);
-            reverbGain.connect(ctx.destination);
-
-            /* Highpass on reverb to keep it airy */
-            var reverbHp = ctx.createBiquadFilter();
-            reverbHp.type = 'highpass';
-            reverbHp.frequency.value = 600;
-            reverbHp.connect(reverb);
-
-            /* Master bus: gentle compression + soft limiting */
-            var comp = ctx.createDynamicsCompressor();
-            comp.threshold.value = -20; comp.ratio.value = 3; comp.knee.value = 10;
-            comp.attack.value = 0.003; comp.release.value = 0.15;
-            comp.connect(ctx.destination);
-            comp.connect(reverbHp);
+            var bus;
 
             switch(type) {
+
                 case 'click':
-                    /* Soft woody tap — like tapping premium glass */
-                    self._tone(ctx, 1200, 'sine', 0.015, now, 0.03, comp);
-                    self._tone(ctx, 600, 'sine', 0.01, now, 0.045, comp);
-                    self._tone(ctx, 2400, 'sine', 0.004, now, 0.015, comp);
+                    /* Subtle tactile pop — like tapping quality glass */
+                    bus = this._chain(ctx, 1.5, 0.3, 0.06);
+                    this._transient(ctx, 3000, 0.02, now, 0.025, bus);
+                    this._voice(ctx, 900, 0.012, now, 0.04, bus, 0);
+                    this._voice(ctx, 450, 0.006, now, 0.05, bus, 0);
                     break;
 
                 case 'success':
-                    /* Luxe ascending marimba: G4→B4→D5→G5 (Gmaj) with bell tail */
-                    self._marimba(ctx, 392, 0.03, now, 0.4, comp);             /* G4 */
-                    self._marimba(ctx, 494, 0.032, now + 0.1, 0.38, comp);     /* B4 */
-                    self._marimba(ctx, 587, 0.034, now + 0.2, 0.38, comp);     /* D5 */
-                    self._bell(ctx, 784, 0.028, now + 0.32, 0.65, comp);       /* G5 bell */
-                    /* High sparkle */
-                    self._tone(ctx, 1568, 'sine', 0.005, now + 0.35, 0.5, comp);
-                    self._tone(ctx, 2352, 'sine', 0.003, now + 0.38, 0.35, comp);
+                    /* Ascending crystal arpeggio — C5→E5→G5→C6 with sparkle tail */
+                    /* Like a luxury brand confirmation / Stripe-inspired */
+                    bus = this._chain(ctx, 3.0, 1.5, 0.25);
+                    this._transient(ctx, 4000, 0.008, now, 0.02, bus);
+                    this._crystal(ctx, 523,  0.030, now,        0.55, bus, -0.2);  /* C5 */
+                    this._crystal(ctx, 659,  0.032, now + 0.09, 0.50, bus,  0.0);  /* E5 */
+                    this._crystal(ctx, 784,  0.034, now + 0.18, 0.50, bus,  0.2);  /* G5 */
+                    this._chime(ctx,   1047, 0.028, now + 0.30, 0.90, bus,  0.0);  /* C6 — hold */
+                    /* High sparkle tail */
+                    this._voice(ctx, 2093, 0.004, now + 0.35, 0.6, bus, 0.3);
+                    this._voice(ctx, 1568, 0.003, now + 0.38, 0.5, bus, -0.3);
                     break;
 
                 case 'error':
-                    /* Warm low double-note — gentle but clear (Eb3→Db3) */
-                    self._marimba(ctx, 311, 0.035, now, 0.18, comp);           /* Eb4 */
-                    self._tone(ctx, 156, 'sine', 0.012, now, 0.2, comp);       /* sub body */
-                    self._marimba(ctx, 277, 0.038, now + 0.2, 0.22, comp);     /* Db4 */
-                    self._tone(ctx, 139, 'sine', 0.014, now + 0.2, 0.25, comp);
+                    /* Gentle descending minor 2nd — warm but clear something's wrong */
+                    /* E4 → Eb4, soft and padded */
+                    bus = this._chain(ctx, 2.2, 0.8, 0.18);
+                    this._crystal(ctx, 330, 0.030, now,        0.28, bus, -0.1);   /* E4  */
+                    this._crystal(ctx, 311, 0.034, now + 0.22, 0.35, bus,  0.1);   /* Eb4 */
+                    /* Subtle warm body */
+                    this._voice(ctx, 165, 0.010, now, 0.45, bus, 0);
                     break;
 
                 case 'notification':
-                    /* Crystal two-tone chime: E5→A5 (perfect 4th) — like iPhone but softer */
-                    self._bell(ctx, 659, 0.025, now, 0.35, comp);              /* E5 */
-                    self._bell(ctx, 880, 0.028, now + 0.15, 0.5, comp);        /* A5 */
-                    /* Airy sparkle tail */
-                    self._tone(ctx, 1760, 'sine', 0.004, now + 0.18, 0.4, comp);
-                    self._tone(ctx, 1319, 'sine', 0.003, now + 0.2, 0.35, comp);
+                    /* Two-tone hotel chime — G5 → D6 (perfect 5th) */
+                    /* Clean, warm, unmistakably a notification */
+                    bus = this._chain(ctx, 3.2, 1.4, 0.28);
+                    this._transient(ctx, 5000, 0.006, now, 0.015, bus);
+                    this._chime(ctx, 784,  0.032, now,        0.65, bus, -0.15);   /* G5 */
+                    this._chime(ctx, 1175, 0.034, now + 0.18, 0.85, bus,  0.15);   /* D6 */
                     /* Warm sub presence */
-                    self._tone(ctx, 330, 'sine', 0.006, now + 0.05, 0.35, comp);
+                    this._voice(ctx, 392, 0.008, now + 0.05, 0.50, bus, 0);
                     break;
 
                 case 'money':
-                    /* Premium cash register: bright coin + resonant ring (Cmaj7) */
-                    /* Initial coin strike */
-                    self._tone(ctx, 2093, 'sine', 0.015, now, 0.04, comp);
-                    self._tone(ctx, 4186, 'sine', 0.005, now, 0.02, comp);
-                    /* The satisfying ring — stacked chord */
-                    self._bell(ctx, 1047, 0.022, now + 0.06, 0.6, comp);       /* C6 */
-                    self._bell(ctx, 1319, 0.018, now + 0.1, 0.5, comp);        /* E6 */
-                    self._bell(ctx, 1568, 0.016, now + 0.14, 0.45, comp);      /* G6 */
-                    self._tone(ctx, 1976, 'sine', 0.008, now + 0.18, 0.4, comp); /* B6 */
-                    /* Deep warm body */
-                    self._tone(ctx, 262, 'sine', 0.008, now + 0.06, 0.5, comp);
-                    self._tone(ctx, 523, 'sine', 0.006, now + 0.06, 0.4, comp);
+                    /* Cash register: metallic strike → rich major chord ring-out */
+                    /* Weighty and satisfying — you just got paid */
+                    bus = this._chain(ctx, 3.5, 1.8, 0.30);
+                    /* Coin strike transient */
+                    this._transient(ctx, 6000, 0.015, now, 0.03, bus);
+                    this._transient(ctx, 3000, 0.010, now, 0.04, bus);
+                    /* Rich Cmaj7 chord ring — staggered for shimmer */
+                    this._crystal(ctx, 1047, 0.026, now + 0.04, 0.85, bus, -0.25); /* C6 */
+                    this._crystal(ctx, 1319, 0.024, now + 0.08, 0.75, bus,  0.0);  /* E6 */
+                    this._crystal(ctx, 1568, 0.022, now + 0.12, 0.70, bus,  0.25); /* G6 */
+                    this._chime(ctx,   1976, 0.016, now + 0.16, 0.65, bus,  0.0);  /* B6 */
+                    /* Deep warm foundation */
+                    this._voice(ctx, 262, 0.012, now + 0.04, 0.70, bus, 0);        /* C4 sub */
+                    this._voice(ctx, 523, 0.008, now + 0.04, 0.55, bus, 0);        /* C5 body */
+                    /* Final sparkle */
+                    this._voice(ctx, 3136, 0.003, now + 0.20, 0.50, bus, 0.4);
+                    this._voice(ctx, 2637, 0.003, now + 0.22, 0.45, bus, -0.4);
                     break;
 
                 case 'alert':
-                    /* Two-tone attention pulse: F5→Db5 (descending minor 3rd) × 2 */
-                    self._marimba(ctx, 698, 0.035, now, 0.12, comp);           /* F5 */
-                    self._marimba(ctx, 554, 0.038, now + 0.15, 0.16, comp);    /* Db5 */
-                    /* Softer echo repeat */
-                    self._marimba(ctx, 698, 0.02, now + 0.4, 0.1, comp);
-                    self._marimba(ctx, 554, 0.025, now + 0.52, 0.14, comp);
+                    /* Attention pulse: descending minor 3rd × 2 with urgency */
+                    /* A5 → F5, repeat softer — clear but not harsh */
+                    bus = this._chain(ctx, 2.0, 0.8, 0.15);
+                    this._transient(ctx, 4000, 0.008, now, 0.02, bus);
+                    /* First phrase */
+                    this._crystal(ctx, 880, 0.034, now,        0.16, bus, -0.1);   /* A5 */
+                    this._crystal(ctx, 698, 0.036, now + 0.14, 0.22, bus,  0.1);   /* F5 */
+                    /* Softer echo */
+                    this._crystal(ctx, 880, 0.018, now + 0.42, 0.14, bus,  0.1);
+                    this._crystal(ctx, 698, 0.022, now + 0.54, 0.20, bus, -0.1);
                     /* Sub weight */
-                    self._tone(ctx, 277, 'sine', 0.008, now + 0.15, 0.3, comp);
+                    this._voice(ctx, 349, 0.008, now + 0.14, 0.35, bus, 0);
                     break;
             }
 
-            /* Clean up audio nodes after playback */
+            /* Cleanup all audio nodes after playback completes */
+            var nodes = this._nodes;
             setTimeout(function() {
-                try {
-                    comp.disconnect();
-                    reverb.disconnect();
-                    reverbGain.disconnect();
-                    reverbHp.disconnect();
-                } catch(e) { /* already disconnected */ }
-            }, 2000);
+                for (var i = 0; i < nodes.length; i++) {
+                    try { nodes[i].disconnect(); } catch(e) {}
+                }
+            }, 3000);
         },
 
         toggle: function() {
@@ -433,6 +510,11 @@
         quote_accepted: 'success',
         amendment_accepted: 'success',
         job_completed: 'success',
+        // Inbound SMS — alert (customer replied!)
+        inbound_sms: 'alert',
+        // Email engagement — notification chirp
+        email_opened: 'notification',
+        email_clicked: 'success',
         // Follow-up nudges — notification chirp
         quote_followup: 'notification',
         // Everything else — notification chirp
@@ -451,12 +533,20 @@
         invoice_overdue: 'warning',
         payment_reminder_firm: 'warning',
         payment_reminder_final: 'error',
+        // Inbound SMS — info toast (customer replied)
+        inbound_sms: 'info',
+        // Email engagement
+        email_opened: 'info',
+        email_clicked: 'success',
     };
 
     var NotificationPoller = {
         lastCheck: null,
         interval: null,
         badgeEl: null,
+        _polling: false,
+        POLL_INTERVAL: 10000,       // 10 seconds (was 30s)
+        POLL_INTERVAL_BG: 30000,    // 30 seconds when tab is hidden
 
         start: function() {
             // Only poll on authenticated pages (not portal/login)
@@ -467,12 +557,36 @@
             this.lastCheck = new Date().toISOString();
             this.badgeEl = document.getElementById('notification-badge');
 
-            // Poll every 30 seconds
             var self = this;
-            this.interval = setInterval(function() { self.poll(); }, 30000);
+
+            // Immediate first poll (after 1s to let page settle)
+            setTimeout(function() { self.poll(); }, 1000);
+
+            // Start regular polling
+            this._startInterval();
+
+            // Poll immediately when tab becomes visible again
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    self.poll();
+                    self._startInterval();  // Reset to fast interval
+                } else {
+                    // Slow down when tab is hidden (save resources)
+                    self._startInterval(self.POLL_INTERVAL_BG);
+                }
+            });
+        },
+
+        _startInterval: function(ms) {
+            var self = this;
+            if (this.interval) clearInterval(this.interval);
+            this.interval = setInterval(function() { self.poll(); }, ms || this.POLL_INTERVAL);
         },
 
         poll: function() {
+            if (this._polling) return;  // Prevent overlapping requests
+            this._polling = true;
+
             var self = this;
             var url = '/notifications/api/poll';
             if (this.lastCheck) {
@@ -492,7 +606,10 @@
                             self.badgeEl.style.background = '#ef4444';
                             self.badgeEl.style.color = '#fff';
                         } else {
-                            self.badgeEl.style.display = 'none';
+                            self.badgeEl.textContent = '0';
+                            self.badgeEl.style.background = 'rgba(255,255,255,0.15)';
+                            self.badgeEl.style.color = 'rgba(255,255,255,0.35)';
+                            self.badgeEl.style.display = '';
                         }
                     }
 
@@ -534,7 +651,8 @@
                         }
                     }
                 })
-                .catch(function() { /* silent fail — network hiccup */ });
+                .catch(function() { /* silent fail — network hiccup */ })
+                .finally(function() { self._polling = false; });
         },
 
         stop: function() {
