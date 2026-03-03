@@ -229,14 +229,35 @@ async def create_invoice_from_quote(
     }
     description = f"{stage_names[stage]} - {quote.quote_number}"
 
-    # Build line items
-    line_items = [{
-        "description": description,
-        "quantity": 1,
-        "unit": "each",
-        "unit_price_cents": subtotal_cents,
-        "total_cents": subtotal_cents,
-    }]
+    # Build line items from quote breakdown (scale each category by stage %)
+    stage_percents = {
+        "deposit": 0.30, "booking": 0.30,
+        "prepour": 0.60,
+        "final": 0.10, "completion": 0.10,
+    }
+    pct = stage_percents[stage]
+
+    if quote.customer_line_items:
+        line_items = []
+        for group in quote.customer_line_items:
+            scaled_total = int(round(group.get("total_cents", 0) * pct))
+            line_items.append({
+                "description": group.get("category", "Item"),
+                "quantity": 1,
+                "unit": "lot",
+                "unit_price_cents": scaled_total,
+                "total_cents": scaled_total,
+                "sub_items": group.get("sub_items", []),
+            })
+    else:
+        # Fallback: single line item if no customer_line_items
+        line_items = [{
+            "description": description,
+            "quantity": 1,
+            "unit": "each",
+            "unit_price_cents": subtotal_cents,
+            "total_cents": subtotal_cents,
+        }]
 
     data = InvoiceCreate(
         customer_id=quote.customer_id,

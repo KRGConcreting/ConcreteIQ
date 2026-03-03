@@ -245,12 +245,15 @@ TRAILER_SOIL_PER_LOAD = 11400
 # Concrete: tip $63 + unloading $84 + fuel $20 = $167/load
 TRAILER_CONCRETE_PER_LOAD = 16700
 
-# Waste tip destinations (address options for trailer disposal)
+# Waste tip destinations (address + round-trip km from Thurgoona base)
 WASTE_TIP_DESTINATIONS = {
-    "jacksons": "Jacksons Wodonga, 17 Kendall St, Wodonga",
-    "albury_waste": "Albury Waste Management, 565 Mudge St, Lavington",
-    "wodonga_transfer": "Wodonga Waste Transfer, 29 Kane Rd, Wodonga",
+    "jacksons": {"name": "Jacksons Wodonga, 17 Kendall St, Wodonga", "round_trip_km": 30},
+    "albury_waste": {"name": "Albury Waste Management, 565 Mudge St, Lavington", "round_trip_km": 20},
+    "wodonga_transfer": {"name": "Wodonga Waste Transfer, 29 Kane Rd, Wodonga", "round_trip_km": 28},
 }
+
+# Per-km fuel/travel cost for trailer disposal (cents per round-trip km)
+TRAILER_TRAVEL_PER_KM = 200  # $2.00/km covers fuel + wear on vehicle + time
 
 # ==============================================================================
 # PRODUCTIVITY RATES (m² or lm per hour)

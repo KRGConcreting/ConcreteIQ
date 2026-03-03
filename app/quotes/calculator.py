@@ -32,7 +32,7 @@ from app.quotes.pricing import (
     # Disposal
     SKIPBIN_MINIMUM_M3, SKIPBIN_SOIL_PER_M3, SKIPBIN_CONCRETE_PER_M3,
     TRAILER_CAPACITY_M3, TRAILER_SOIL_PER_LOAD, TRAILER_CONCRETE_PER_LOAD,
-    WASTE_TIP_DESTINATIONS,
+    TRAILER_TRAVEL_PER_KM, WASTE_TIP_DESTINATIONS,
     # Concrete removal
     CONCRETE_REMOVAL,
     # Complexity
@@ -676,14 +676,25 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
             
             compactor_cost = fuel_cost + depreciation + service
         
-        r.subbase_cost_cents = material_cost + delivery_cost + compactor_cost
-        
+        subbase_material_and_compact = material_cost + compactor_cost
+        r.subbase_cost_cents = subbase_material_and_compact + delivery_cost
+
         r.line_items.append(LineItem(
             description=f"Supply & compact {int(inp.subbase_thickness)}mm crusher dust subbase",
             quantity=inp.slab_area,
             unit="m²",
-            unit_price_cents=int(r.subbase_cost_cents / inp.slab_area),
-            total_cents=r.subbase_cost_cents,
+            unit_price_cents=int(subbase_material_and_compact / inp.slab_area) if inp.slab_area > 0 else 0,
+            total_cents=subbase_material_and_compact,
+            category="materials",
+        ))
+        # Show delivery as separate line item so it's visible on the quote
+        dist_note = f" ({int(inp.delivery_distance_km)}km)" if inp.delivery_distance_km > 0 else ""
+        r.line_items.append(LineItem(
+            description=f"Subbase delivery from supplier{dist_note}",
+            quantity=1,
+            unit="trip",
+            unit_price_cents=delivery_cost,
+            total_cents=delivery_cost,
             category="materials",
         ))
     
@@ -800,13 +811,19 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
             ))
         else:  # trailer
             num_loads = max(1, math.ceil(exc_volume / TRAILER_CAPACITY_M3))
-            disposal_cost = num_loads * TRAILER_SOIL_PER_LOAD
-            tip_name = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, "tip")
+            tip_info = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, {})
+            tip_name = tip_info.get("name", "tip") if isinstance(tip_info, dict) else tip_info
+            round_trip_km = tip_info.get("round_trip_km", 0) if isinstance(tip_info, dict) else 0
+            # Base disposal cost + travel cost per load
+            travel_cost_per_load = int(round_trip_km * TRAILER_TRAVEL_PER_KM) if round_trip_km > 0 else 0
+            cost_per_load = TRAILER_SOIL_PER_LOAD + travel_cost_per_load
+            disposal_cost = num_loads * cost_per_load
+            km_note = f", {round_trip_km}km round trip" if round_trip_km > 0 else ""
             r.line_items.append(LineItem(
-                description=f"Trailer Disposal — soil to {tip_name} ({num_loads} load{'s' if num_loads > 1 else ''})",
+                description=f"Trailer Disposal — soil to {tip_name} ({num_loads} load{'s' if num_loads > 1 else ''}{km_note})",
                 quantity=num_loads,
                 unit="load",
-                unit_price_cents=TRAILER_SOIL_PER_LOAD,
+                unit_price_cents=cost_per_load,
                 total_cents=disposal_cost,
                 category="other",
             ))
@@ -893,10 +910,12 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
             billable_vol = max(r.removal_volume_m3, SKIPBIN_MINIMUM_M3)
             disposal_cost = int(billable_vol * SKIPBIN_CONCRETE_PER_M3)
         else:  # trailer
-            # $167/load, 0.5m³ per load
+            # $167/load, 0.5m³ per load + travel cost per load
             num_loads = max(1, math.ceil(r.removal_volume_m3 / TRAILER_CAPACITY_M3)) if r.removal_volume_m3 > 0 else 1
-            disposal_cost = num_loads * TRAILER_CONCRETE_PER_LOAD
-            tip_name = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, "tip")
+            tip_info = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, {})
+            round_trip_km = tip_info.get("round_trip_km", 0) if isinstance(tip_info, dict) else 0
+            travel_cost_per_load = int(round_trip_km * TRAILER_TRAVEL_PER_KM) if round_trip_km > 0 else 0
+            disposal_cost = num_loads * (TRAILER_CONCRETE_PER_LOAD + travel_cost_per_load)
 
         r.removal_disposal_cents = disposal_cost
 
@@ -905,8 +924,9 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
 
         # Line item for quote
         method_label = "Manual" if inp.removal_method == "manual" else "Machine"
-        tip_dest = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, "tip")
-        disposal_labels = {"skip_bin": "skip bin", "trailer": f"trailer to {tip_dest}"}
+        tip_dest_info = WASTE_TIP_DESTINATIONS.get(inp.waste_tip_destination, {})
+        tip_dest_name = tip_dest_info.get("name", "tip") if isinstance(tip_dest_info, dict) else tip_dest_info
+        disposal_labels = {"skip_bin": "skip bin", "trailer": f"trailer to {tip_dest_name}"}
         disposal_label = disposal_labels.get(inp.removal_disposal, "skip bin")
         reo_label = " (reinforced)" if inp.removal_reinforced else ""
 

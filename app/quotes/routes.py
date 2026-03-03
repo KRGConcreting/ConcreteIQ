@@ -726,6 +726,7 @@ async def api_send_prepour_invoice(
 ) -> dict:
     """
     API: Send the 60% pre-pour invoice. Transitions quote to pour_stage.
+    Accepts optional JSON body: {"pour_date": "YYYY-MM-DD"}
     """
     quote = await service.get_quote(db, id)
     if not quote:
@@ -734,8 +735,20 @@ async def api_send_prepour_invoice(
     if quote.status != "confirmed":
         raise HTTPException(400, f"Quote must be confirmed to send pre-pour invoice (current: {quote.status})")
 
+    # Accept optional pour_date from request body
+    pour_date = quote.confirmed_start_date
+    try:
+        body = await request.json()
+        if body.get("pour_date"):
+            from datetime import date as date_cls
+            pour_date = date_cls.fromisoformat(body["pour_date"])
+            # Update the quote's confirmed_start_date to the new pour date
+            quote.confirmed_start_date = pour_date
+    except Exception:
+        pass  # No JSON body or invalid — use existing date
+
     from app.invoices.service import on_job_scheduled
-    invoice = await on_job_scheduled(db, quote, quote.confirmed_start_date, request=request)
+    invoice = await on_job_scheduled(db, quote, pour_date, request=request)
 
     if not invoice:
         raise HTTPException(400, "No pre-pour invoice found to send (may already be sent)")

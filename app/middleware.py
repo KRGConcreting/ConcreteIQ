@@ -45,9 +45,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
 
-        # Allow same-origin iframes for internal previews (e.g. email template gallery)
+        # Allow same-origin iframes for internal previews and portal pages
         is_preview = request.url.path.startswith("/settings/api/email/preview/")
-        response.headers["X-Frame-Options"] = "SAMEORIGIN" if is_preview else "DENY"
+        is_portal = request.url.path.startswith("/p/")
+        allow_frames = is_preview or is_portal
+        response.headers["X-Frame-Options"] = "SAMEORIGIN" if allow_frames else "DENY"
 
         # XSS protection (legacy but still useful)
         response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -56,7 +58,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         # Content Security Policy
-        frame_ancestors = "'self'" if is_preview else "'none'"
+        frame_ancestors = "'self'" if allow_frames else "'none'"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' "

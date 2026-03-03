@@ -379,6 +379,9 @@
         interval: null,
         badgeEl: null,
         _polling: false,
+        _seenIds: {},               // Track notification IDs to prevent duplicates
+        _lastSoundTime: 0,         // Throttle sounds (max 1 per 3 seconds)
+        MAX_TOASTS: 5,             // Max visible toasts at once
         POLL_INTERVAL: 10000,       // 10 seconds (was 30s)
         POLL_INTERVAL_BG: 30000,    // 30 seconds when tab is hidden
 
@@ -447,16 +450,31 @@
                         }
                     }
 
-                    // Show toast for each new notification
+                    // Show toast for each new notification (with deduplication)
                     if (data.notifications && data.notifications.length > 0) {
+                        var container = getToastContainer();
+                        var playedSound = false;
+                        var now = Date.now();
+
                         data.notifications.forEach(function(n) {
+                            // Skip if we've already shown this notification
+                            var nid = n.id || (n.title + '_' + n.created_at);
+                            if (self._seenIds[nid]) return;
+                            self._seenIds[nid] = true;
+
                             var toastType = NOTIF_TOAST_MAP[n.type] || 'info';
                             var soundType = NOTIF_SOUND_MAP[n.type] || 'notification';
 
-                            // Create toast without default sound
-                            var container = getToastContainer();
+                            // Limit max visible toasts — remove oldest if at limit
+                            var existing = container.querySelectorAll('.toast');
+                            if (existing.length >= self.MAX_TOASTS) {
+                                dismissToast(existing[0]);
+                            }
+
+                            // Create toast
                             var toast = document.createElement('div');
                             toast.className = 'toast toast-' + toastType;
+                            toast.setAttribute('data-nid', nid);
                             toast.innerHTML =
                                 '<div class="toast-accent"></div>' +
                                 TOAST_ICONS[toastType] +
@@ -474,7 +492,14 @@
                             });
 
                             container.appendChild(toast);
-                            Sound.play(soundType);
+
+                            // Throttle sound: max 1 per 3 seconds
+                            if (!playedSound && (now - self._lastSoundTime) > 3000) {
+                                Sound.play(soundType);
+                                self._lastSoundTime = now;
+                                playedSound = true;
+                            }
+
                             setTimeout(function() { dismissToast(toast); }, 6000);
                         });
 
@@ -482,6 +507,14 @@
                         var last = data.notifications[data.notifications.length - 1];
                         if (last.created_at) {
                             self.lastCheck = last.created_at;
+                        }
+
+                        // Clean up old seen IDs (keep only last 200)
+                        var seenKeys = Object.keys(self._seenIds);
+                        if (seenKeys.length > 200) {
+                            seenKeys.slice(0, seenKeys.length - 200).forEach(function(k) {
+                                delete self._seenIds[k];
+                            });
                         }
                     }
 
