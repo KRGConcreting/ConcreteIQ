@@ -493,7 +493,6 @@ async def _send_payment_reminder(
         business_abn=settings.abn,
         business_address=settings.business_address,
         bank_name=bank["bank_name"],
-        bank_account_name=bank["bank_account_name"],
         bank_bsb=bank["bank_bsb"],
         bank_account=bank["bank_account"],
     )
@@ -526,7 +525,6 @@ Pay online: {portal_url}
 
 Or pay by bank transfer:
 Bank: {bank["bank_name"]}
-Acc. Name: {bank["bank_account_name"]}
 BSB: {bank["bank_bsb"]}
 Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
@@ -563,7 +561,6 @@ Pay online: {portal_url}
 
 Or pay by bank transfer:
 Bank: {bank["bank_name"]}
-Acc. Name: {bank["bank_account_name"]}
 BSB: {bank["bank_bsb"]}
 Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
@@ -600,7 +597,6 @@ Pay online: {portal_url}
 
 Or pay by bank transfer:
 Bank: {bank["bank_name"]}
-Acc. Name: {bank["bank_account_name"]}
 BSB: {bank["bank_bsb"]}
 Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
@@ -639,7 +635,6 @@ Pay online: {portal_url}
 
 Or pay by bank transfer:
 Bank: {bank["bank_name"]}
-Acc. Name: {bank["bank_account_name"]}
 BSB: {bank["bank_bsb"]}
 Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
