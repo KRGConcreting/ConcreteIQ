@@ -279,6 +279,19 @@ async def send_quote_email(
     custom_intro = customs.get('quote_sent_intro', '').strip() or "Here is your quote for review. You can view the full details and accept online using the button below."
     custom_cta = customs.get('quote_sent_cta', '').strip() or "View Quote & Accept Online"
 
+    # Load portfolio photos for email showcase (up to 3)
+    portfolio_photos = []
+    try:
+        from app.documents.service import list_portfolio_photos
+        raw_photos = list_portfolio_photos()
+        for p in raw_photos[:3]:
+            portfolio_photos.append({
+                "url": f"{settings.app_url}{p['url']}",
+                "title": p.get("title", ""),
+            })
+    except Exception as e:
+        logger.debug(f"Could not load portfolio photos for email: {e}")
+
     # Render HTML template
     try:
         html_content = templates.get_template("emails/quote_sent.html").render(
@@ -295,6 +308,7 @@ async def send_quote_email(
             business_email=settings.business_email,
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
+            portfolio_photos=portfolio_photos,
         )
     except Exception as e:
         logger.error(f"Failed to render quote email template: {str(e)}")

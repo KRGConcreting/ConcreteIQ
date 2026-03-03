@@ -666,6 +666,20 @@ async def preview_email_template(template_name: str, request: Request):
         "completed_date_formatted": "March 2023",
     }
 
+    # Load portfolio photos for quote_sent preview
+    if template_name == "quote_sent":
+        try:
+            from app.documents.service import list_portfolio_photos
+            raw_photos = list_portfolio_photos()
+            sample["portfolio_photos"] = [
+                {"url": p["url"], "title": p.get("title", "")}
+                for p in raw_photos[:3]
+            ]
+        except Exception:
+            sample["portfolio_photos"] = []
+    else:
+        sample["portfolio_photos"] = []
+
     # Add custom_intro and custom_cta defaults for preview
     preview_defaults = {
         "quote_sent": {"custom_intro": "Here is your quote for review. You can view the full details and accept online using the button below.", "custom_cta": "View Quote & Accept Online"},
