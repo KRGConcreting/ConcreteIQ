@@ -473,6 +473,9 @@ async def _send_payment_reminder(
     # Load email template customizations
     customs = await _load_email_customizations(db)
 
+    # Fetch bank details from database settings
+    bank = await settings_service.get_bank_details(db)
+
     # Common template context
     template_ctx = dict(
         invoice=invoice,
@@ -489,9 +492,9 @@ async def _send_payment_reminder(
         business_email=settings.business_email,
         business_abn=settings.abn,
         business_address=settings.business_address,
-        bank_name=settings.bank_name,
-        bank_bsb=settings.bank_bsb,
-        bank_account=settings.bank_account,
+        bank_name=bank["bank_name"],
+        bank_bsb=bank["bank_bsb"],
+        bank_account=bank["bank_account"],
     )
 
     # Select template, subject, and tone based on reminder type
@@ -521,9 +524,9 @@ Due Date: {due_date_formatted}
 Pay online: {portal_url}
 
 Or pay by bank transfer:
-Bank: {settings.bank_name}
-BSB: {settings.bank_bsb}
-Account: {settings.bank_account}
+Bank: {bank["bank_name"]}
+BSB: {bank["bank_bsb"]}
+Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
 
 If you have already made this payment, please disregard this reminder. Bank transfers can take 1-2 business days to process.
@@ -557,9 +560,9 @@ Please note: Late payment fees may apply for invoices that remain overdue for mo
 Pay online: {portal_url}
 
 Or pay by bank transfer:
-Bank: {settings.bank_name}
-BSB: {settings.bank_bsb}
-Account: {settings.bank_account}
+Bank: {bank["bank_name"]}
+BSB: {bank["bank_bsb"]}
+Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
 
 If you are experiencing difficulties, please contact us immediately to discuss payment arrangements.
@@ -593,9 +596,9 @@ IMPORTANT: If payment of {balance_formatted} is not received within 7 days of th
 Pay online: {portal_url}
 
 Or pay by bank transfer:
-Bank: {settings.bank_name}
-BSB: {settings.bank_bsb}
-Account: {settings.bank_account}
+Bank: {bank["bank_name"]}
+BSB: {bank["bank_bsb"]}
+Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
 
 If you are experiencing financial difficulty, please contact us IMMEDIATELY on {settings.business_phone} so we can discuss payment arrangements.
@@ -631,9 +634,9 @@ Due Date: {due_date_formatted}
 Pay online: {portal_url}
 
 Or pay by bank transfer:
-Bank: {settings.bank_name}
-BSB: {settings.bank_bsb}
-Account: {settings.bank_account}
+Bank: {bank["bank_name"]}
+BSB: {bank["bank_bsb"]}
+Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
 
 If you have already made this payment, please disregard this reminder.

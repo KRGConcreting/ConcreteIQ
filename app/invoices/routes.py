@@ -27,6 +27,7 @@ from app.config import settings
 from app.invoices import service
 from app.quotes.pdf import generate_invoice_pdf, generate_receipt_pdf
 from app.core.security import decrypt_customer_pii
+from app.settings import service as settings_service
 
 router = APIRouter(dependencies=[Depends(require_login), Depends(verify_csrf)])
 
@@ -611,9 +612,7 @@ async def api_send_reminder(
         business_email=settings.business_email,
         business_abn=settings.abn,
         business_address=settings.business_address,
-        bank_name=settings.bank_name,
-        bank_bsb=settings.bank_bsb,
-        bank_account=settings.bank_account,
+        **await settings_service.get_bank_details(db),
     )
 
     # Select template & subject by tier
@@ -789,6 +788,13 @@ async def api_get_pdf(
     )
     payments = payments_result.scalars().all()
 
+    # Get discount from linked quote if present
+    discount_cents = 0
+    if invoice.quote_id:
+        quote = await db.get(Quote, invoice.quote_id)
+        if quote and quote.discount_cents:
+            discount_cents = quote.discount_cents
+
     invoice_dict = {
         "invoice_number": invoice.invoice_number,
         "issue_date": invoice.issue_date,
@@ -803,6 +809,7 @@ async def api_get_pdf(
         "balance_cents": invoice.total_cents - invoice.paid_cents,
         "status": invoice.status,
         "notes": invoice.notes,
+        "discount_cents": discount_cents,
     }
 
     customer_dict = None
@@ -817,20 +824,7 @@ async def api_get_pdf(
             "postcode": customer.postcode,
         }
 
-    business_dict = {
-        "name": settings.business_name,
-        "trading_as": settings.trading_as,
-        "abn": settings.abn,
-        "address": settings.business_address,
-        "phone": settings.business_phone,
-        "email": settings.business_email,
-        "bank_name": settings.bank_name,
-        "bank_account_name": getattr(settings, 'bank_account_name', ''),
-        "bank_bsb": settings.bank_bsb,
-        "bsb": settings.bank_bsb,
-        "bank_account": settings.bank_account,
-        "account": settings.bank_account,
-    }
+    business_dict = await settings_service.get_business_dict(db, include_bank=True)
 
     try:
         payment_dicts = [

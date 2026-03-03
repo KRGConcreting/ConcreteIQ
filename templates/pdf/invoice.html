@@ -546,6 +546,12 @@
                     <span>Subtotal</span>
                     <span class="amount">{{ invoice.subtotal_cents|currency }}</span>
                 </div>
+                {% if invoice.discount_cents and invoice.discount_cents > 0 %}
+                <div class="total-line" style="color: #059669;">
+                    <span>Discount</span>
+                    <span class="amount">-{{ invoice.discount_cents|currency }}</span>
+                </div>
+                {% endif %}
                 <div class="total-line">
                     <span>GST (10%)</span>
                     <span class="amount">{{ invoice.gst_cents|currency }}</span>

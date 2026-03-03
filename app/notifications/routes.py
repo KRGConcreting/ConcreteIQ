@@ -45,11 +45,16 @@ async def notifications_page(
     db: AsyncSession = Depends(get_db),
 ):
     """Display all notifications."""
-    # Auto-cleanup old read notifications to prevent accumulation
-    from app.notifications.service import cleanup_old_notifications
-    cleaned = await cleanup_old_notifications(db, max_keep=100)
-    if cleaned > 0:
-        await db.commit()
+    # Auto-cleanup old read notifications (only occasionally to avoid race conditions)
+    import random
+    if random.random() < 0.1:  # ~10% of page loads
+        try:
+            from app.notifications.service import cleanup_old_notifications
+            cleaned = await cleanup_old_notifications(db, max_keep=100)
+            if cleaned > 0:
+                await db.commit()
+        except Exception:
+            pass  # Don't let cleanup errors break the page
 
     page_size = 20
     offset = (page - 1) * page_size
@@ -138,8 +143,10 @@ async def api_delete_notification(
 ):
     """Delete a notification."""
     success = await delete_notification(db, notification_id)
+    if not success:
+        raise HTTPException(404, "Notification not found")
     await db.commit()
-    return {"success": success}
+    return {"success": True}
 
 
 @router.get("/api/poll", name="notifications:poll")
@@ -194,7 +201,7 @@ async def api_poll_notifications(
             "id": n.id,
             "type": n.type,
             "title": n.title,
-            "message": n.message[:60] + ("..." if n.message and len(n.message) > 60 else ""),
+            "message": ((n.message or "")[:60] + ("..." if n.message and len(n.message) > 60 else "")),
             "is_read": n.is_read,
             "created_at": n.created_at.isoformat() if n.created_at else None,
         })

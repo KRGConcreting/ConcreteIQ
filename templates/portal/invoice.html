@@ -177,6 +177,12 @@
                     <span class="text-slate-500">Subtotal</span>
                     <span class="font-medium text-slate-700">${{ '%.2f'|format((invoice.subtotal_cents or 0) / 100) }}</span>
                 </div>
+                {% if invoice.discount_cents is defined and invoice.discount_cents and invoice.discount_cents > 0 %}
+                <div class="flex justify-between w-full max-w-xs text-sm text-green-600">
+                    <span class="font-medium">Discount</span>
+                    <span class="font-medium">-${{ '%.2f'|format((invoice.discount_cents or 0) / 100) }}</span>
+                </div>
+                {% endif %}
                 <div class="flex justify-between w-full max-w-xs text-sm">
                     <span class="text-slate-500">GST (10%)</span>
                     <span class="font-medium text-slate-700">${{ '%.2f'|format((invoice.gst_cents or 0) / 100) }}</span>

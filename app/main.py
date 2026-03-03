@@ -111,11 +111,20 @@ def _home_url_for_request(request: Request) -> str:
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: StarletteHTTPException):
+    # For portal routes, show a friendlier message with the specific detail
+    detail = getattr(exc, "detail", None)
+    is_portal = request.url.path.startswith("/p/")
+    if is_portal and detail and detail != "Not Found":
+        message = detail
+        title = "Not Found"
+    else:
+        message = "The page you're looking for doesn't exist or has been moved."
+        title = "Page Not Found"
     return templates.TemplateResponse("error.html", {
         "request": request,
         "status_code": 404,
-        "title": "Page Not Found",
-        "message": "The page you're looking for doesn't exist or has been moved.",
+        "title": title,
+        "message": message,
         "home_url": _home_url_for_request(request),
     }, status_code=404)
 

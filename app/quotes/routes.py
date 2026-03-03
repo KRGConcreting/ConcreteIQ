@@ -33,6 +33,7 @@ from app.config import settings
 from app.quotes.calculator import calculate_quote
 from app.quotes.pdf import generate_quote_pdf
 from app.quotes import service
+from app.settings import service as settings_service
 
 router = APIRouter(dependencies=[Depends(require_login), Depends(verify_csrf)])
 
@@ -529,14 +530,7 @@ async def api_get_pdf(
             "postcode": customer.postcode,
         }
 
-    business_dict = {
-        "name": settings.business_name,
-        "trading_as": settings.trading_as,
-        "abn": settings.abn,
-        "address": settings.business_address,
-        "phone": settings.business_phone,
-        "email": settings.business_email,
-    }
+    business_dict = await settings_service.get_business_dict(db, include_bank=False)
 
     try:
         pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)

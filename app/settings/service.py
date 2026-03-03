@@ -460,6 +460,38 @@ async def set_settings_bulk(
         await set_setting(db, category, key, value)
 
 
+async def get_bank_details(db: AsyncSession) -> dict:
+    """Get bank details from database settings (not from env/config)."""
+    business = await get_settings_by_category(db, 'business')
+    return {
+        "bank_name": business.get("bank_name") or "Great Southern Bank",
+        "bank_account_name": business.get("bank_account_name") or "",
+        "bank_bsb": business.get("bank_bsb") or "",
+        "bank_account": business.get("bank_account") or "",
+    }
+
+
+async def get_business_dict(db: AsyncSession, include_bank: bool = True) -> dict:
+    """Build a complete business info dict from database settings."""
+    business = await get_settings_by_category(db, 'business')
+    biz = {
+        "name": business.get("name") or "KRG Concreting",
+        "trading_as": business.get("trading_as") or business.get("name") or "KRG Concreting",
+        "abn": business.get("abn") or "",
+        "address": business.get("address_line1") or "",
+        "phone": business.get("phone") or "",
+        "email": business.get("email") or "",
+    }
+    if include_bank:
+        biz["bank_name"] = business.get("bank_name") or "Great Southern Bank"
+        biz["bank_account_name"] = business.get("bank_account_name") or ""
+        biz["bank_bsb"] = business.get("bank_bsb") or ""
+        biz["bsb"] = business.get("bank_bsb") or ""
+        biz["bank_account"] = business.get("bank_account") or ""
+        biz["account"] = business.get("bank_account") or ""
+    return biz
+
+
 async def delete_setting(db: AsyncSession, category: str, key: str) -> bool:
     """Delete a setting (reverts to default)."""
     result = await db.execute(

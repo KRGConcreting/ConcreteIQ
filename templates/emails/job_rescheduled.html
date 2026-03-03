@@ -70,26 +70,16 @@
                                 </tr>
                             </table>
 
-                            <!-- Job Details Card -->
-                            {% if quote.job_name or quote.job_address %}
+                            <!-- Job Location -->
+                            {% if quote.job_address %}
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
                                 <tr>
                                     <td style="background-color: #f9fafb; border-radius: 12px; padding: 24px;">
-                                        <p style="margin: 0 0 16px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #E87A2E;">Job Details</p>
-
                                         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                                            {% if quote.job_name %}
-                                            <tr>
-                                                <td style="padding: 6px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">Project</td>
-                                                <td style="padding: 6px 0; font-size: 14px; color: #374151; font-weight: 600; text-align: right; line-height: 1.5;">{{ quote.job_name }}</td>
-                                            </tr>
-                                            {% endif %}
-                                            {% if quote.job_address %}
                                             <tr>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">Location</td>
                                                 <td style="padding: 6px 0; font-size: 14px; color: #374151; font-weight: 600; text-align: right; line-height: 1.5;">{{ quote.job_address }}</td>
                                             </tr>
-                                            {% endif %}
                                         </table>
                                     </td>
                                 </tr>

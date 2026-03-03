@@ -15,6 +15,7 @@ from app.models import Quote, Invoice, Payment, Customer, CommunicationLog
 from app.core.dates import sydney_now
 from app.core.templates import templates
 from app.core.security import decrypt_customer_pii
+from app.settings import service as settings_service
 
 logger = logging.getLogger(__name__)
 
@@ -511,6 +512,9 @@ async def send_invoice_email(
     custom_intro = customs.get('invoice_sent_intro', '').strip() or "Please find your invoice below. Payment can be made by bank transfer using the details provided."
     custom_cta = customs.get('invoice_sent_cta', '').strip() or "View Invoice & Payment Details"
 
+    # Fetch bank details from database settings
+    bank = await settings_service.get_bank_details(db)
+
     # Render HTML template
     try:
         html_content = templates.get_template("emails/invoice_sent.html").render(
@@ -527,9 +531,9 @@ async def send_invoice_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
-            bank_name=settings.bank_name,
-            bank_bsb=settings.bank_bsb,
-            bank_account=settings.bank_account,
+            bank_name=bank["bank_name"],
+            bank_bsb=bank["bank_bsb"],
+            bank_account=bank["bank_account"],
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
         )
@@ -552,9 +556,9 @@ Pay online:
 {portal_url}
 
 Or pay by bank transfer:
-Bank: {settings.bank_name}
-BSB: {settings.bank_bsb}
-Account: {settings.bank_account}
+Bank: {bank["bank_name"]}
+BSB: {bank["bank_bsb"]}
+Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
 
 If you have any questions, please call {settings.business_phone} or reply to this email.
@@ -758,11 +762,13 @@ def send_payment_reminder_email_sync(
     is_overdue: bool = False,
     days_overdue: int = 0,
     portal_url: str = "",
+    bank_details: dict = None,
 ) -> bool:
     """
     Send payment reminder email (synchronous).
 
     Used by Celery tasks for scheduled payment reminders.
+    bank_details dict should have keys: bank_name, bank_bsb, bank_account
     """
     decrypt_customer_pii(customer)
     if not customer.email:
@@ -773,6 +779,12 @@ def send_payment_reminder_email_sync(
             f"portal_url is empty for invoice {invoice.invoice_number} — "
             "customer will receive a broken payment link"
         )
+
+    # Bank details from caller (DB) or fallback to config
+    bank = bank_details or {}
+    bank_name = bank.get("bank_name") or settings.bank_name
+    bank_bsb = bank.get("bank_bsb") or settings.bank_bsb
+    bank_account = bank.get("bank_account") or settings.bank_account
 
     # Format amounts
     total_formatted = f"${invoice.total_cents / 100:,.2f}"
@@ -815,9 +827,9 @@ def send_payment_reminder_email_sync(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
-            bank_name=settings.bank_name,
-            bank_bsb=settings.bank_bsb,
-            bank_account=settings.bank_account,
+            bank_name=bank_name,
+            bank_bsb=bank_bsb,
+            bank_account=bank_account,
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
         )
@@ -840,9 +852,9 @@ Pay online:
 {portal_url}
 
 Or pay by bank transfer:
-Bank: {settings.bank_name}
-BSB: {settings.bank_bsb}
-Account: {settings.bank_account}
+Bank: {bank_name}
+BSB: {bank_bsb}
+Account: {bank_account}
 Reference: {invoice.invoice_number}
 
 If you have already made this payment, please disregard this reminder.
@@ -1917,6 +1929,9 @@ async def send_progress_payment_email(
         except Exception:
             pour_date_formatted = str(pour_date)
 
+    # Fetch bank details from database settings
+    bank = await settings_service.get_bank_details(db)
+
     subject = _render_subject(
         customs.get('progress_payment_subject', '').strip() or "Progress Payment Request — {invoice_number}",
         {"invoice_number": invoice.invoice_number, "business_name": settings.trading_as}
@@ -1940,9 +1955,9 @@ async def send_progress_payment_email(
             business_address=settings.business_address,
             business_phone=settings.business_phone,
             business_email=settings.business_email,
-            bank_name=settings.bank_name,
-            bank_bsb=settings.bank_bsb,
-            bank_account=settings.bank_account,
+            bank_name=bank["bank_name"],
+            bank_bsb=bank["bank_bsb"],
+            bank_account=bank["bank_account"],
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
         )
@@ -1965,9 +1980,9 @@ Invoice Total: {total_formatted}
 {f"Scheduled Pour Date: {pour_date_formatted}" if pour_date_formatted else ""}
 
 Pay by bank transfer:
-Bank: {settings.bank_name}
-BSB: {settings.bank_bsb}
-Account: {settings.bank_account}
+Bank: {bank["bank_name"]}
+BSB: {bank["bank_bsb"]}
+Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}
 
 {f"View online: {portal_url}" if portal_url else ""}

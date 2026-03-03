@@ -28,6 +28,7 @@ from app.quotes.pdf import generate_quote_pdf, generate_invoice_pdf
 from app.core.security import decrypt_customer_pii
 from app.core.auth import verify_csrf
 from app.invoices import service as invoice_service
+from app.settings import service as settings_service
 from app.payments import service as payment_service
 
 # NO require_login dependency - portal is public
@@ -132,19 +133,7 @@ async def customer_dashboard(
         "total_paid_cents": total_paid_cents,
         "outstanding_cents": outstanding_cents,
         "today": sydney_today(),
-        "business": {
-            "name": settings.business_name,
-            "trading_as": settings.trading_as,
-            "phone": settings.business_phone,
-            "email": settings.business_email,
-            "abn": settings.abn,
-            "bank_name": settings.bank_name,
-            "bank_account_name": getattr(settings, 'bank_account_name', ''),
-            "bank_bsb": settings.bank_bsb,
-            "bsb": settings.bank_bsb,
-            "bank_account": settings.bank_account,
-            "account": settings.bank_account,
-        },
+        "business": await settings_service.get_business_dict(db, include_bank=True),
     })
 
 
@@ -686,14 +675,7 @@ async def download_pdf(
             "postcode": customer.postcode,
         }
 
-    business_dict = {
-        "name": settings.business_name,
-        "trading_as": settings.trading_as,
-        "abn": settings.abn,
-        "address": settings.business_address,
-        "phone": settings.business_phone,
-        "email": settings.business_email,
-    }
+    business_dict = await settings_service.get_business_dict(db, include_bank=False)
 
     try:
         pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)
@@ -909,7 +891,7 @@ async def view_invoice(
     """
     invoice = await invoice_service.get_invoice_by_token(db, token)
     if not invoice:
-        raise HTTPException(404, "Invoice not found")
+        raise HTTPException(404, "This invoice link has expired or is invalid. Please check your most recent email from KRG Concreting for an updated link.")
 
     # Get customer
     customer = await db.get(Customer, invoice.customer_id)
@@ -937,19 +919,7 @@ async def view_invoice(
         "customer": customer,
         "payments": payments,
         "balance_cents": (invoice.total_cents or 0) - (invoice.paid_cents or 0),
-        "business": {
-            "name": settings.business_name,
-            "trading_as": settings.trading_as,
-            "phone": settings.business_phone,
-            "email": settings.business_email,
-            "abn": settings.abn,
-            "bank_name": settings.bank_name,
-            "bank_account_name": getattr(settings, 'bank_account_name', ''),
-            "bank_bsb": settings.bank_bsb,
-            "bsb": settings.bank_bsb,
-            "bank_account": settings.bank_account,
-            "account": settings.bank_account,
-        },
+        "business": await settings_service.get_business_dict(db, include_bank=True),
         "token": token,
         "stripe_enabled": bool(settings.stripe_secret_key),
         "stripe_publishable_key": settings.stripe_publishable_key,
@@ -995,7 +965,14 @@ async def download_invoice_pdf(
         "balance_cents": (invoice.total_cents or 0) - (invoice.paid_cents or 0),
         "status": invoice.status,
         "notes": invoice.notes,
+        "discount_cents": 0,
     }
+
+    # Get discount from linked quote if present
+    if invoice.quote_id:
+        quote = await db.get(Quote, invoice.quote_id)
+        if quote and quote.discount_cents:
+            invoice_dict["discount_cents"] = quote.discount_cents
 
     customer_dict = None
     if customer:
@@ -1009,20 +986,7 @@ async def download_invoice_pdf(
             "postcode": customer.postcode,
         }
 
-    business_dict = {
-        "name": settings.business_name,
-        "trading_as": settings.trading_as,
-        "abn": settings.abn,
-        "address": settings.business_address,
-        "phone": settings.business_phone,
-        "email": settings.business_email,
-        "bank_name": settings.bank_name,
-        "bank_account_name": getattr(settings, 'bank_account_name', ''),
-        "bank_bsb": settings.bank_bsb,
-        "bsb": settings.bank_bsb,
-        "bank_account": settings.bank_account,
-        "account": settings.bank_account,
-    }
+    business_dict = await settings_service.get_business_dict(db, include_bank=True)
 
     try:
         payment_dicts = [

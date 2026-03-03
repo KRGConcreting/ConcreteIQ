@@ -827,11 +827,20 @@ def generate_invoice_pdf(
         story.append(Spacer(1, 4 * mm))
 
     # --- Totals ---
+    discount_cents = invoice.get("discount_cents", 0) or 0
     totals_data = [
         [
             Paragraph("Subtotal", styles["body_right"]),
             Paragraph(_fmt(invoice.get("subtotal_cents")), styles["body_bold_right"]),
         ],
+    ]
+    if discount_cents > 0:
+        totals_data.append([
+            Paragraph("Discount", styles["body_right"]),
+            Paragraph(f"-{_fmt(discount_cents)}", ParagraphStyle(
+                "disc_val", parent=styles["body_bold_right"], textColor=GREEN)),
+        ])
+    totals_data.extend([
         [
             Paragraph("GST (10%)", styles["body_right"]),
             Paragraph(_fmt(invoice.get("gst_cents")), styles["body_bold_right"]),
@@ -840,7 +849,7 @@ def generate_invoice_pdf(
             Paragraph("TOTAL (inc GST)", styles["total_label"]),
             Paragraph(_fmt(invoice.get("total_cents")), styles["total_value_orange"]),
         ],
-    ]
+    ])
     paid = invoice.get("paid_cents", 0) or 0
     if paid > 0:
         totals_data.append([
@@ -862,10 +871,11 @@ def generate_invoice_pdf(
         ("TOPPADDING", (0, 0), (-1, -1), 2),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
     ]
-    # Line above the first "TOTAL" row (index 2)
-    ts_totals.append(("LINEABOVE", (0, 2), (-1, 2), 1, DARK_SLATE))
-    ts_totals.append(("TOPPADDING", (0, 2), (-1, 2), 6))
-    ts_totals.append(("BOTTOMPADDING", (0, 2), (-1, 2), 6))
+    # Line above the "TOTAL" row (after subtotal, optional discount, gst)
+    total_row_idx = 2 + (1 if discount_cents > 0 else 0)
+    ts_totals.append(("LINEABOVE", (0, total_row_idx), (-1, total_row_idx), 1, DARK_SLATE))
+    ts_totals.append(("TOPPADDING", (0, total_row_idx), (-1, total_row_idx), 6))
+    ts_totals.append(("BOTTOMPADDING", (0, total_row_idx), (-1, total_row_idx), 6))
     # If there is a balance due row, emphasize it
     if paid > 0:
         last = len(totals_data) - 1
