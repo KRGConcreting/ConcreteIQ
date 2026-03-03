@@ -42,6 +42,13 @@
         duration = duration || 4000;
         var container = getToastContainer();
 
+        // Enforce max visible toasts (remove oldest active ones first)
+        while (activeToastCount() >= 5) {
+            var oldest = container.querySelector('.toast:not(.toast-exit)');
+            if (oldest) dismissToast(oldest);
+            else break;
+        }
+
         var toast = document.createElement('div');
         toast.className = 'toast toast-' + type;
         toast.innerHTML =
@@ -68,9 +75,19 @@
     }
 
     function dismissToast(toast) {
+        if (!toast || !toast.parentNode) return;         // Already removed
         if (toast.classList.contains('toast-exit')) return;
         toast.classList.add('toast-exit');
-        setTimeout(function() { toast.remove(); }, 300);
+        setTimeout(function() {
+            if (toast.parentNode) toast.remove();
+        }, 300);
+    }
+
+    /** Count only visible (non-exiting) toasts */
+    function activeToastCount() {
+        var container = document.getElementById('toast-container');
+        if (!container) return 0;
+        return container.querySelectorAll('.toast:not(.toast-exit)').length;
     }
 
     window.Toast = {
@@ -380,35 +397,44 @@
         badgeEl: null,
         _polling: false,
         _seenIds: {},               // Track notification IDs to prevent duplicates
-        _lastSoundTime: 0,         // Throttle sounds (max 1 per 3 seconds)
-        MAX_TOASTS: 5,             // Max visible toasts at once
-        POLL_INTERVAL: 10000,       // 10 seconds (was 30s)
-        POLL_INTERVAL_BG: 30000,    // 30 seconds when tab is hidden
+        _lastSoundTime: 0,          // Throttle sounds (max 1 per 5 seconds)
+        _firstPoll: true,           // Suppress toasts on first poll (page load)
+        _failCount: 0,              // Track consecutive failures for backoff
+        MAX_TOASTS: 4,              // Max visible toasts at once
+        MAX_BATCH_TOASTS: 3,        // Max toasts per poll batch (don't flood)
+        POLL_INTERVAL: 10000,       // 10 seconds foreground
+        POLL_INTERVAL_BG: 60000,    // 60 seconds when tab hidden
+        SOUND_COOLDOWN: 5000,       // Min 5s between notification sounds
+        TOAST_DURATION: 8000,       // Auto-dismiss after 8s
 
         start: function() {
             // Only poll on authenticated pages (not portal/login)
-            if (document.querySelector('[data-no-poll]') || window.location.pathname.startsWith('/p/') || window.location.pathname === '/login') {
+            if (document.querySelector('[data-no-poll]') ||
+                window.location.pathname.startsWith('/p/') ||
+                window.location.pathname === '/login') {
                 return;
             }
 
             this.lastCheck = new Date().toISOString();
             this.badgeEl = document.getElementById('notification-badge');
+            this._firstPoll = true;
 
             var self = this;
 
-            // Immediate first poll (after 1s to let page settle)
-            setTimeout(function() { self.poll(); }, 1000);
+            // First poll after 2s (let page fully load)
+            setTimeout(function() { self.poll(); }, 2000);
 
             // Start regular polling
-            this._startInterval();
+            this._startInterval(this.POLL_INTERVAL);
 
-            // Poll immediately when tab becomes visible again
+            // Handle tab visibility changes
             document.addEventListener('visibilitychange', function() {
                 if (document.visibilityState === 'visible') {
+                    // Tab came back — poll and switch to fast interval
                     self.poll();
-                    self._startInterval();  // Reset to fast interval
+                    self._startInterval(self.POLL_INTERVAL);
                 } else {
-                    // Slow down when tab is hidden (save resources)
+                    // Tab hidden — slow down to save resources
                     self._startInterval(self.POLL_INTERVAL_BG);
                 }
             });
@@ -417,7 +443,7 @@
         _startInterval: function(ms) {
             var self = this;
             if (this.interval) clearInterval(this.interval);
-            this.interval = setInterval(function() { self.poll(); }, ms || this.POLL_INTERVAL);
+            this.interval = setInterval(function() { self.poll(); }, ms);
         },
 
         poll: function() {
@@ -431,103 +457,208 @@
             }
 
             fetch(url)
-                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(function(data) {
                     if (!data) return;
+                    self._failCount = 0;  // Reset on success
 
-                    // Update badge count and styling
-                    if (self.badgeEl) {
-                        if (data.unread_count > 0) {
-                            self.badgeEl.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
-                            self.badgeEl.style.display = '';
-                            self.badgeEl.style.background = '#ef4444';
-                            self.badgeEl.style.color = '#fff';
-                        } else {
-                            self.badgeEl.textContent = '0';
-                            self.badgeEl.style.background = 'rgba(255,255,255,0.15)';
-                            self.badgeEl.style.color = 'rgba(255,255,255,0.35)';
-                            self.badgeEl.style.display = '';
-                        }
-                    }
+                    // ── Update badge ──
+                    self._updateBadge(data.unread_count || 0);
 
-                    // Show toast for each new notification (with deduplication)
+                    // ── Show toasts for new notifications ──
                     if (data.notifications && data.notifications.length > 0) {
-                        var container = getToastContainer();
-                        var playedSound = false;
-                        var now = Date.now();
-
-                        data.notifications.forEach(function(n) {
-                            // Skip if we've already shown this notification
-                            var nid = n.id || (n.title + '_' + n.created_at);
-                            if (self._seenIds[nid]) return;
-                            self._seenIds[nid] = true;
-
-                            var toastType = NOTIF_TOAST_MAP[n.type] || 'info';
-                            var soundType = NOTIF_SOUND_MAP[n.type] || 'notification';
-
-                            // Limit max visible toasts — remove oldest if at limit
-                            var existing = container.querySelectorAll('.toast');
-                            if (existing.length >= self.MAX_TOASTS) {
-                                dismissToast(existing[0]);
-                            }
-
-                            // Create toast
-                            var toast = document.createElement('div');
-                            toast.className = 'toast toast-' + toastType;
-                            toast.setAttribute('data-nid', nid);
-                            toast.innerHTML =
-                                '<div class="toast-accent"></div>' +
-                                TOAST_ICONS[toastType] +
-                                '<div class="toast-body">' +
-                                    '<div class="toast-title">' + escapeHtml(n.title) + '</div>' +
-                                    '<div class="toast-message">' + escapeHtml(n.message) + '</div>' +
-                                '</div>' +
-                                '<button class="toast-close" aria-label="Close">' +
-                                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
-                                '</button>' +
-                                '<div class="toast-progress"><div class="toast-progress-bar" style="animation-duration: 6000ms"></div></div>';
-
-                            toast.querySelector('.toast-close').addEventListener('click', function() {
-                                dismissToast(toast);
-                            });
-
-                            container.appendChild(toast);
-
-                            // Throttle sound: max 1 per 3 seconds
-                            if (!playedSound && (now - self._lastSoundTime) > 3000) {
-                                Sound.play(soundType);
-                                self._lastSoundTime = now;
-                                playedSound = true;
-                            }
-
-                            setTimeout(function() { dismissToast(toast); }, 6000);
-                        });
-
-                        // Update lastCheck to latest notification time
-                        var last = data.notifications[data.notifications.length - 1];
-                        if (last.created_at) {
-                            self.lastCheck = last.created_at;
-                        }
-
-                        // Clean up old seen IDs (keep only last 200)
-                        var seenKeys = Object.keys(self._seenIds);
-                        if (seenKeys.length > 200) {
-                            seenKeys.slice(0, seenKeys.length - 200).forEach(function(k) {
-                                delete self._seenIds[k];
-                            });
-                        }
+                        self._processNotifications(data.notifications);
                     }
 
-                    // Sync recent items to the Alpine dropdown (if open)
+                    // ── Sync Alpine dropdown ──
                     if (data.recent) {
-                        var dropdownEl = document.querySelector('[x-data*="notifOpen"]');
-                        if (dropdownEl && dropdownEl.__x) {
-                            dropdownEl.__x.$data.items = data.recent;
-                        }
+                        self._syncDropdown(data.recent);
+                    }
+
+                    // After first poll, allow toasts for subsequent polls
+                    self._firstPoll = false;
+                })
+                .catch(function(err) {
+                    self._failCount++;
+                    // Back off on repeated failures (max 60s)
+                    if (self._failCount > 3) {
+                        var backoff = Math.min(self._failCount * 10000, 60000);
+                        self._startInterval(backoff);
                     }
                 })
-                .catch(function() { /* silent fail — network hiccup */ })
                 .finally(function() { self._polling = false; });
+        },
+
+        _updateBadge: function(count) {
+            if (!this.badgeEl) return;
+            if (count > 0) {
+                this.badgeEl.textContent = count > 99 ? '99+' : count;
+                this.badgeEl.style.display = '';
+                this.badgeEl.style.background = '#ef4444';
+                this.badgeEl.style.color = '#fff';
+            } else {
+                this.badgeEl.textContent = '0';
+                this.badgeEl.style.background = 'rgba(255,255,255,0.15)';
+                this.badgeEl.style.color = 'rgba(255,255,255,0.35)';
+                this.badgeEl.style.display = '';
+            }
+        },
+
+        _processNotifications: function(notifications) {
+            var self = this;
+            var container = getToastContainer();
+            var now = Date.now();
+            var toastsShown = 0;
+            var playedSound = false;
+
+            // Filter to only unseen notifications
+            var unseen = [];
+            notifications.forEach(function(n) {
+                // Robust dedup: prefer numeric id, fall back to string hash
+                var nid = (n.id != null) ? String(n.id) : (n.title + '|' + n.created_at);
+                if (!self._seenIds[nid]) {
+                    self._seenIds[nid] = now;
+                    n._nid = nid;
+                    unseen.push(n);
+                }
+            });
+
+            if (unseen.length === 0) {
+                // Still update lastCheck even if all were dupes
+                this._updateLastCheck(notifications);
+                return;
+            }
+
+            // On first poll (page load), just mark as seen — don't show toasts
+            // This prevents the flood of old notifications when you open the page
+            if (this._firstPoll) {
+                this._updateLastCheck(notifications);
+                return;
+            }
+
+            // Stagger toasts with a slight delay between each (200ms)
+            unseen.forEach(function(n, idx) {
+                // Cap how many toasts we show per batch
+                if (toastsShown >= self.MAX_BATCH_TOASTS) return;
+
+                setTimeout(function() {
+                    // Re-check limit before adding (another toast might have been added)
+                    while (activeToastCount() >= self.MAX_TOASTS) {
+                        var oldest = container.querySelector('.toast:not(.toast-exit)');
+                        if (oldest) dismissToast(oldest);
+                        else break;
+                    }
+
+                    var toastType = NOTIF_TOAST_MAP[n.type] || 'info';
+                    var soundType = NOTIF_SOUND_MAP[n.type] || 'notification';
+
+                    // Create toast element
+                    var toast = document.createElement('div');
+                    toast.className = 'toast toast-' + toastType;
+                    toast.setAttribute('data-nid', n._nid);
+                    toast.innerHTML =
+                        '<div class="toast-accent"></div>' +
+                        TOAST_ICONS[toastType] +
+                        '<div class="toast-body">' +
+                            '<div class="toast-title">' + escapeHtml(n.title) + '</div>' +
+                            '<div class="toast-message">' + escapeHtml(n.message) + '</div>' +
+                        '</div>' +
+                        '<button class="toast-close" aria-label="Close">' +
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+                        '</button>' +
+                        '<div class="toast-progress"><div class="toast-progress-bar" style="animation-duration: ' + self.TOAST_DURATION + 'ms"></div></div>';
+
+                    toast.querySelector('.toast-close').addEventListener('click', function() {
+                        dismissToast(toast);
+                    });
+
+                    container.appendChild(toast);
+
+                    // Play sound (throttled — max 1 per cooldown period)
+                    var soundNow = Date.now();
+                    if (!playedSound && (soundNow - self._lastSoundTime) > self.SOUND_COOLDOWN) {
+                        Sound.play(soundType);
+                        self._lastSoundTime = soundNow;
+                        playedSound = true;
+                    }
+
+                    // Auto-dismiss
+                    setTimeout(function() { dismissToast(toast); }, self.TOAST_DURATION);
+
+                }, idx * 250);  // 250ms stagger between toasts
+
+                toastsShown++;
+            });
+
+            // If there are more unseen notifications than we showed, add a summary
+            if (unseen.length > self.MAX_BATCH_TOASTS) {
+                var remaining = unseen.length - self.MAX_BATCH_TOASTS;
+                setTimeout(function() {
+                    while (activeToastCount() >= self.MAX_TOASTS) {
+                        var oldest = container.querySelector('.toast:not(.toast-exit)');
+                        if (oldest) dismissToast(oldest);
+                        else break;
+                    }
+                    var summary = document.createElement('div');
+                    summary.className = 'toast toast-info';
+                    summary.innerHTML =
+                        '<div class="toast-accent"></div>' +
+                        TOAST_ICONS.info +
+                        '<div class="toast-body">' +
+                            '<div class="toast-title">More Notifications</div>' +
+                            '<div class="toast-message">+ ' + remaining + ' more notification' + (remaining > 1 ? 's' : '') + '</div>' +
+                        '</div>' +
+                        '<button class="toast-close" aria-label="Close">' +
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' +
+                        '</button>' +
+                        '<div class="toast-progress"><div class="toast-progress-bar" style="animation-duration: ' + self.TOAST_DURATION + 'ms"></div></div>';
+                    summary.querySelector('.toast-close').addEventListener('click', function() {
+                        dismissToast(summary);
+                    });
+                    container.appendChild(summary);
+                    setTimeout(function() { dismissToast(summary); }, self.TOAST_DURATION);
+                }, self.MAX_BATCH_TOASTS * 250 + 100);
+            }
+
+            this._updateLastCheck(notifications);
+            this._cleanSeenIds();
+        },
+
+        _updateLastCheck: function(notifications) {
+            var last = notifications[notifications.length - 1];
+            if (last && last.created_at) {
+                this.lastCheck = last.created_at;
+            }
+        },
+
+        _cleanSeenIds: function() {
+            // Remove seen IDs older than 5 minutes (keep memory bounded)
+            var cutoff = Date.now() - 300000;
+            var keys = Object.keys(this._seenIds);
+            if (keys.length > 100) {
+                for (var i = 0; i < keys.length; i++) {
+                    if (this._seenIds[keys[i]] < cutoff) {
+                        delete this._seenIds[keys[i]];
+                    }
+                }
+            }
+        },
+
+        _syncDropdown: function(recent) {
+            // Try Alpine v3 first, then v2
+            var dropdownEl = document.querySelector('[x-data*="notifOpen"]');
+            if (!dropdownEl) return;
+
+            if (dropdownEl._x_dataStack) {
+                // Alpine v3
+                dropdownEl._x_dataStack[0].items = recent;
+            } else if (dropdownEl.__x) {
+                // Alpine v2
+                dropdownEl.__x.$data.items = recent;
+            }
         },
 
         stop: function() {

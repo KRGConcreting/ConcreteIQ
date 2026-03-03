@@ -1864,6 +1864,23 @@ function quoteCalculator() {
             this.customerSearch = customer.name;
             this.customerResults = [];
             this.showCustomerResults = false;
+
+            // Auto-fill job address from customer address if job_address is empty
+            if (!this.form.job_address && (customer.street || customer.city)) {
+                const parts = [];
+                if (customer.unit) parts.push(customer.unit);
+                if (customer.street) parts.push(customer.street);
+                const cityLine = [customer.city, customer.state].filter(Boolean).join(', ');
+                if (cityLine) parts.push(cityLine);
+                if (customer.postcode) parts[parts.length - 1] = (parts[parts.length - 1] || '') + ' ' + customer.postcode;
+                this.form.job_address = parts.join(', ').trim();
+            }
+
+            // Auto-fill customer discount if they have one
+            if (customer.discount_percent && !this.form.customer_discount_percent) {
+                this.form.customer_discount_percent = parseFloat(customer.discount_percent);
+                this.recalculate();
+            }
         },
 
         recalculate() {

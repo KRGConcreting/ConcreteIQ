@@ -649,12 +649,18 @@ async def download_pdf(
     ]
 
     # Convert to dicts for PDF generator
+    # Extract specs from calculator_input if available
+    calc_input = quote.calculator_input or {}
     quote_dict = {
         "quote_number": quote.quote_number,
         "quote_date": quote.quote_date,
         "expiry_date": quote.expiry_date,
+        "status": quote.status,
         "job_name": quote.job_name,
         "job_address": quote.job_address,
+        "concrete_finish": calc_input.get("concrete_finish") or calc_input.get("placement_method", ""),
+        "reinforcement_type": calc_input.get("reinforcement", ""),
+        "concrete_grade": calc_input.get("concrete_grade", ""),
         "line_items": quote.line_items or [],
         "customer_line_items": quote.customer_line_items,
         "subtotal_cents": quote.subtotal_cents,

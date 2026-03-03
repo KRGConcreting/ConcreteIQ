@@ -541,10 +541,17 @@ def generate_quote_pdf(
 
     row_idx = 1
     for item in line_items:
+        category = item.get("category", "")
+        total_cents = item.get("total_cents", 0) or 0
+
+        # Skip discount groups here — they show in the totals section below
+        if total_cents < 0 or category.lower().startswith("discount"):
+            continue
+
         # Category row
         table_data.append([
-            Paragraph(item.get("category", ""), styles["table_cell_bold"]),
-            Paragraph(_fmt(item.get("total_cents")), styles["table_cell_bold_right"]),
+            Paragraph(category, styles["table_cell_bold"]),
+            Paragraph(_fmt(total_cents), styles["table_cell_bold_right"]),
         ])
         row_idx += 1
         # Sub-items
@@ -592,6 +599,13 @@ def generate_quote_pdf(
         Paragraph(_fmt(quote.get("subtotal_cents")), styles["body_bold_right"]),
     ])
     discount = quote.get("discount_cents", 0) or 0
+    # Fallback: extract discount from customer_line_items if not set on quote
+    if not discount and line_items:
+        for li in line_items:
+            tc = li.get("total_cents", 0) or 0
+            if tc < 0 or (li.get("category", "").lower().startswith("discount")):
+                discount = abs(tc)
+                break
     if discount > 0:
         discount_style = ParagraphStyle(
             "discount_val",
