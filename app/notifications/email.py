@@ -552,6 +552,7 @@ async def send_invoice_email(
             business_phone=biz["phone"],
             business_email=biz["email"],
             bank_name=biz.get("bank_name", ""),
+            bank_account_name=biz.get("bank_account_name", ""),
             bank_bsb=biz.get("bank_bsb", ""),
             bank_account=biz.get("bank_account", ""),
             logo_url=_email_logo_url(),
@@ -578,6 +579,7 @@ Pay online:
 
 Or pay by bank transfer:
 Bank: {biz.get("bank_name", "")}
+Acc. Name: {biz.get("bank_account_name", "")}
 BSB: {biz.get("bank_bsb", "")}
 Account: {biz.get("bank_account", "")}
 Reference: {invoice.invoice_number}
@@ -807,6 +809,7 @@ def send_payment_reminder_email_sync(
     # Bank details from caller (DB) or fallback to config
     bank = bank_details or {}
     bank_name = bank.get("bank_name") or settings.bank_name
+    bank_account_name = bank.get("bank_account_name") or getattr(settings, "bank_account_name", "")
     bank_bsb = bank.get("bank_bsb") or settings.bank_bsb
     bank_account = bank.get("bank_account") or settings.bank_account
 
@@ -852,6 +855,7 @@ def send_payment_reminder_email_sync(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             bank_name=bank_name,
+            bank_account_name=bank_account_name,
             bank_bsb=bank_bsb,
             bank_account=bank_account,
             logo_url=_email_logo_url(),
@@ -877,6 +881,7 @@ Pay online:
 
 Or pay by bank transfer:
 Bank: {bank_name}
+Acc. Name: {bank_account_name}
 BSB: {bank_bsb}
 Account: {bank_account}
 Reference: {invoice.invoice_number}
@@ -1980,6 +1985,7 @@ async def send_progress_payment_email(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             bank_name=bank["bank_name"],
+            bank_account_name=bank["bank_account_name"],
             bank_bsb=bank["bank_bsb"],
             bank_account=bank["bank_account"],
             logo_url=_email_logo_url(),
@@ -2005,6 +2011,7 @@ Invoice Total: {total_formatted}
 
 Pay by bank transfer:
 Bank: {bank["bank_name"]}
+Acc. Name: {bank["bank_account_name"]}
 BSB: {bank["bank_bsb"]}
 Account: {bank["bank_account"]}
 Reference: {invoice.invoice_number}

@@ -603,7 +603,7 @@ async def preview_email_template(template_name: str, request: Request):
         # Business details
         "business_name": "KRG Concreting",
         "business_phone": "0423 005 129",
-        "business_email": "admin@krgconcreting.com.au",
+        "business_email": "kyle@krgconcreting.au",
         "business_abn": "76 993 685 401",
         "business_address": "1/32 Whitton Drive, Thurgoona NSW 2640",
         # Logos
