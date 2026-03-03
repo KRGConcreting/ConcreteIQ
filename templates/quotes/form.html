@@ -588,7 +588,10 @@
                                 <div x-show="form.subbase_thickness > 0" x-cloak>
                                     <label class="field-label">Delivery Distance (km)</label>
                                     <input type="number" x-model.number="form.delivery_distance_km" @input="recalculate()" min="0" step="1" placeholder="km from Peards" class="input-field">
-                                    <p class="text-[10px] text-slate-400 mt-1" x-show="form.delivery_distance_km > 20">+$<span x-text="((form.delivery_distance_km - 20) * 1.5).toFixed(2)"></span> extra delivery</p>
+                                    <p class="text-[10px] text-slate-400 mt-1" x-show="form.subbase_thickness > 0">
+                                        <span x-show="form.delivery_distance_km <= 20">$50 flat delivery (≤20km)</span>
+                                        <span x-show="form.delivery_distance_km > 20">$<span x-text="(50 + (form.delivery_distance_km - 20) * 1.5).toFixed(2)"></span> delivery (<span x-text="form.delivery_distance_km"></span>km)</span>
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -905,6 +908,19 @@
                                 <div class="flex justify-between items-baseline font-medium border-t border-slate-100 pt-1 mt-1"><span>Concrete Total</span><span x-text="'$' + (summary.concrete.total / 100).toFixed(2)"></span></div>
                             </div>
                         </div>
+                        <template x-if="summary.subbase.show">
+                        <div x-data="{ open: true }" class="border-t border-slate-100 pt-3">
+                            <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-amber-500"></span>Subbase Preparation</button>
+                            <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
+                                <div class="flex justify-between"><span class="text-slate-500">Material (crusher dust)</span><span x-text="'$' + (summary.subbase.material / 100).toFixed(2)"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Delivery <span x-show="form.delivery_distance_km > 0" x-text="'(' + form.delivery_distance_km + 'km)'"></span></span><span x-text="'$' + (summary.subbase.delivery / 100).toFixed(2)"></span></div>
+                                <template x-if="summary.subbase.compactor_fuel > 0"><div class="flex justify-between"><span class="text-slate-500">Compactor Fuel</span><span x-text="'$' + (summary.subbase.compactor_fuel / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.subbase.compactor_depreciation > 0"><div class="flex justify-between"><span class="text-slate-500">Compactor Depreciation</span><span x-text="'$' + (summary.subbase.compactor_depreciation / 100).toFixed(2)"></span></div></template>
+                                <template x-if="summary.subbase.compactor_service > 0"><div class="flex justify-between"><span class="text-slate-500">Compactor Service</span><span x-text="'$' + (summary.subbase.compactor_service / 100).toFixed(2)"></span></div></template>
+                                <div class="flex justify-between items-baseline font-medium border-t border-slate-100 pt-1 mt-1"><span>Subbase Total</span><span x-text="'$' + (summary.subbase.total / 100).toFixed(2)"></span></div>
+                            </div>
+                        </div>
+                        </template>
                         <div x-data="{ open: true }" class="border-t border-slate-100 pt-3">
                             <button @click="open = !open" type="button" class="flex items-center gap-2 w-full text-left font-medium text-slate-900 text-sm"><svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><span class="section-dot bg-sky-400"></span>Formwork & Reinforcement</button>
                             <div x-show="open" class="mt-2 space-y-1 pl-4 text-xs">
