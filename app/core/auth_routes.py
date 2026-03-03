@@ -72,7 +72,10 @@ async def login_submit(
 
     # Get effective password hash (DB override takes precedence over env var)
     from app.settings import service as settings_service
-    db_hash = await settings_service.get_setting(db, "security", "admin_password_hash")
+    try:
+        db_hash = await settings_service.get_setting(db, "security", "admin_password_hash")
+    except Exception:
+        db_hash = None  # Settings table missing — fall back to env var
     effective_hash = db_hash if db_hash else settings.admin_password
 
     # Verify password
@@ -118,8 +121,11 @@ async def login_submit(
     )
 
     # Get session version for session cookie
-    session_ver = await settings_service.get_setting(db, "security", "session_version")
-    session_version = int(session_ver) if session_ver else 1
+    try:
+        session_ver = await settings_service.get_setting(db, "security", "session_version")
+        session_version = int(session_ver) if session_ver else 1
+    except Exception:
+        session_version = 1  # Settings table missing — use default
 
     response = RedirectResponse(url=_safe_redirect_url(next), status_code=302)
     create_session(response, session_version=session_version)
@@ -200,8 +206,11 @@ async def login_2fa_submit(
 
     # Get session version for session cookie
     from app.settings import service as settings_service
-    session_ver = await settings_service.get_setting(db, "security", "session_version")
-    session_version = int(session_ver) if session_ver else 1
+    try:
+        session_ver = await settings_service.get_setting(db, "security", "session_version")
+        session_version = int(session_ver) if session_ver else 1
+    except Exception:
+        session_version = 1  # Settings table missing — use default
 
     response = RedirectResponse(url=_safe_redirect_url(next_url), status_code=302)
     create_session(response, session_version=session_version)

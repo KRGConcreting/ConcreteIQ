@@ -461,8 +461,18 @@ async def set_settings_bulk(
 
 
 async def get_bank_details(db: AsyncSession) -> dict:
-    """Get bank details from database settings (not from env/config)."""
-    business = await get_settings_by_category(db, 'business')
+    """Get bank details from database settings, with config fallback."""
+    try:
+        business = await get_settings_by_category(db, 'business')
+    except Exception:
+        # DB unavailable or settings table missing — fall back to config
+        from app.config import settings as cfg
+        return {
+            "bank_name": getattr(cfg, "bank_name", "") or "Great Southern Bank",
+            "bank_account_name": getattr(cfg, "bank_account_name", "") or "",
+            "bank_bsb": getattr(cfg, "bank_bsb", "") or "",
+            "bank_account": getattr(cfg, "bank_account", "") or "",
+        }
     return {
         "bank_name": business.get("bank_name") or "Great Southern Bank",
         "bank_account_name": business.get("bank_account_name") or "",
@@ -473,7 +483,27 @@ async def get_bank_details(db: AsyncSession) -> dict:
 
 async def get_business_dict(db: AsyncSession, include_bank: bool = True) -> dict:
     """Build a complete business info dict from database settings."""
-    business = await get_settings_by_category(db, 'business')
+    try:
+        business = await get_settings_by_category(db, 'business')
+    except Exception:
+        # DB unavailable — return minimal defaults from config
+        from app.config import settings as cfg
+        biz = {
+            "name": getattr(cfg, "business_name", "") or "KRG Concreting",
+            "trading_as": getattr(cfg, "trading_as", "") or "KRG Concreting",
+            "abn": getattr(cfg, "abn", "") or "",
+            "address": getattr(cfg, "business_address", "") or "",
+            "phone": getattr(cfg, "business_phone", "") or "",
+            "email": getattr(cfg, "business_email", "") or "",
+        }
+        if include_bank:
+            biz["bank_name"] = getattr(cfg, "bank_name", "") or "Great Southern Bank"
+            biz["bank_account_name"] = getattr(cfg, "bank_account_name", "") or ""
+            biz["bank_bsb"] = getattr(cfg, "bank_bsb", "") or ""
+            biz["bsb"] = getattr(cfg, "bank_bsb", "") or ""
+            biz["bank_account"] = getattr(cfg, "bank_account", "") or ""
+            biz["account"] = getattr(cfg, "bank_account", "") or ""
+        return biz
     biz = {
         "name": business.get("name") or "KRG Concreting",
         "trading_as": business.get("trading_as") or business.get("name") or "KRG Concreting",

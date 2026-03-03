@@ -156,14 +156,21 @@ class TestStageAmounts:
         assert "Unknown stage" in str(exc_info.value)
 
     def test_payment_split_matches_stages(self):
-        """Payment split function should match stage calculations."""
+        """Payment split function should match stage calculations.
+
+        calculate_payment_split() returns canonical keys: deposit, prepour, final.
+        calculate_stage_amount() accepts both canonical and legacy names.
+        """
         total_cents = 100000
 
         split = calculate_payment_split(total_cents)
 
-        assert split["booking"] == calculate_stage_amount(total_cents, "booking")
+        # Use canonical keys from split dict, with legacy stage names for stage_amount
+        assert split["deposit"] == calculate_stage_amount(total_cents, "booking")
+        assert split["deposit"] == calculate_stage_amount(total_cents, "deposit")
         assert split["prepour"] == calculate_stage_amount(total_cents, "prepour")
-        assert split["completion"] == calculate_stage_amount(total_cents, "completion")
+        assert split["final"] == calculate_stage_amount(total_cents, "completion")
+        assert split["final"] == calculate_stage_amount(total_cents, "final")
 
 
 # =============================================================================

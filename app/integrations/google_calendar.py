@@ -37,10 +37,10 @@ async def _load_google_credentials_from_db():
         async with get_async_session() as db:
             db_settings = await settings_service.get_settings_by_category(db, "integrations")
             _cached_credentials_json = db_settings.get("google_credentials_json") or settings.google_credentials_json or None
-            _cached_calendar_id = db_settings.get("google_calendar_id") or _get_effective_calendar_id() or None
+            _cached_calendar_id = db_settings.get("google_calendar_id") or settings.google_calendar_id or None
     except Exception:
         _cached_credentials_json = settings.google_credentials_json or None
-        _cached_calendar_id = _get_effective_calendar_id() or None
+        _cached_calendar_id = settings.google_calendar_id or None
 
 
 def _get_effective_credentials_json() -> Optional[str]:
@@ -50,7 +50,7 @@ def _get_effective_credentials_json() -> Optional[str]:
 
 def _get_effective_calendar_id() -> Optional[str]:
     """Get Google Calendar ID — DB cache first, then env var."""
-    return _cached_calendar_id or _get_effective_calendar_id() or None
+    return _cached_calendar_id or settings.google_calendar_id or None
 
 
 def _get_credentials():

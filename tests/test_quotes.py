@@ -579,8 +579,11 @@ async def test_accept_quote_from_sent_status():
     mock_db = AsyncMock()
 
     # Mock the invoice creation, sending, and notification since sign_quote calls them
-    mock_notification = AsyncMock()
-    with patch("app.invoices.service.create_progress_invoices", new_callable=AsyncMock, return_value=[]) as mock_invoices, \
+    # sign_quote calls create_job_invoice (not create_progress_invoices)
+    mock_invoice = MagicMock()
+    mock_invoice.status = "draft"
+    mock_invoice.invoice_number = "INV-2026-00007"
+    with patch("app.invoices.service.create_job_invoice", new_callable=AsyncMock, return_value=mock_invoice) as mock_create, \
          patch("app.invoices.service.send_invoice", new_callable=AsyncMock) as mock_send, \
          patch("app.notifications.service.notify_quote_accepted", new_callable=AsyncMock) as mock_notify:
         result, was_already_signed = await sign_quote(
@@ -620,7 +623,10 @@ async def test_accept_quote_from_viewed_status():
 
     mock_db = AsyncMock()
 
-    with patch("app.invoices.service.create_progress_invoices", new_callable=AsyncMock, return_value=[]) as mock_invoices, \
+    mock_invoice = MagicMock()
+    mock_invoice.status = "draft"
+    mock_invoice.invoice_number = "INV-2026-00008"
+    with patch("app.invoices.service.create_job_invoice", new_callable=AsyncMock, return_value=mock_invoice) as mock_create, \
          patch("app.invoices.service.send_invoice", new_callable=AsyncMock) as mock_send, \
          patch("app.notifications.service.notify_quote_accepted", new_callable=AsyncMock) as mock_notify:
         result, was_already_signed = await sign_quote(

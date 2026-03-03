@@ -79,20 +79,28 @@ def is_authenticated(request: Request) -> bool:
 
 
 async def _check_session_version(request: Request) -> bool:
-    """Check if session version matches the current DB version."""
+    """Check if session version matches the current DB version.
+
+    Gracefully returns True if the settings table is unreachable,
+    so login isn't blocked by a missing/broken settings table.
+    """
     session = get_session(request)
     if not session:
         return False
 
     session_ver = session.get("session_version", 1)
 
-    # Lazy import to avoid circular dependencies
-    from app.database import get_async_session
-    from app.settings import service as settings_service
+    try:
+        # Lazy import to avoid circular dependencies
+        from app.database import get_async_session
+        from app.settings import service as settings_service
 
-    async with get_async_session() as db:
-        db_ver = await settings_service.get_setting(db, "security", "session_version")
-        current_ver = int(db_ver) if db_ver else 1
+        async with get_async_session() as db:
+            db_ver = await settings_service.get_setting(db, "security", "session_version")
+            current_ver = int(db_ver) if db_ver else 1
+    except Exception:
+        # Settings table missing or DB error — allow session through
+        return True
 
     return session_ver >= current_ver
 
