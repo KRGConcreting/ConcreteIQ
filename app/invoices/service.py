@@ -459,6 +459,10 @@ async def record_payment(
     Updates invoice paid_cents and status.
     Optionally sends payment receipt email.
     """
+    # Only allow payments on active invoices (not draft or voided)
+    if invoice.status in ("draft", "voided"):
+        raise ValueError(f"Cannot record payment on a {invoice.status} invoice")
+
     # Validate payment amount
     if amount_cents <= 0:
         raise ValueError("Payment amount must be positive")
@@ -501,10 +505,12 @@ async def record_payment(
 
             # Also send updated invoice showing payment progress
             try:
-                if invoice.portal_token:
-                    portal_url = f"{settings.app_url}/p/invoice/{invoice.portal_token}"
-                    from app.notifications.email import send_invoice_email
-                    await send_invoice_email(db, invoice, customer, portal_url)
+                # Generate fresh portal token for URL (stored token is hashed)
+                fresh_raw, fresh_hash = generate_portal_token()
+                invoice.portal_token = fresh_hash
+                portal_url = f"{settings.app_url}/p/invoice/{fresh_raw}"
+                from app.notifications.email import send_invoice_email
+                await send_invoice_email(db, invoice, customer, portal_url)
             except Exception as e:
                 logger.warning(f"Failed to send updated invoice after payment: {e}")
 
@@ -1076,12 +1082,13 @@ async def on_job_scheduled(
     # Send 60% progress payment request email
     try:
         customer = await db.get(Customer, quote.customer_id)
-        if customer and invoice.portal_token:
+        if customer:
             from app.core.security import decrypt_customer_pii
             decrypt_customer_pii(customer)
-            # Recover raw token for portal URL
-            raw_token = invoice.portal_token  # Already hashed, need to use stored token
-            portal_url = f"{settings.app_url}/p/invoice/{invoice.portal_token}"
+            # Generate a fresh portal token for the URL (stored token is hashed)
+            raw_token, hashed_token = generate_portal_token()
+            invoice.portal_token = hashed_token
+            portal_url = f"{settings.app_url}/p/invoice/{raw_token}"
             from app.notifications.email import send_progress_payment_email
             await send_progress_payment_email(
                 db=db,
@@ -1142,8 +1149,8 @@ async def on_fully_paid(
     if not quote:
         return
 
-    # Auto-transition to completed
-    if quote.status in ("pending_completion", "pour_stage", "confirmed", "accepted"):
+    # Auto-transition to completed only from late stages (not accepted/confirmed)
+    if quote.status in ("pending_completion", "pour_stage"):
         quote.status = "completed"
         quote.completed_date = sydney_today()
 

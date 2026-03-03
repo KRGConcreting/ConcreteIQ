@@ -407,7 +407,7 @@ async def api_update_preview(
         # Return profit comparison
         from app.quotes.customer_lines import calculate_profit_comparison
         comparison = calculate_profit_comparison(
-            quote.calculator_result, quote.customer_line_items
+            quote.calculator_result or {}, quote.customer_line_items or []
         )
 
         return {
@@ -496,7 +496,7 @@ async def api_get_pdf(
         "status": quote.status,
         "job_name": quote.job_name,
         "job_address": quote.job_address,
-        "concrete_finish": calc_input.get("concrete_finish") or calc_input.get("placement_method", ""),
+        "concrete_finish": calc_input.get("concrete_finish") or "Broom",
         "reinforcement_type": calc_input.get("reinforcement", ""),
         "concrete_grade": calc_input.get("concrete_grade", ""),
         "line_items": quote.line_items or [],

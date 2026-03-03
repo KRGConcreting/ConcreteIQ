@@ -41,6 +41,10 @@
            class="filter-pill {{ 'active' if status_filter == 'sent' else '' }}">
             Sent
         </a>
+        <a href="/quotes?status=viewed"
+           class="filter-pill {{ 'active' if status_filter == 'viewed' else '' }}">
+            Viewed
+        </a>
         <a href="/quotes?status=accepted"
            class="filter-pill {{ 'active' if status_filter == 'accepted' else '' }}">
             Accepted
@@ -64,6 +68,10 @@
         <a href="/quotes?status=declined"
            class="filter-pill {{ 'active' if status_filter == 'declined' else '' }}">
             Declined
+        </a>
+        <a href="/quotes?status=expired"
+           class="filter-pill {{ 'active' if status_filter == 'expired' else '' }}">
+            Expired
         </a>
     </div>
 

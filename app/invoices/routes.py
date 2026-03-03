@@ -491,7 +491,7 @@ async def api_resend_receipt(
     result = await db.execute(
         select(Payment)
         .where(Payment.invoice_id == invoice.id)
-        .order_by(Payment.paid_at.desc())
+        .order_by(Payment.created_at.desc())
         .limit(1)
     )
     payment = result.scalar_one_or_none()
@@ -504,7 +504,7 @@ async def api_resend_receipt(
     # Send receipt email
     from app.notifications.email import send_payment_receipt_email
     email_sent = await send_payment_receipt_email(
-        db, payment, invoice, customer, quote
+        db, payment, invoice, customer
     )
 
     # Log activity

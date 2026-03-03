@@ -658,7 +658,7 @@ async def download_pdf(
         "status": quote.status,
         "job_name": quote.job_name,
         "job_address": quote.job_address,
-        "concrete_finish": calc_input.get("concrete_finish") or calc_input.get("placement_method", ""),
+        "concrete_finish": calc_input.get("concrete_finish") or "Broom",
         "reinforcement_type": calc_input.get("reinforcement", ""),
         "concrete_grade": calc_input.get("concrete_grade", ""),
         "line_items": quote.line_items or [],

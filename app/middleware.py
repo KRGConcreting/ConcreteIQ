@@ -68,7 +68,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "font-src 'self' data: https://fonts.gstatic.com; "
             "connect-src 'self' https://api.stripe.com https://maps.googleapis.com "
             "https://api.open-meteo.com; "
-            "frame-src https://js.stripe.com; "
+            "frame-src 'self' https://js.stripe.com; "
             f"frame-ancestors {frame_ancestors};"
         )
 

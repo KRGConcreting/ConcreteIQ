@@ -529,6 +529,7 @@
                             <div><label class="field-label">Season</label><select x-model="form.season" @change="recalculate()" class="select-field"><option value="Summer">Summer</option><option value="Winter">Winter</option></select></div>
                             <div><label class="field-label">Site Complexity</label><select x-model="form.complexity" @change="recalculate()" class="select-field"><option value="Easy">Easy (-10%)</option><option value="Standard">Standard</option><option value="Complex">Complex (+15%)</option><option value="Very Complex">Very Complex (+30%)</option></select></div>
                             <div><label class="field-label">Pump Required</label><select @change="form.pump_required = ($event.target.value === 'yes'); recalculate()" class="select-field"><option value="no" :selected="!form.pump_required">No</option><option value="yes" :selected="form.pump_required">Yes</option></select></div>
+                            <div><label class="field-label">Concrete Finish</label><select x-model="form.concrete_finish" class="select-field"><option value="Broom">Broom</option><option value="Float">Float (Smooth)</option><option value="Burnished">Burnished</option><option value="Exposed Aggregate">Exposed Aggregate</option><option value="Honed">Honed</option><option value="Stencil">Stencil</option><option value="Stamped">Stamped</option></select></div>
                         </div>
                         <div class="mt-3 p-4 rounded-xl border" :class="form.fall_type !== 'none' ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50 border-slate-200'">
                             <p class="field-group-label">Drainage Falls</p>
@@ -1148,6 +1149,9 @@ function quoteCalculator() {
             drain_relocations: {{ quote.calculator_input.get('drain_relocations', 0) if quote and quote.calculator_input else 0 }},
             drain_labour_hrs: {{ quote.calculator_input.get('drain_labour_hrs', 0) if quote and quote.calculator_input else 0 }},
 
+            // Customer discount
+            customer_discount_percent: {{ quote.calculator_input.get('customer_discount_percent', 0) if quote and quote.calculator_input else 0 }},
+
             // Concrete spec
             coloured_concrete: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('coloured_concrete') else 'false' }},
             concrete_colour: {{ (quote.calculator_input.get('concrete_colour', '') if quote and quote.calculator_input else '') | tojson }},
@@ -1159,6 +1163,7 @@ function quoteCalculator() {
             control_joint_rate_dollars: {{ (quote.calculator_input.get('control_joint_rate', 0) / 100) if quote and quote.calculator_input and quote.calculator_input.get('control_joint_rate', 0) else 0 }},
             season: {{ (quote.calculator_input.get('season', default_season) if quote and quote.calculator_input else default_season) | tojson }},
             placement_method: {{ (quote.calculator_input.get('placement_method', 'Chute') if quote and quote.calculator_input else 'Chute') | tojson }},
+            concrete_finish: {{ (quote.calculator_input.get('concrete_finish', 'Broom') if quote and quote.calculator_input else 'Broom') | tojson }},
             falls_complexity_pct: {{ quote.calculator_input.get('falls_complexity_pct', 0) if quote and quote.calculator_input else 0 }},
             fall_type: {{ (quote.calculator_input.get('fall_type', 'none') if quote and quote.calculator_input else 'none') | tojson }},
             fall_pit_count: {{ quote.calculator_input.get('fall_pit_count', 0) if quote and quote.calculator_input else 0 }},
@@ -1167,8 +1172,8 @@ function quoteCalculator() {
 
             // Labour
             team_tier: {{ (quote.calculator_input.get('team_tier', 'Standard') if quote and quote.calculator_input else 'Standard') | tojson }},
-            setup_day_workers: [],
-            pour_day_workers: [],
+            setup_day_workers: {{ (quote.calculator_input.get('setup_day_workers', []) if quote and quote.calculator_input else []) | tojson }},
+            pour_day_workers: {{ (quote.calculator_input.get('pour_day_workers', []) if quote and quote.calculator_input else []) | tojson }},
             setup_day_custom: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('setup_day_custom') else 'false' }},
             setup_day_custom_rate: {{ quote.calculator_input.get('setup_day_custom_rate', 0) if quote and quote.calculator_input else 0 }},
             setup_day_custom_workers: {{ quote.calculator_input.get('setup_day_custom_workers', 1) if quote and quote.calculator_input else 1 }},
@@ -1195,10 +1200,10 @@ function quoteCalculator() {
 
             // Pricing
             tier: {{ (quote.calculator_input.get('tier', 'Standard') if quote and quote.calculator_input else 'Standard') | tojson }},
-            discount_type: 'percent',
-            discount_value: 0,
-            price_override_enabled: false,
-            price_override_value: 0,
+            discount_type: {{ (quote.calculator_input.get('discount_type', 'percent') if quote and quote.calculator_input else 'percent') | tojson }},
+            discount_value: {{ quote.calculator_input.get('discount_value', 0) if quote and quote.calculator_input else 0 }},
+            price_override_enabled: {{ 'true' if quote and quote.calculator_input and quote.calculator_input.get('price_override_enabled') else 'false' }},
+            price_override_value: {{ quote.calculator_input.get('price_override_value', 0) if quote and quote.calculator_input else 0 }},
         },
 
         // UI state
@@ -1938,6 +1943,10 @@ function quoteCalculator() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(calcInput),
                 });
+                if (!response.ok) {
+                    console.error('Calculate failed:', response.status);
+                    return;
+                }
                 this.result = await response.json();
             } catch (error) {
                 console.error('Calculate error:', error);
@@ -2026,6 +2035,7 @@ function quoteCalculator() {
                         control_joint_rate: this.form.control_joint_rate_dollars ? Math.round(this.form.control_joint_rate_dollars * 100) : 0,
                         pump_required: this.form.pump_required,
                         placement_method: this.form.placement_method,
+                        concrete_finish: this.form.concrete_finish || 'Broom',
                         season: this.form.season,
                         falls_complexity_pct: this.form.falls_complexity_pct,
                         fall_type: this.form.fall_type || 'none',
@@ -2076,6 +2086,16 @@ function quoteCalculator() {
                         drain_trench_lm: this.form.drain_trench_lm || 0,
                         drain_relocations: this.form.drain_relocations || 0,
                         drain_labour_hrs: this.form.drain_labour_hrs || 0,
+                        // Customer discount
+                        customer_discount_percent: this.form.customer_discount_percent || 0,
+                        // Worker selections (ID arrays for restoring on edit)
+                        setup_day_workers: this.form.setup_day_workers || [],
+                        pour_day_workers: this.form.pour_day_workers || [],
+                        // Discount & price override (UI state for restoring on edit)
+                        discount_type: this.form.discount_type || 'percent',
+                        discount_value: this.form.discount_value || 0,
+                        price_override_enabled: this.form.price_override_enabled || false,
+                        price_override_value: this.form.price_override_value || 0,
                     },
                 };
 

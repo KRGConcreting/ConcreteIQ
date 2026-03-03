@@ -1437,6 +1437,7 @@ def calculate(inp: CalculatorInput, pricing: dict = None) -> CalculatorResult:
         r.total_cents = MINIMUM_QUOTE
         r.subtotal_cents = int(round(MINIMUM_QUOTE / (1 + GST_RATE)))
         r.gst_cents = MINIMUM_QUOTE - r.subtotal_cents
+        r.discount_cents = 0  # Reset discount when minimum overrides
     
     # Rate per m²
     if inp.slab_area > 0:

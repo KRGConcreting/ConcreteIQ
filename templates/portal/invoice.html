@@ -31,7 +31,7 @@
                     </svg>
                 </div>
                 <p class="text-amber-800 font-semibold font-display">
-                    Partially paid — ${{ '%.2f'|format(balance_cents / 100) }} remaining
+                    Partially paid — ${{ '%.2f'|format((balance_cents or 0) / 100) }} remaining
                 </p>
             </div>
         </div>
@@ -162,7 +162,7 @@
                     <tr>
                         <td class="px-6 py-4 sm:px-8 text-sm text-slate-900">{{ item.description }}</td>
                         <td class="px-6 py-4 text-sm text-slate-500">{{ item.quantity }} {{ item.unit }}</td>
-                        <td class="px-6 py-4 sm:px-8 text-sm text-slate-900 text-right font-medium">${{ '%.2f'|format(item.total_cents / 100) }}</td>
+                        <td class="px-6 py-4 sm:px-8 text-sm text-slate-900 text-right font-medium">${{ '%.2f'|format((item.total_cents or 0) / 100) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -175,26 +175,26 @@
             <div class="flex flex-col items-end space-y-2">
                 <div class="flex justify-between w-full max-w-xs text-sm">
                     <span class="text-slate-500">Subtotal</span>
-                    <span class="font-medium text-slate-700">${{ '%.2f'|format(invoice.subtotal_cents / 100) }}</span>
+                    <span class="font-medium text-slate-700">${{ '%.2f'|format((invoice.subtotal_cents or 0) / 100) }}</span>
                 </div>
                 <div class="flex justify-between w-full max-w-xs text-sm">
                     <span class="text-slate-500">GST (10%)</span>
-                    <span class="font-medium text-slate-700">${{ '%.2f'|format(invoice.gst_cents / 100) }}</span>
+                    <span class="font-medium text-slate-700">${{ '%.2f'|format((invoice.gst_cents or 0) / 100) }}</span>
                 </div>
                 <div class="flex justify-between w-full max-w-xs border-t border-slate-200 pt-3 mt-1">
                     <span class="text-lg font-bold text-slate-900 font-display">Total</span>
-                    <span class="text-lg font-bold text-slate-900 font-display">${{ '%.2f'|format(invoice.total_cents / 100) }}</span>
+                    <span class="text-lg font-bold text-slate-900 font-display">${{ '%.2f'|format((invoice.total_cents or 0) / 100) }}</span>
                 </div>
                 {% if invoice.paid_cents > 0 %}
                 <div class="flex justify-between w-full max-w-xs text-sm text-green-600">
                     <span class="font-medium">Amount Paid</span>
-                    <span class="font-medium">-${{ '%.2f'|format(invoice.paid_cents / 100) }}</span>
+                    <span class="font-medium">-${{ '%.2f'|format((invoice.paid_cents or 0) / 100) }}</span>
                 </div>
                 {% endif %}
                 {% if balance_cents > 0 %}
                 <div class="flex justify-between w-full max-w-xs bg-red-50 border border-red-100 rounded-xl px-4 py-3 mt-2">
                     <span class="text-lg font-bold text-red-700 font-display">Balance Due</span>
-                    <span class="text-lg font-bold text-red-700 font-display">${{ '%.2f'|format(balance_cents / 100) }}</span>
+                    <span class="text-lg font-bold text-red-700 font-display">${{ '%.2f'|format((balance_cents or 0) / 100) }}</span>
                 </div>
                 {% endif %}
             </div>
@@ -215,11 +215,11 @@
             </div>
         </div>
         <!-- Progress bar -->
-        {% set progress_pct = ((invoice.paid_cents / invoice.total_cents) * 100) if invoice.total_cents > 0 else 0 %}
+        {% set progress_pct = (((invoice.paid_cents or 0) / invoice.total_cents) * 100) if invoice.total_cents else 0 %}
         <div class="px-6 py-4 sm:px-8 border-b border-slate-50">
             <div class="flex justify-between text-xs font-medium mb-2">
                 <span class="text-slate-500">{{ '%.0f'|format(progress_pct) }}% paid</span>
-                <span class="text-slate-500">${{ '%.2f'|format(invoice.paid_cents / 100) }} of ${{ '%.2f'|format(invoice.total_cents / 100) }}</span>
+                <span class="text-slate-500">${{ '%.2f'|format((invoice.paid_cents or 0) / 100) }} of ${{ '%.2f'|format((invoice.total_cents or 0) / 100) }}</span>
             </div>
             <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
                 <div class="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all" style="width: {{ progress_pct }}%"></div>
@@ -254,7 +254,7 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    <p class="font-bold {{ 'text-green-700' if milestone_status == 'received' else 'text-slate-900' }}">${{ '%.2f'|format(m.amount_cents / 100) }}</p>
+                    <p class="font-bold {{ 'text-green-700' if milestone_status == 'received' else 'text-slate-900' }}">${{ '%.2f'|format((m.amount_cents or 0) / 100) }}</p>
                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ 'bg-green-100 text-green-700' if milestone_status == 'received' else 'bg-amber-50 text-amber-600' }}">
                         {{ 'Received' if milestone_status == 'received' else 'Due' }}
                     </span>
@@ -282,7 +282,7 @@
             {% for payment in payments %}
             <li class="px-6 py-4 sm:px-8 flex justify-between items-center">
                 <div>
-                    <p class="font-semibold text-slate-900">${{ '%.2f'|format(payment.amount_cents / 100) }}</p>
+                    <p class="font-semibold text-slate-900">${{ '%.2f'|format((payment.amount_cents or 0) / 100) }}</p>
                     <p class="text-sm text-slate-500 mt-0.5">
                         {{ payment.method|title if payment.method else 'Payment' }}
                         {% if payment.reference %} — {{ payment.reference }}{% endif %}
@@ -325,7 +325,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                     </svg>
-                    <span x-text="isProcessing ? 'Processing...' : 'Pay ${{ '%.2f'|format(balance_cents / 100) }} Now'"></span>
+                    <span x-text="isProcessing ? 'Processing...' : 'Pay ${{ '%.2f'|format((balance_cents or 0) / 100) }} Now'"></span>
                 </button>
                 <p class="text-sm text-slate-400 mt-3">Secure payment via Stripe. Visa, Mastercard, and American Express accepted.</p>
             </div>

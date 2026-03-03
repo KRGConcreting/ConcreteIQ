@@ -145,7 +145,7 @@
                         <tr class="bg-slate-50/50">
                             <td class="px-6 py-3.5 sm:px-8 text-sm font-semibold text-slate-900">{{ group.category }}</td>
                             <td class="px-6 py-3.5 sm:px-8 text-sm font-semibold text-slate-900 text-right">
-                                ${{ "%.2f"|format(group.total_cents / 100) }}
+                                ${{ "%.2f"|format((group.total_cents or 0) / 100) }}
                             </td>
                         </tr>
                         {% for sub in group.sub_items %}
@@ -157,7 +157,7 @@
                             </td>
                             {% if group.show_sub_prices and sub.price_cents %}
                             <td class="px-6 py-1.5 sm:px-8 text-xs text-slate-500 text-right">
-                                ${{ "%.2f"|format(sub.price_cents / 100) }}
+                                ${{ "%.2f"|format((sub.price_cents or 0) / 100) }}
                             </td>
                             {% endif %}
                         </tr>
@@ -169,7 +169,7 @@
                         <tr>
                             <td class="px-6 py-4 sm:px-8 text-sm text-slate-900">{{ item.description }}</td>
                             <td class="px-6 py-4 sm:px-8 text-sm text-slate-900 text-right font-medium">
-                                ${{ "%.2f"|format(item.total_cents / 100) }}
+                                ${{ "%.2f"|format((item.total_cents or 0) / 100) }}
                             </td>
                         </tr>
                         {% endfor %}

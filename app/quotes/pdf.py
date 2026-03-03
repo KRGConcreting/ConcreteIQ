@@ -27,8 +27,17 @@ from reportlab.platypus import (
 )
 from reportlab.platypus.flowables import Flowable
 
+from xml.sax.saxutils import escape as xml_escape
+
 from app.config import get_settings
 from app.core.dates import sydney_now
+
+
+def _esc(text) -> str:
+    """Escape user text for safe use in ReportLab Paragraph XML."""
+    if text is None:
+        return ""
+    return xml_escape(str(text))
 
 
 # ---------------------------------------------------------------------------
@@ -359,9 +368,9 @@ def _build_header(story, styles, business: dict, doc_label: str, doc_number: str
         left_parts.append(logo)
         left_parts.append(Spacer(1, 2 * mm))
     biz_name = business.get("trading_as") or business.get("name", "")
-    left_parts.append(Paragraph(biz_name, styles["title"]))
+    left_parts.append(Paragraph(_esc(biz_name), styles["title"]))
     if business.get("trading_as") and business.get("name"):
-        left_parts.append(Paragraph(business["name"], styles["body_small"]))
+        left_parts.append(Paragraph(_esc(business["name"]), styles["body_small"]))
 
     # Right side: document label + number
     right_parts = [
@@ -398,7 +407,7 @@ def _customer_block(customer: dict, styles) -> list:
     """Build a list of Paragraphs for customer info."""
     parts = []
     if customer.get("name"):
-        parts.append(Paragraph(customer["name"], styles["body_bold"]))
+        parts.append(Paragraph(_esc(customer["name"]), styles["body_bold"]))
     addr_pieces = []
     if customer.get("street"):
         addr_pieces.append(customer["street"])
@@ -410,11 +419,11 @@ def _customer_block(customer: dict, styles) -> list:
     if city_line:
         addr_pieces.append(city_line)
     for line in addr_pieces:
-        parts.append(Paragraph(line, styles["body"]))
+        parts.append(Paragraph(_esc(line), styles["body"]))
     if customer.get("email"):
-        parts.append(Paragraph(customer["email"], styles["body_small"]))
+        parts.append(Paragraph(_esc(customer["email"]), styles["body_small"]))
     if customer.get("phone"):
-        parts.append(Paragraph(customer["phone"], styles["body_small"]))
+        parts.append(Paragraph(_esc(customer["phone"]), styles["body_small"]))
     return parts
 
 
@@ -492,9 +501,9 @@ def generate_quote_pdf(
     if quote.get("job_name") or quote.get("job_address"):
         story.append(Paragraph("JOB LOCATION", styles["section_heading"]))
         if quote.get("job_name"):
-            story.append(Paragraph(quote["job_name"], styles["body_bold"]))
+            story.append(Paragraph(_esc(quote["job_name"]), styles["body_bold"]))
         if quote.get("job_address"):
-            story.append(Paragraph(quote["job_address"], styles["body"]))
+            story.append(Paragraph(_esc(quote["job_address"]), styles["body"]))
         story.append(Spacer(1, 2 * mm))
 
     # Job specs row
@@ -550,7 +559,7 @@ def generate_quote_pdf(
 
         # Category row
         table_data.append([
-            Paragraph(category, styles["table_cell_bold"]),
+            Paragraph(_esc(category), styles["table_cell_bold"]),
             Paragraph(_fmt(total_cents), styles["table_cell_bold_right"]),
         ])
         row_idx += 1
@@ -558,7 +567,7 @@ def generate_quote_pdf(
         for sub in item.get("sub_items", []):
             desc = sub.get("description", "") if isinstance(sub, dict) else str(sub)
             table_data.append([
-                Paragraph(f"    {desc}", styles["table_cell"]),
+                Paragraph(f"    {_esc(desc)}", styles["table_cell"]),
                 Paragraph("", styles["table_cell"]),
             ])
             row_idx += 1
@@ -653,7 +662,7 @@ def generate_quote_pdf(
         ]]
         for pmt in payment_schedule:
             sched_data.append([
-                Paragraph(pmt.get("name", ""), styles["table_cell"]),
+                Paragraph(_esc(pmt.get("name", "")), styles["table_cell"]),
                 Paragraph(_fmt(pmt.get("amount_cents")), styles["table_cell_right"]),
             ])
         sched_table = Table(sched_data, colWidths=[cw * 0.70, cw * 0.30], repeatRows=1)
@@ -681,7 +690,7 @@ def generate_quote_pdf(
         story.append(Paragraph("NOTES", styles["section_heading"]))
         story.append(Spacer(1, 1 * mm))
         for line in str(notes).split("\n"):
-            story.append(Paragraph(line, styles["notes"]))
+            story.append(Paragraph(_esc(line), styles["notes"]))
         story.append(Spacer(1, 4 * mm))
 
     # Build
@@ -761,7 +770,7 @@ def generate_invoice_pdf(
     # Description
     if invoice.get("description"):
         story.append(Paragraph("DESCRIPTION", styles["section_heading"]))
-        story.append(Paragraph(invoice["description"], styles["body"]))
+        story.append(Paragraph(_esc(invoice["description"]), styles["body"]))
         story.append(Spacer(1, 3 * mm))
 
     # --- Line items ---
@@ -779,9 +788,9 @@ def generate_invoice_pdf(
         ]]
         for li in line_items:
             table_data.append([
-                Paragraph(li.get("description", ""), styles["table_cell_bold"]),
+                Paragraph(_esc(li.get("description", "")), styles["table_cell_bold"]),
                 Paragraph(str(li.get("quantity", "")), styles["table_cell_right"]),
-                Paragraph(li.get("unit", ""), styles["table_cell"]),
+                Paragraph(_esc(li.get("unit", "")), styles["table_cell"]),
                 Paragraph(_fmt(li.get("unit_price_cents")), styles["table_cell_right"]),
                 Paragraph(_fmt(li.get("total_cents")), styles["table_cell_bold_right"]),
             ])
@@ -789,7 +798,7 @@ def generate_invoice_pdf(
             for sub in li.get("sub_items", []):
                 desc = sub.get("description", "") if isinstance(sub, dict) else str(sub)
                 table_data.append([
-                    Paragraph(f"    {desc}", styles["table_cell"]),
+                    Paragraph(f"    {_esc(desc)}", styles["table_cell"]),
                     Paragraph("", styles["table_cell"]),
                     Paragraph("", styles["table_cell"]),
                     Paragraph("", styles["table_cell"]),
@@ -882,10 +891,10 @@ def generate_invoice_pdf(
         for ps in payment_schedule:
             status_text = (ps.get("status") or "").replace("_", " ").title()
             sched_data.append([
-                Paragraph(ps.get("label", ""), styles["table_cell"]),
+                Paragraph(_esc(ps.get("label", "")), styles["table_cell"]),
                 Paragraph(f"{ps.get('percent', '')}%", styles["table_cell_right"]),
                 Paragraph(_fmt(ps.get("amount_cents")), styles["table_cell_right"]),
-                Paragraph(status_text, styles["table_cell"]),
+                Paragraph(_esc(status_text), styles["table_cell"]),
             ])
         sched_table = Table(
             sched_data,
@@ -923,8 +932,8 @@ def generate_invoice_pdf(
         for pmt in payments:
             ph_data.append([
                 Paragraph(_fmt_date(pmt.get("payment_date")), styles["table_cell"]),
-                Paragraph((pmt.get("method") or "").title(), styles["table_cell"]),
-                Paragraph(pmt.get("reference", "") or "", styles["table_cell"]),
+                Paragraph(_esc((pmt.get("method") or "").title()), styles["table_cell"]),
+                Paragraph(_esc(pmt.get("reference", "") or ""), styles["table_cell"]),
                 Paragraph(_fmt(pmt.get("amount_cents")), styles["table_cell_right"]),
             ])
         ph_table = Table(
@@ -973,7 +982,7 @@ def generate_invoice_pdf(
         story.append(Paragraph("NOTES", styles["section_heading"]))
         story.append(Spacer(1, 1 * mm))
         for line in str(notes).split("\n"):
-            story.append(Paragraph(line, styles["notes"]))
+            story.append(Paragraph(_esc(line), styles["notes"]))
         story.append(Spacer(1, 4 * mm))
 
     # Build
@@ -1062,8 +1071,8 @@ def generate_receipt_pdf(
         ],
         [
             Paragraph(_fmt(payment.get("amount_cents")), styles["table_cell_bold"]),
-            Paragraph((payment.get("method") or "").title(), styles["table_cell"]),
-            Paragraph(payment.get("reference", "") or "", styles["table_cell"]),
+            Paragraph(_esc((payment.get("method") or "").title()), styles["table_cell"]),
+            Paragraph(_esc(payment.get("reference", "") or ""), styles["table_cell"]),
             Paragraph(_fmt_date(payment.get("payment_date")), styles["table_cell"]),
         ],
     ]

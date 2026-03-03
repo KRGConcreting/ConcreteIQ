@@ -139,11 +139,19 @@ class CalculatorInput(BaseModel):
     # Subbase
     subbase_thickness: float = Field(default=0, ge=0)
     compaction: bool = False
+    delivery_distance_km: float = Field(default=0, ge=0)
 
     # Excavation
     excavation: bool = False
     excavation_depth: float = Field(default=0, ge=0)
+    dig_method: str = Field(default="hand")  # hand or machine
+    excavation_disposal: str = Field(default="none")  # none, skipbin, trailer
+    waste_tip_destination: str = Field(default="jacksons")
     soil_type: str = Field(default="soil")  # topsoil, soil, clay, rock
+
+    # Equipment hire
+    pressure_washer: bool = False
+    pressure_washer_duration: str = Field(default="half")
 
     # Concrete removal
     concrete_removal: bool = False
@@ -157,11 +165,36 @@ class CalculatorInput(BaseModel):
 
     # Specification
     concrete_grade: str = Field(default="N32")
+    concrete_finish: str = Field(default="Broom")
     mix_additive: str = Field(default="None")
+    concrete_fibre: str = Field(default="None")
+    coloured_concrete: bool = False
+    concrete_colour: str = Field(default="")
+    concrete_volume_override: float = Field(default=0, ge=0)
     reinforcement: str = Field(default="GFRP 450mm")
     control_joint_method: str = Field(default="Sawcut")
+    control_joint_rate: int = Field(default=0, ge=0)
     pump_required: bool = False
+    placement_method: str = Field(default="Chute")
     season: str = Field(default="Summer")
+    falls_complexity_pct: float = Field(default=0, ge=0)
+    fall_type: str = Field(default="none")
+    fall_pit_count: int = Field(default=0, ge=0)
+
+    # Rebates
+    rebates: float = Field(default=0, ge=0)
+
+    # Pier holes
+    pier_holes: int = Field(default=0, ge=0)
+    pier_diameter: float = Field(default=300, ge=0)
+    pier_depth: float = Field(default=600, ge=0)
+    pier_starters: int = Field(default=4, ge=0)
+
+    # Edge beams
+    edge_beams: bool = False
+    edge_beam_length: float = Field(default=0, ge=0)
+    edge_beam_depth: float = Field(default=200, ge=0)
+    edge_beam_width: float = Field(default=300, ge=0)
 
     # Complexity & pricing
     complexity: str = Field(default="Standard")
@@ -169,6 +202,7 @@ class CalculatorInput(BaseModel):
     team_tier: str = Field(default="Standard")
     distance_km: float = Field(default=0, ge=0)
     concrete_distance_km: float = Field(default=0, ge=0)
+    setup_crew_count: int = Field(default=3, ge=0)
 
     # Inclusions
     inc_release_agent: bool = True
@@ -189,6 +223,21 @@ class CalculatorInput(BaseModel):
     pour_hourly_rate: int = Field(default=0, ge=0)
     setup_cost_rate: int = Field(default=0, ge=0)
     pour_cost_rate: int = Field(default=0, ge=0)
+
+    # Custom labour
+    setup_day_custom: bool = False
+    setup_day_custom_rate: float = Field(default=0, ge=0)
+    setup_day_custom_workers: int = Field(default=1, ge=1)
+    pour_day_custom: bool = False
+    pour_day_custom_rate: float = Field(default=0, ge=0)
+    pour_day_custom_workers: int = Field(default=1, ge=1)
+
+    # Plumbing & Drainage
+    drainage: bool = False
+    plumber_hours: float = Field(default=0, ge=0)
+    plumber_rate: int = Field(default=9500, ge=0)
+    plumber_materials_cents: int = Field(default=0, ge=0)
+    plumber_description: str = Field(default="")
 
     # Customer discount
     customer_discount_percent: float = Field(default=0, ge=0, le=100)
@@ -302,10 +351,11 @@ class CustomQuoteCreate(BaseModel):
 
 class QuoteUpdate(BaseModel):
     """Update a quote (draft only)."""
+    customer_id: Optional[int] = None
     job_name: Optional[str] = Field(None, max_length=255)
     job_type: Optional[str] = Field(None, max_length=50)
     job_address: Optional[str] = None
-    
+
     calculator_input: Optional[CalculatorInput] = None
     
     notes: Optional[str] = None
@@ -407,7 +457,7 @@ class CustomerLineItem(BaseModel):
     id: str
     category: str
     sub_items: list[CustomerLineItemSubItem]
-    total_cents: int = Field(ge=0)
+    total_cents: int  # Can be negative for discount line items
     show_sub_prices: bool = False
     sort_order: int = 0
 

@@ -112,7 +112,7 @@ async def get_next_quote_number(db: AsyncSession) -> str:
 
 VALID_TRANSITIONS = {
     "draft": ["sent"],
-    "sent": ["viewed", "accepted", "expired"],       # accepted when first payment received
+    "sent": ["viewed", "accepted", "declined", "expired"],  # accepted when first payment received
     "viewed": ["accepted", "declined", "expired"],    # viewed still tracked but not required
     "accepted": ["confirmed"],                         # admin confirms date
     "confirmed": ["pour_stage"],                       # 60% prepour invoice sent
