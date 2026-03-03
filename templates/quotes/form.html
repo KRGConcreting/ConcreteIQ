@@ -1894,7 +1894,13 @@ function quoteCalculator() {
                 const cityLine = [customer.city, customer.state].filter(Boolean).join(', ');
                 if (cityLine) parts.push(cityLine);
                 if (customer.postcode) parts[parts.length - 1] = (parts[parts.length - 1] || '') + ' ' + customer.postcode;
-                this.form.job_address = parts.join(', ').trim();
+                const address = parts.join(', ').trim();
+                this.form.job_address = address;
+
+                // Sync the visible address autocomplete input
+                this.$nextTick(() => {
+                    window.dispatchEvent(new CustomEvent('address-prefilled', { detail: { address } }));
+                });
             }
 
             // Auto-fill customer discount if they have one
@@ -2181,10 +2187,18 @@ function addressAutocomplete() {
 
         init() {
             // Sync initial value from parent form
-            const parent = this.$el.closest('[x-data]');
-            if (parent && parent.__x) {
-                this.query = parent.__x.$data.form.job_address || '';
+            const calc = this.getCalculator();
+            if (calc) {
+                this.query = calc.form.job_address || '';
             }
+
+            // Listen for customer-selection address prefill
+            window.addEventListener('address-prefilled', (e) => {
+                if (e.detail && e.detail.address) {
+                    this.query = e.detail.address;
+                    this.resolved = false;
+                }
+            });
         },
 
         async search() {

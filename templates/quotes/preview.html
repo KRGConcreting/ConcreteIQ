@@ -186,6 +186,12 @@
                             <span>Subtotal (ex GST)</span>
                             <span class="font-medium" x-text="formatMoney(subtotalCents)"></span>
                         </div>
+                        <template x-if="discountCents > 0">
+                            <div class="flex justify-between text-sm text-green-600">
+                                <span>Discount</span>
+                                <span class="font-medium" x-text="'-' + formatMoney(discountCents)"></span>
+                            </div>
+                        </template>
                         <div class="flex justify-between text-sm text-slate-600">
                             <span>GST (10%)</span>
                             <span class="font-medium" x-text="formatMoney(gstCents)"></span>
@@ -348,11 +354,20 @@ function quotePreview() {
         get subtotalCents() {
             return this.groups.reduce((sum, g) => sum + (g.total_cents || 0), 0);
         },
+        get discountCents() {
+            return {{ quote.discount_cents or 0 }};
+        },
+        get discountExGst() {
+            return Math.round(this.discountCents / 1.1);
+        },
+        get adjustedSubtotalCents() {
+            return Math.max(0, this.subtotalCents - this.discountExGst);
+        },
         get gstCents() {
-            return Math.round(this.subtotalCents * 0.10);
+            return Math.round(this.adjustedSubtotalCents * 0.10);
         },
         get totalCents() {
-            return this.subtotalCents + this.gstCents;
+            return this.adjustedSubtotalCents + this.gstCents;
         },
         get depositCents() {
             return Math.round(this.totalCents * 0.30);

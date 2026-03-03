@@ -666,8 +666,8 @@ async def preview_email_template(template_name: str, request: Request):
         "completed_date_formatted": "March 2023",
     }
 
-    # Load portfolio photos for quote_sent preview
-    if template_name == "quote_sent":
+    # Load portfolio photos for quote_sent and invoice_sent previews
+    if template_name in ("quote_sent", "invoice_sent"):
         try:
             from app.documents.service import list_portfolio_photos
             raw_photos = list_portfolio_photos()

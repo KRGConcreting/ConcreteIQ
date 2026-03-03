@@ -30,6 +30,27 @@ def _ciq_logo_url() -> str:
     return f"{settings.app_url}/static/images/ConcreteIQ_Logo_Nav.png"
 
 
+def _load_portfolio_photos(limit: int = 3) -> list[dict]:
+    """Load portfolio photos for email showcase.
+
+    Returns list of dicts with 'url' (absolute) and 'title'.
+    Fails silently — returns empty list on any error.
+    """
+    try:
+        from app.documents.service import list_portfolio_photos
+        raw_photos = list_portfolio_photos()
+        return [
+            {
+                "url": f"{settings.app_url}{p['url']}",
+                "title": p.get("title", ""),
+            }
+            for p in raw_photos[:limit]
+        ]
+    except Exception as e:
+        logger.debug(f"Could not load portfolio photos for email: {e}")
+        return []
+
+
 async def _load_email_customizations(db: AsyncSession) -> dict:
     """Load email template customisations from settings DB."""
     try:
@@ -270,28 +291,21 @@ async def send_quote_email(
 
     customs = await _load_email_customizations(db)
 
+    # Business details from DB (consistent with other email functions)
+    biz = await settings_service.get_business_dict(db, include_bank=False)
+
     # Format total for display
     total_formatted = f"${quote.total_cents / 100:,.2f}"
 
     subject = _render_subject(
         customs.get('quote_sent_subject', '').strip() or "Quote {quote_number} from {business_name}",
-        {"quote_number": quote.quote_number, "business_name": settings.trading_as}
+        {"quote_number": quote.quote_number, "business_name": biz["trading_as"]}
     )
     custom_intro = customs.get('quote_sent_intro', '').strip() or "Here is your quote for review. You can view the full details and accept online using the button below."
     custom_cta = customs.get('quote_sent_cta', '').strip() or "View Quote & Accept Online"
 
     # Load portfolio photos for email showcase (up to 3)
-    portfolio_photos = []
-    try:
-        from app.documents.service import list_portfolio_photos
-        raw_photos = list_portfolio_photos()
-        for p in raw_photos[:3]:
-            portfolio_photos.append({
-                "url": f"{settings.app_url}{p['url']}",
-                "title": p.get("title", ""),
-            })
-    except Exception as e:
-        logger.debug(f"Could not load portfolio photos for email: {e}")
+    portfolio_photos = _load_portfolio_photos()
 
     # Render HTML template
     try:
@@ -302,11 +316,11 @@ async def send_quote_email(
             total_formatted=total_formatted,
             custom_intro=custom_intro,
             custom_cta=custom_cta,
-            business_name=settings.trading_as,
-            business_abn=settings.abn,
-            business_address=settings.business_address,
-            business_phone=settings.business_phone,
-            business_email=settings.business_email,
+            business_name=biz["trading_as"],
+            business_abn=biz["abn"],
+            business_address=biz["address"],
+            business_phone=biz["phone"],
+            business_email=biz["email"],
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
             portfolio_photos=portfolio_photos,
@@ -319,7 +333,7 @@ async def send_quote_email(
     text_content = f"""
 Hi {customer.name},
 
-Thank you for requesting a quote from {settings.trading_as}.
+Thank you for requesting a quote from {biz["trading_as"]}.
 
 Quote: {quote.quote_number}
 Total: {total_formatted} (inc GST)
@@ -329,10 +343,10 @@ View and accept your quote online:
 
 This quote is valid until {quote.expiry_date.strftime('%d %B %Y') if quote.expiry_date else '30 days from today'}.
 
-If you have any questions, please call {settings.business_phone} or reply to this email.
+If you have any questions, please call {biz["phone"]} or reply to this email.
 
 Thanks,
-{settings.trading_as}
+{biz["trading_as"]}
 """.strip()
 
     return await send_email(
@@ -382,6 +396,9 @@ async def send_amendment_email(
 
     customs = await _load_email_customizations(db)
 
+    # Business details from DB (consistent with other email functions)
+    biz = await settings_service.get_business_dict(db, include_bank=False)
+
     # Format amounts
     original_total = quote.total_cents or 0
     variation_amount = amendment.amount_cents or 0
@@ -394,7 +411,7 @@ async def send_amendment_email(
 
     subject = _render_subject(
         customs.get('amendment_sent_subject', '').strip() or "Variation #{amendment_number} — Quote {quote_number} | {business_name}",
-        {"amendment_number": amendment.amendment_number, "quote_number": quote.quote_number, "business_name": settings.trading_as}
+        {"amendment_number": amendment.amendment_number, "quote_number": quote.quote_number, "business_name": biz["trading_as"]}
     )
     custom_intro = customs.get('amendment_sent_intro', '').strip() or "There's been a change to the scope of your project. Please review the details below and let us know if you'd like to proceed."
     custom_cta = customs.get('amendment_sent_cta', '').strip() or "Review & Respond"
@@ -411,11 +428,11 @@ async def send_amendment_email(
             adjusted_total_formatted=adjusted_total_formatted,
             custom_intro=custom_intro,
             custom_cta=custom_cta,
-            business_name=settings.trading_as,
-            business_abn=settings.abn,
-            business_address=settings.business_address,
-            business_phone=settings.business_phone,
-            business_email=settings.business_email,
+            business_name=biz["trading_as"],
+            business_abn=biz["abn"],
+            business_address=biz["address"],
+            business_phone=biz["phone"],
+            business_email=biz["email"],
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
         )
@@ -442,10 +459,10 @@ Adjusted Total: {adjusted_total_formatted}
 Review and respond online:
 {portal_url}
 
-If you have any questions, please call {settings.business_phone} or reply to this email.
+If you have any questions, please call {biz["phone"]} or reply to this email.
 
 Thanks,
-{settings.trading_as}
+{biz["trading_as"]}
 """.strip()
 
     return await send_email(
@@ -493,6 +510,9 @@ async def send_invoice_email(
 
     customs = await _load_email_customizations(db)
 
+    # Business details from DB (consistent with other email functions)
+    biz = await settings_service.get_business_dict(db, include_bank=True)
+
     # Format amounts
     total_formatted = f"${invoice.total_cents / 100:,.2f}"
     due_date_formatted = invoice.due_date.strftime("%d %B %Y") if invoice.due_date else "On receipt"
@@ -507,13 +527,13 @@ async def send_invoice_email(
 
     subject = _render_subject(
         customs.get('invoice_sent_subject', '').strip() or "Invoice {invoice_number} from {business_name}",
-        {"invoice_number": invoice.invoice_number, "business_name": settings.trading_as}
+        {"invoice_number": invoice.invoice_number, "business_name": biz["trading_as"]}
     )
     custom_intro = customs.get('invoice_sent_intro', '').strip() or "Please find your invoice below. Payment can be made by bank transfer using the details provided."
     custom_cta = customs.get('invoice_sent_cta', '').strip() or "View Invoice & Payment Details"
 
-    # Fetch bank details from database settings
-    bank = await settings_service.get_bank_details(db)
+    # Load portfolio photos for email showcase (up to 3)
+    portfolio_photos = _load_portfolio_photos()
 
     # Render HTML template
     try:
@@ -526,16 +546,17 @@ async def send_invoice_email(
             stage_label=stage_label,
             custom_intro=custom_intro,
             custom_cta=custom_cta,
-            business_name=settings.trading_as,
-            business_abn=settings.abn,
-            business_address=settings.business_address,
-            business_phone=settings.business_phone,
-            business_email=settings.business_email,
-            bank_name=bank["bank_name"],
-            bank_bsb=bank["bank_bsb"],
-            bank_account=bank["bank_account"],
+            business_name=biz["trading_as"],
+            business_abn=biz["abn"],
+            business_address=biz["address"],
+            business_phone=biz["phone"],
+            business_email=biz["email"],
+            bank_name=biz.get("bank_name", ""),
+            bank_bsb=biz.get("bank_bsb", ""),
+            bank_account=biz.get("bank_account", ""),
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
+            portfolio_photos=portfolio_photos,
         )
     except Exception as e:
         logger.error(f"Failed to render invoice email template: {str(e)}")
@@ -545,7 +566,7 @@ async def send_invoice_email(
     text_content = f"""
 Hi {customer.name},
 
-Please find attached your invoice from {settings.trading_as}.
+Please find attached your invoice from {biz["trading_as"]}.
 
 Invoice: {invoice.invoice_number}
 {stage_label}
@@ -556,15 +577,15 @@ Pay online:
 {portal_url}
 
 Or pay by bank transfer:
-Bank: {bank["bank_name"]}
-BSB: {bank["bank_bsb"]}
-Account: {bank["bank_account"]}
+Bank: {biz.get("bank_name", "")}
+BSB: {biz.get("bank_bsb", "")}
+Account: {biz.get("bank_account", "")}
 Reference: {invoice.invoice_number}
 
-If you have any questions, please call {settings.business_phone} or reply to this email.
+If you have any questions, please call {biz["phone"]} or reply to this email.
 
 Thanks,
-{settings.trading_as}
+{biz["trading_as"]}
 """.strip()
 
     return await send_email(
@@ -612,6 +633,9 @@ async def send_payment_receipt_email(
 
     customs = await _load_email_customizations(db)
 
+    # Business details from DB (consistent with other email functions)
+    biz = await settings_service.get_business_dict(db, include_bank=False)
+
     # Format amounts
     amount_formatted = f"${payment.amount_cents / 100:,.2f}"
     total_formatted = f"${invoice.total_cents / 100:,.2f}"
@@ -640,11 +664,11 @@ async def send_payment_receipt_email(
             balance_cents=balance_cents,
             payment_date_formatted=payment_date_formatted,
             custom_intro=custom_intro,
-            business_name=settings.trading_as,
-            business_abn=settings.abn,
-            business_address=settings.business_address,
-            business_phone=settings.business_phone,
-            business_email=settings.business_email,
+            business_name=biz["trading_as"],
+            business_abn=biz["abn"],
+            business_address=biz["address"],
+            business_phone=biz["phone"],
+            business_email=biz["email"],
             logo_url=_email_logo_url(),
             ciq_logo_url=_ciq_logo_url(),
         )
@@ -671,10 +695,10 @@ Invoice Total: {total_formatted}
 Total Paid: {paid_formatted}
 {balance_text}
 
-If you have any questions, please call {settings.business_phone} or reply to this email.
+If you have any questions, please call {biz["phone"]} or reply to this email.
 
 Thanks,
-{settings.trading_as}
+{biz["trading_as"]}
 """.strip()
 
     return await send_email(
