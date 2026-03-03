@@ -45,10 +45,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
 
-        # Allow same-origin iframes for internal previews and portal pages
+        # Allow same-origin iframes for internal previews, portal pages,
+        # and static files (T&C PDFs loaded in portal iframes)
         is_preview = request.url.path.startswith("/settings/api/email/preview/")
         is_portal = request.url.path.startswith("/p/")
-        allow_frames = is_preview or is_portal
+        is_static = request.url.path.startswith("/static/")
+        allow_frames = is_preview or is_portal or is_static
         response.headers["X-Frame-Options"] = "SAMEORIGIN" if allow_frames else "DENY"
 
         # XSS protection (legacy but still useful)

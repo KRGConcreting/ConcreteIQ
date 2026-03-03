@@ -167,7 +167,9 @@ async def get_portfolio_photos() -> list:
     """
     from app.documents import service as doc_service
 
-    return doc_service.list_portfolio_photos()
+    photos = doc_service.list_portfolio_photos()
+    logger.info(f"Portfolio endpoint: returning {len(photos)} photos")
+    return photos
 
 
 # =============================================================================

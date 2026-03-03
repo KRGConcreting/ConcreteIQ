@@ -568,7 +568,10 @@ function portfolioGallery() {
                 const resp = await fetch('/p/portfolio/photos');
                 if (resp.ok) {
                     this.photos = await resp.json();
+                    console.log('Portfolio loaded:', this.photos.length, 'photos');
                     if (this.photos.length > 1) this.startAutoplay();
+                } else {
+                    console.error('Portfolio fetch failed:', resp.status, resp.statusText);
                 }
             } catch (e) { console.error('Failed to load portfolio:', e); }
         },
