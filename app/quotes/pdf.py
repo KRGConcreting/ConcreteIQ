@@ -38,7 +38,6 @@ def _default_business(include_bank: bool = False) -> dict:
         "address": s.business_address,
         "phone": s.business_phone,
         "email": s.business_email,
-        "license": s.licence_number,
     }
     if include_bank:
         biz["bank_name"] = s.bank_name

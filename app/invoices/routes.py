@@ -610,7 +610,6 @@ async def api_send_reminder(
         business_phone=settings.business_phone,
         business_email=settings.business_email,
         business_abn=settings.abn,
-        business_licence=settings.licence_number,
         business_address=settings.business_address,
         bank_name=settings.bank_name,
         bank_bsb=settings.bank_bsb,
@@ -825,7 +824,6 @@ async def api_get_pdf(
         "address": settings.business_address,
         "phone": settings.business_phone,
         "email": settings.business_email,
-        "license": settings.licence_number,
         "bank_name": settings.bank_name,
         "bank_account_name": getattr(settings, 'bank_account_name', ''),
         "bank_bsb": settings.bank_bsb,
@@ -845,10 +843,10 @@ async def api_get_pdf(
             for p in payments
         ]
         pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict, payment_dicts)
-    except (RuntimeError, OSError) as e:
+    except Exception as e:
         logger.error(f"PDF generation failed for invoice {invoice.invoice_number}: {e}")
         return Response(
-            content=f"PDF generation is temporarily unavailable. WeasyPrint requires GTK/Pango libraries to be installed on the server. Error: {e}",
+            content=f"PDF generation is temporarily unavailable. Error: {e}",
             media_type="text/plain",
             status_code=503,
         )
@@ -910,15 +908,14 @@ async def api_get_receipt_pdf(
         "address": settings.business_address,
         "phone": settings.business_phone,
         "email": settings.business_email,
-        "license": settings.licence_number,
     }
 
     try:
         pdf_bytes = generate_receipt_pdf(payment_dict, invoice_dict, customer_dict, business_dict)
-    except (RuntimeError, OSError) as e:
+    except Exception as e:
         logger.error(f"PDF generation failed for receipt (payment {payment_id}): {e}")
         return Response(
-            content=f"PDF generation is temporarily unavailable. WeasyPrint requires GTK/Pango libraries. Error: {e}",
+            content=f"PDF generation is temporarily unavailable. Error: {e}",
             media_type="text/plain",
             status_code=503,
         )

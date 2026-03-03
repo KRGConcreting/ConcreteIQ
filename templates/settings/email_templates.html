@@ -1,0 +1,752 @@
+{% extends "settings/base.html" %}
+
+{% block settings_content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900 font-display">Email & PDF Templates</h2>
+            <p class="text-sm text-slate-500 mt-1">Customise the subject lines, intro text, and button labels used in customer emails. Leave fields blank to use defaults.</p>
+        </div>
+    </div>
+
+    <form action="/settings/email-templates" method="POST" class="space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+
+        <!-- Available Variables -->
+        <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-1">
+            <div class="settings-section-header">
+                <div class="settings-section-header-icon icon-bg-orange">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Available Variables</h2>
+                    <p>Use these placeholders in your templates — not all variables apply to every template</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;business_name&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;quote_number&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;invoice_number&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;amendment_number&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;expiry_date&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;job_date&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;time_description&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;update_title&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;days_overdue&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;years_since&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;balance&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;business_phone&#125;</code>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             QUOTES & BOOKING
+             ═══════════════════════════════════════ -->
+        <div class="pt-2">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Quotes & Booking</h3>
+        </div>
+
+        <!-- 1. Quote Sent -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-blue p-6 card-enter card-enter-2">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Quote Sent</h3>
+                        <p class="text-xs text-slate-500">Sent when a new quote is emailed to a customer</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/quote_sent" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="quote_sent_subject" class="input-field text-sm" placeholder="Quote {quote_number} from {business_name}" value="{{ email_customizations.get('quote_sent_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;quote_number&#125;</code> <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="quote_sent_intro" rows="2" class="input-field text-sm" placeholder="Here is your quote for review. You can view the full details and accept online using the button below.">{{ email_customizations.get('quote_sent_intro', '') }}</textarea>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="quote_sent_cta" class="input-field text-sm" placeholder="View Quote & Accept Online" value="{{ email_customizations.get('quote_sent_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Variation Sent -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-blue p-6 card-enter card-enter-3">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Variation Sent</h3>
+                        <p class="text-xs text-slate-500">Sent when a variation/amendment is emailed</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/amendment_sent" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="amendment_sent_subject" class="input-field text-sm" placeholder="Variation #{amendment_number} — Quote {quote_number} | {business_name}" value="{{ email_customizations.get('amendment_sent_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;amendment_number&#125;</code> <code>&#123;quote_number&#125;</code> <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="amendment_sent_intro" rows="2" class="input-field text-sm" placeholder="There's been a change to the scope of your project. Please review the details below and let us know if you'd like to proceed.">{{ email_customizations.get('amendment_sent_intro', '') }}</textarea>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="amendment_sent_cta" class="input-field text-sm" placeholder="Review & Respond" value="{{ email_customizations.get('amendment_sent_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Booking Confirmed -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-blue p-6 card-enter card-enter-4">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Booking Confirmed</h3>
+                        <p class="text-xs text-slate-500">Sent when a job is booked and deposit received</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/booking_confirmed" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="booking_confirmed_subject" class="input-field text-sm" placeholder="Booking Confirmed — {quote_number} | {business_name}" value="{{ email_customizations.get('booking_confirmed_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;quote_number&#125;</code> <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="booking_confirmed_intro" rows="2" class="input-field text-sm" placeholder="Your start date is locked in. Here are the details for your upcoming job.">{{ email_customizations.get('booking_confirmed_intro', '') }}</textarea>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="booking_confirmed_cta" class="input-field text-sm" placeholder="View Invoice & Payment Details" value="{{ email_customizations.get('booking_confirmed_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Quote Follow-up -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-blue p-6 card-enter card-enter-5">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Quote Follow-up</h3>
+                        <p class="text-xs text-slate-500">Automatic follow-up if quote hasn't been responded to</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/quote_followup" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="quote_followup_subject" class="input-field text-sm" placeholder="Following Up — Quote {quote_number} from {business_name}" value="{{ email_customizations.get('quote_followup_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;quote_number&#125;</code> <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="quote_followup_intro" rows="2" class="input-field text-sm" placeholder="We sent you a quote recently and wanted to follow up. Your quote is still available to view and accept online.">{{ email_customizations.get('quote_followup_intro', '') }}</textarea>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="quote_followup_cta" class="input-field text-sm" placeholder="View Your Quote" value="{{ email_customizations.get('quote_followup_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Quote Expiry Warning -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-blue p-6 card-enter card-enter-6">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Quote Expiry Warning</h3>
+                        <p class="text-xs text-slate-500">Sent a few days before a quote expires</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/quote_expiry_warning" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="quote_expiry_warning_subject" class="input-field text-sm" placeholder="Your Quote Expires Soon — {quote_number}" value="{{ email_customizations.get('quote_expiry_warning_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;quote_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="quote_expiry_warning_intro" rows="2" class="input-field text-sm" placeholder="Your quote from {business_name} expires on {expiry_date}. Lock in your current price by accepting online before this date.">{{ email_customizations.get('quote_expiry_warning_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;business_name&#125;</code> <code>&#123;expiry_date&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="quote_expiry_warning_cta" class="input-field text-sm" placeholder="View & Accept Your Quote" value="{{ email_customizations.get('quote_expiry_warning_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             INVOICE & PAYMENT
+             ═══════════════════════════════════════ -->
+        <div class="pt-2">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Invoice & Payment</h3>
+        </div>
+
+        <!-- 6. Invoice Sent -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-green p-6 card-enter card-enter-7">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Invoice Sent</h3>
+                        <p class="text-xs text-slate-500">Sent when a new invoice is emailed</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/invoice_sent" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="invoice_sent_subject" class="input-field text-sm" placeholder="Invoice {invoice_number} from {business_name}" value="{{ email_customizations.get('invoice_sent_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code> <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="invoice_sent_intro" rows="2" class="input-field text-sm" placeholder="Please find your invoice below. Payment can be made by bank transfer using the details provided.">{{ email_customizations.get('invoice_sent_intro', '') }}</textarea>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="invoice_sent_cta" class="input-field text-sm" placeholder="View Invoice & Payment Details" value="{{ email_customizations.get('invoice_sent_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Payment Receipt -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-green p-6 card-enter card-enter-8">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Payment Receipt</h3>
+                        <p class="text-xs text-slate-500">Sent when a payment is received</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_receipt" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="payment_receipt_subject" class="input-field text-sm" placeholder="Payment Receipt — {invoice_number}" value="{{ email_customizations.get('payment_receipt_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="payment_receipt_intro" rows="2" class="input-field text-sm" placeholder="Thank you for your payment! This email confirms we have received your payment.">{{ email_customizations.get('payment_receipt_intro', '') }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Payment Reminder -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-green p-6 card-enter card-enter-9">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Payment Reminder</h3>
+                        <p class="text-xs text-slate-500">Standard payment reminder before due date</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="payment_reminder_subject" class="input-field text-sm" placeholder="Payment Reminder — Invoice {invoice_number}" value="{{ email_customizations.get('payment_reminder_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="payment_reminder_intro" rows="2" class="input-field text-sm" placeholder="This is a friendly reminder that your payment for invoice {invoice_number} is coming up soon.">{{ email_customizations.get('payment_reminder_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="payment_reminder_cta" class="input-field text-sm" placeholder="View Invoice & Payment Details" value="{{ email_customizations.get('payment_reminder_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Friendly Reminder -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-green p-6 card-enter card-enter-10">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Friendly Reminder</h3>
+                        <p class="text-xs text-slate-500">Gentle payment nudge for recently overdue</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder_friendly" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="payment_reminder_friendly_subject" class="input-field text-sm" placeholder="Friendly Reminder — Invoice {invoice_number}" value="{{ email_customizations.get('payment_reminder_friendly_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="payment_reminder_friendly_intro" rows="2" class="input-field text-sm" placeholder="Just a heads up — your payment for invoice {invoice_number} is now a little overdue. We're sure it's just slipped through!">{{ email_customizations.get('payment_reminder_friendly_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="payment_reminder_friendly_cta" class="input-field text-sm" placeholder="View Invoice & Payment Details" value="{{ email_customizations.get('payment_reminder_friendly_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. Firm Reminder -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-green p-6 card-enter card-enter-11">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Firm Reminder</h3>
+                        <p class="text-xs text-slate-500">Firmer notice for significantly overdue invoices</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder_firm" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="payment_reminder_firm_subject" class="input-field text-sm" placeholder="Overdue Invoice — {invoice_number}" value="{{ email_customizations.get('payment_reminder_firm_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="payment_reminder_firm_intro" rows="2" class="input-field text-sm" placeholder="Your payment for invoice {invoice_number} is now {days_overdue} days overdue. Please arrange payment as soon as possible.">{{ email_customizations.get('payment_reminder_firm_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code> <code>&#123;days_overdue&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="payment_reminder_firm_cta" class="input-field text-sm" placeholder="View Invoice & Arrange Payment" value="{{ email_customizations.get('payment_reminder_firm_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 11. Final Notice -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-green p-6 card-enter card-enter-12">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Final Notice</h3>
+                        <p class="text-xs text-slate-500">Last reminder before further action</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/payment_reminder_final" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="payment_reminder_final_subject" class="input-field text-sm" placeholder="URGENT: Overdue Invoice — {invoice_number}" value="{{ email_customizations.get('payment_reminder_final_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="payment_reminder_final_intro" rows="2" class="input-field text-sm" placeholder="Despite previous reminders, invoice {invoice_number} remains unpaid and is now {days_overdue} days overdue. Immediate payment is required.">{{ email_customizations.get('payment_reminder_final_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;invoice_number&#125;</code> <code>&#123;days_overdue&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="payment_reminder_final_cta" class="input-field text-sm" placeholder="View Invoice & Arrange Payment" value="{{ email_customizations.get('payment_reminder_final_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             JOB & POST-JOB
+             ═══════════════════════════════════════ -->
+        <div class="pt-2">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Job & Post-Job</h3>
+        </div>
+
+        <!-- 12. Job Reminder -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-orange p-6 card-enter card-enter-13">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Job Reminder</h3>
+                        <p class="text-xs text-slate-500">Sent the day before or week before a scheduled job</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/job_reminder" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="job_reminder_subject" class="input-field text-sm" placeholder="Your Job {time_description} — {job_date}" value="{{ email_customizations.get('job_reminder_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;time_description&#125;</code> <code>&#123;job_date&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="job_reminder_intro" rows="2" class="input-field text-sm" placeholder="Just a friendly reminder that your concreting job is scheduled for {time_description}.">{{ email_customizations.get('job_reminder_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;time_description&#125;</code></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 13. Job Complete -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-orange p-6 card-enter card-enter-14">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Job Complete</h3>
+                        <p class="text-xs text-slate-500">Sent when a job is marked as finished</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/job_complete" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="job_complete_subject" class="input-field text-sm" placeholder="Your Job is Complete! — {business_name}" value="{{ email_customizations.get('job_complete_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="job_complete_intro" rows="2" class="input-field text-sm" placeholder="Great news — your concreting project is now complete! We hope you're happy with the result.">{{ email_customizations.get('job_complete_intro', '') }}</textarea>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="job_complete_cta" class="input-field text-sm" placeholder="View Invoice & Pay Balance" value="{{ email_customizations.get('job_complete_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 14. Job Rescheduled -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-orange p-6 card-enter card-enter-15">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Job Rescheduled</h3>
+                        <p class="text-xs text-slate-500">Sent when a job date changes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/job_rescheduled" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="job_rescheduled_subject" class="input-field text-sm" placeholder="Date Change — {quote_number} | {business_name}" value="{{ email_customizations.get('job_rescheduled_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;quote_number&#125;</code> <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="job_rescheduled_intro" rows="2" class="input-field text-sm" placeholder="Your job has been rescheduled to a new date. Here are the updated details.">{{ email_customizations.get('job_rescheduled_intro', '') }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 15. Progress Update -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-orange p-6 card-enter card-enter-16">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Progress Update</h3>
+                        <p class="text-xs text-slate-500">Sent with photos during the job</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/progress_update" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="progress_update_subject" class="input-field text-sm" placeholder="Progress Update: {update_title} — {business_name}" value="{{ email_customizations.get('progress_update_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;update_title&#125;</code> <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="progress_update_intro" rows="2" class="input-field text-sm" placeholder="Here's an update on your concreting project:">{{ email_customizations.get('progress_update_intro', '') }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 16. Review Request -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-orange p-6 card-enter card-enter-17">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Review Request</h3>
+                        <p class="text-xs text-slate-500">Sent post-job asking for a Google review</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/review_request" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="review_request_subject" class="input-field text-sm" placeholder="How did we do? — {business_name}" value="{{ email_customizations.get('review_request_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="review_request_intro" rows="2" class="input-field text-sm" placeholder="Thank you for choosing {business_name} for your recent concreting project! We hope you're happy with the finished result.">{{ email_customizations.get('review_request_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="review_request_cta" class="input-field text-sm" placeholder="Leave a Google Review" value="{{ email_customizations.get('review_request_cta', '') }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- 17. Sealer Follow-up -->
+        <div x-data="{ open: false }" class="form-section-card form-section-accent-orange p-6 card-enter card-enter-18">
+            <div @click="open = !open" class="flex items-center justify-between cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-900">Sealer Follow-up</h3>
+                        <p class="text-xs text-slate-500">Sent ~3 years after job for concrete resealing</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="/settings/api/email/preview/sealer_followup" target="_blank" @click.stop class="text-slate-400 hover:text-brand-600 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <svg :class="open && 'rotate-180'" class="w-5 h-5 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                <div>
+                    <label class="settings-label">Subject Line</label>
+                    <input type="text" name="sealer_followup_subject" class="input-field text-sm" placeholder="Time to Reseal Your Concrete | {business_name}" value="{{ email_customizations.get('sealer_followup_subject', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;business_name&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Intro Paragraph</label>
+                    <textarea name="sealer_followup_intro" rows="2" class="input-field text-sm" placeholder="It's been about {years_since} years since we completed your concreting job. The sealer on your concrete is approaching the end of its lifespan.">{{ email_customizations.get('sealer_followup_intro', '') }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;years_since&#125;</code></p>
+                </div>
+                <div>
+                    <label class="settings-label">Button Text</label>
+                    <input type="text" name="sealer_followup_cta" class="input-field text-sm" placeholder="Call {business_phone}" value="{{ email_customizations.get('sealer_followup_cta', '') }}">
+                    <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;business_phone&#125;</code></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="flex justify-end">
+            <button type="submit" class="btn-v4 btn-v4-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Save Templates
+            </button>
+        </div>
+    </form>
+
+    <!-- ═══════════════════════════════════════
+         PDF TEMPLATES
+         ═══════════════════════════════════════ -->
+    <div class="pt-2">
+        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">PDF Documents</h3>
+    </div>
+
+    <!-- PDF Templates -->
+    <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-19">
+        <div class="settings-section-header">
+            <div class="settings-section-header-icon icon-bg-purple">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h2>PDF Documents</h2>
+                <p>Generated as downloadable PDF files — preview only</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+            <a href="/settings/preview/pdf/quote" target="_blank"
+               class="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-100 group-hover:text-purple-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-800 group-hover:text-purple-700">Quote PDF</p>
+                    <p class="text-xs text-slate-400 truncate">Generated when a quote is exported</p>
+                </div>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-purple-500 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+            <a href="/settings/preview/pdf/invoice" target="_blank"
+               class="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-100 group-hover:text-purple-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-800 group-hover:text-purple-700">Invoice PDF</p>
+                    <p class="text-xs text-slate-400 truncate">Generated when an invoice is exported</p>
+                </div>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-purple-500 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+            <a href="/settings/preview/pdf/receipt" target="_blank"
+               class="group flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-100 group-hover:text-purple-700 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-800 group-hover:text-purple-700">Payment Receipt</p>
+                    <p class="text-xs text-slate-400 truncate">Generated when a payment receipt is exported</p>
+                </div>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-purple-500 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Info note -->
+    <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="text-sm text-slate-600">
+                <p class="font-semibold text-slate-700">Template Customisation</p>
+                <p class="mt-1">Leave any field blank to use the default value shown in the placeholder. Email templates use your business details from <a href="/settings/business" class="text-brand-600 hover:text-brand-700 underline">Business Settings</a>. SMS messages can be customised from <a href="/settings/sms-templates" class="text-brand-600 hover:text-brand-700 underline">SMS Templates</a>. To request changes to email or PDF layouts, please contact support.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

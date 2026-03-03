@@ -209,6 +209,51 @@ async def sms_reply(
     return result
 
 
+@router.delete("/api/message/{message_id}", name="sms_inbox:delete_message")
+async def delete_message(
+    request: Request,
+    message_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a single SMS message from the inbox."""
+    msg = await db.get(CommunicationLog, message_id)
+    if not msg or msg.channel != "sms":
+        raise HTTPException(404, "Message not found")
+
+    await db.delete(msg)
+    await db.commit()
+    return {"success": True, "message": "Message deleted"}
+
+
+@router.delete("/api/conversation/{phone}", name="sms_inbox:delete_conversation")
+async def delete_conversation(
+    request: Request,
+    phone: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete all SMS messages for a phone number."""
+    result = await db.execute(
+        select(CommunicationLog)
+        .where(CommunicationLog.channel == "sms")
+        .where(
+            or_(
+                CommunicationLog.to_phone == phone,
+                CommunicationLog.from_phone == phone,
+            )
+        )
+    )
+    messages = result.scalars().all()
+
+    if not messages:
+        raise HTTPException(404, "No conversation found")
+
+    for msg in messages:
+        await db.delete(msg)
+    await db.commit()
+
+    return {"success": True, "message": f"Deleted {len(messages)} messages"}
+
+
 @router.get("/api/unread-count", name="sms_inbox:unread_count")
 async def get_unread_count(
     request: Request,

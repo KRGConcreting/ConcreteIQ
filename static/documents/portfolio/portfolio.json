@@ -1,26 +1,86 @@
 {
-  "sample_1.jpg": {
-    "title": "Exposed Aggregate Driveway",
-    "description": "Exposed aggregate finish"
+  "krg_work_1.jpg": {
+    "title": "Backyard Concrete Patio",
+    "description": "Smooth trowel finish with control joints — residential"
   },
-  "sample_2.jpg": {
+  "krg_work_2.jpg": {
+    "title": "Concrete Slab — Broom Finish",
+    "description": "Clean broom finish with precision-cut control joints"
+  },
+  "krg_work_3.png": {
+    "title": "Coloured Concrete Entertainment Area",
+    "description": "Terracotta coloured concrete with landscape lighting"
+  },
+  "krg_work_4.jpg": {
+    "title": "Pool Surround & Deck",
+    "description": "Smooth trowel finish pool surround with formed edges"
+  },
+  "krg_work_5.png": {
+    "title": "Curved Garden Pathway",
+    "description": "Flowing curved pathway through landscaped garden"
+  },
+  "krg_work_6.jpg": {
+    "title": "Driveway Prep — Steel Reinforcement",
+    "description": "Reo mesh with bar chairs ready for pour — new build"
+  },
+  "krg_work_7.png": {
+    "title": "Glow-in-the-Dark Exposed Aggregate",
+    "description": "Blue luminescent stones in exposed aggregate at night"
+  },
+  "krg_work_8.jpg": {
+    "title": "New Build Paths & Alfresco",
+    "description": "Smooth finish pathways and patio — residential new build"
+  },
+  "krg_work_9.jpg": {
     "title": "Residential Driveway",
-    "description": "Broom finish"
+    "description": "Freshly poured smooth trowel finish driveway"
   },
-  "sample_3.jpg": {
-    "title": "Coloured Concrete Slab",
-    "description": "Charcoal coloured concrete"
+  "krg_work_10.jpg": {
+    "title": "Large Backyard Slab",
+    "description": "Smooth finish slab with control joints — residential"
   },
-  "sample_4.jpg": {
-    "title": "Stamped Concrete Patio",
-    "description": "Ashlar slate pattern"
+  "krg_work_11.jpg": {
+    "title": "Pathway Prep — Reo & Formwork",
+    "description": "Steel mesh on bar chairs with timber formwork ready for pour"
   },
-  "sample_5.jpg": {
-    "title": "Side Pathway",
-    "description": "Plain finish with border"
+  "krg_work_12.jpg": {
+    "title": "Base Compaction — Pathway",
+    "description": "Crushed rock base being compacted before pour"
   },
-  "sample_6.jpg": {
-    "title": "Retaining Wall & Steps",
-    "description": "Formed concrete"
+  "krg_work_13.jpg": {
+    "title": "Rural Property Pathways",
+    "description": "Smooth finish paths connecting deck areas — rural residential"
+  },
+  "krg_work_14.jpg": {
+    "title": "Side Path with River Rock Feature",
+    "description": "Concrete path with decorative river rock and synthetic turf"
+  },
+  "krg_work_15.jpg": {
+    "title": "Side Pathway — New Build",
+    "description": "Clean smooth finish side path along brick home"
+  },
+  "krg_work_16.jpg": {
+    "title": "Exposed Aggregate — Chemical Retarder",
+    "description": "Exposed chemical retarder applied for controlled depth aggregate reveal"
+  },
+  "krg_work_17.jpg": {
+    "title": "Exposed Aggregate Side Path",
+    "description": "Dark exposed aggregate finish along side of home"
+  },
+  "krg_work_18.jpg": {
+    "title": "Dual-Tone Exposed Aggregate",
+    "description": "Two-colour exposed aggregate meeting at corner — light and dark"
+  },
+  "krg_work_19.jpg": {
+    "title": "Smooth Trowel Side Path",
+    "description": "Freshly poured smooth finish side pathway — residential"
+  },
+  "krg_work_20.jpg": {
+    "title": "Undercover Slab & Ramp",
+    "description": "Large smooth finish slab with integrated ramp under carport"
+  },
+  "krg_work_21.jpg": {
+    "title": "Exposed Aggregate Close-Up",
+    "description": "Sealed exposed aggregate detail — mixed stone with gloss finish"
   }
 }

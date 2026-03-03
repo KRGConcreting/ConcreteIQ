@@ -639,6 +639,15 @@ async def download_pdf(
     if customer:
         decrypt_customer_pii(customer)
 
+    # Build payment schedule for PDF
+    from app.invoices.service import get_payment_schedule
+    schedule = get_payment_schedule(quote)
+    total = quote.total_cents or 0
+    payments_for_pdf = [
+        {"name": f"{m['label']} ({m['percent']}%)", "amount_cents": int(total * m['percent'] / 100)}
+        for m in schedule
+    ]
+
     # Convert to dicts for PDF generator
     quote_dict = {
         "quote_number": quote.quote_number,
@@ -654,6 +663,7 @@ async def download_pdf(
         "total_cents": quote.total_cents,
         "notes": quote.notes,
         "calculator_result": quote.calculator_result,
+        "payments": payments_for_pdf,
     }
 
     customer_dict = None
@@ -675,12 +685,11 @@ async def download_pdf(
         "address": settings.business_address,
         "phone": settings.business_phone,
         "email": settings.business_email,
-        "license": settings.licence_number,
     }
 
     try:
         pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)
-    except (RuntimeError, OSError) as e:
+    except Exception as e:
         logger.error(f"PDF generation failed for quote {quote.quote_number}: {e}")
         raise HTTPException(503, "PDF generation is temporarily unavailable. Please contact KRG Concreting for a copy of your quote.")
 
@@ -838,8 +847,11 @@ async def decline_amendment_endpoint(
             "message": f"Amendment is already {amendment.status}",
         }
 
-    body = await request.json()
-    reason = body.get("reason")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    reason = body.get("reason") if body else None
 
     try:
         amendment = await amendments_service.decline_amendment(
@@ -858,6 +870,7 @@ async def decline_amendment_endpoint(
         try:
             from app.notifications.service import notify_amendment_declined
             await notify_amendment_declined(db, amendment, quote, customer)
+            await db.commit()
         except Exception:
             pass
 
@@ -951,12 +964,22 @@ async def download_invoice_pdf(
     if customer:
         decrypt_customer_pii(customer)
 
+    # Get payments for the invoice
+    from app.models import Payment
+    payments_result = await db.execute(
+        select(Payment)
+        .where(Payment.invoice_id == invoice.id)
+        .order_by(Payment.payment_date.asc())
+    )
+    payments = payments_result.scalars().all()
+
     invoice_dict = {
         "invoice_number": invoice.invoice_number,
         "issue_date": invoice.issue_date,
         "due_date": invoice.due_date,
         "description": invoice.description,
         "line_items": invoice.line_items or [],
+        "payment_schedule": invoice.payment_schedule or [],
         "subtotal_cents": invoice.subtotal_cents,
         "gst_cents": invoice.gst_cents,
         "total_cents": invoice.total_cents,
@@ -985,7 +1008,6 @@ async def download_invoice_pdf(
         "address": settings.business_address,
         "phone": settings.business_phone,
         "email": settings.business_email,
-        "license": settings.licence_number,
         "bank_name": settings.bank_name,
         "bank_account_name": getattr(settings, 'bank_account_name', ''),
         "bank_bsb": settings.bank_bsb,
@@ -995,8 +1017,17 @@ async def download_invoice_pdf(
     }
 
     try:
-        pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict)
-    except (RuntimeError, OSError) as e:
+        payment_dicts = [
+            {
+                "amount_cents": p.amount_cents,
+                "method": p.method,
+                "reference": p.reference,
+                "payment_date": p.payment_date,
+            }
+            for p in payments
+        ]
+        pdf_bytes = generate_invoice_pdf(invoice_dict, customer_dict, business_dict, payment_dicts)
+    except Exception as e:
         logger.error(f"PDF generation failed for invoice {invoice.invoice_number}: {e}")
         raise HTTPException(503, "PDF generation is temporarily unavailable. Please contact KRG Concreting for a copy of your invoice.")
 

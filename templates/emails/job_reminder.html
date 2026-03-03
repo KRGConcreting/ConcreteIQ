@@ -38,7 +38,7 @@
                             </p>
                             <!-- Greeting -->
                             <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151;">Hi {{ customer.name }},</p>
-                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151;">Just a reminder that your concreting job is scheduled for <strong style="color: #1a1a1a;">{{ time_description }}</strong>.</p>
+                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151;">{{ custom_intro }}</p>
                             <!-- Date Highlight Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
                                 <tr>
@@ -98,7 +98,7 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <span style="font-size: 16px; color: #22c55e;">&#10003;</span>
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Ensure clear truck and equipment access to the work area</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Make sure there's clear access for the concrete truck and our equipment &mdash; concrete trucks are large and need a straight run to the pour area</td>
                                             </tr>
                                         </table>
                                         <!-- Item 2 -->
@@ -107,7 +107,7 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <span style="font-size: 16px; color: #22c55e;">&#10003;</span>
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Move vehicles, bins, and any items from the driveway and work zone</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Move any vehicles, bins, or belongings out of the driveway and anywhere along the path to the work area</td>
                                             </tr>
                                         </table>
                                         <!-- Item 3 -->
@@ -116,7 +116,7 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <span style="font-size: 16px; color: #22c55e;">&#10003;</span>
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Be home for the first 10-15 minutes so we can confirm scope and access</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Please be home when we arrive so we can walk through the job and confirm everything before we start</td>
                                             </tr>
                                         </table>
                                         <!-- Item 4 -->
@@ -125,12 +125,22 @@
                                                 <td width="24" valign="top" style="padding-right: 10px; padding-top: 1px;">
                                                     <span style="font-size: 16px; color: #22c55e;">&#10003;</span>
                                                 </td>
-                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Keep pets and children clear of the work area</td>
+                                                <td style="font-size: 14px; color: #374151; line-height: 1.5;">Keep pets and kids well away from the work area for the duration of the pour</td>
                                             </tr>
                                         </table>
                                     </td>
                                 </tr>
                             </table>
+                            <!-- Formwork / Pour Day Notice -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
+                                <tr>
+                                    <td style="background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; padding: 18px;">
+                                        <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #991b1b;">&#9888;&#65039; Important — Please Read Before Pour Day</p>
+                                        <p style="margin: 0; font-size: 13px; color: #991b1b; line-height: 1.6;">Once the concrete truck arrives, the pour must run continuously and cannot be stopped part-way through. Any changes to the scope or layout need to be raised <strong>in the days before the truck arrives</strong>. Please check the area and let us know as soon as possible if anything needs adjusting.</p>
+                                    </td>
+                                </tr>
+                            </table>
+
                             <!-- Note Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
                                 <tr>
@@ -153,7 +163,7 @@
                                 {% if business_phone and business_email %}<span style="color: rgba(255,255,255,0.3); padding: 0 8px;">|</span>{% endif %}
                                 {% if business_email %}<a href="mailto:{{ business_email }}" style="color: #E87A2E; text-decoration: none;">{{ business_email }}</a>{% endif %}
                             </p>
-                            {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
+                            {% if business_abn %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">ABN: {{ business_abn }}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
                             {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="20" style="height: 20px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
                             <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>

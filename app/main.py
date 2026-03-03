@@ -290,6 +290,61 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     )
     reminder_alerts = reminder_alerts_result.scalars().all()
 
+    # Fetch weather for dashboard widget
+    weather = None
+    try:
+        from app.pour_planner.service import get_weather_forecast
+        from app.core.dates import sydney_now
+        from datetime import timedelta
+        now = sydney_now()
+        today_str = now.strftime("%Y-%m-%d")
+        tomorrow_str = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        today_data = await get_weather_forecast(date=today_str)
+        tomorrow_data = await get_weather_forecast(date=tomorrow_str)
+
+        if today_data:
+            mid_hour = None
+            for wd in today_data:
+                if wd.datetime.hour == 12:
+                    mid_hour = wd
+                    break
+            if not mid_hour:
+                mid_hour = today_data[len(today_data) // 2] if today_data else None
+
+            if mid_hour:
+                risk = "good"
+                if mid_hour.rain_probability > 60 or mid_hour.wind_speed > 40:
+                    risk = "poor"
+                elif mid_hour.rain_probability > 30 or mid_hour.wind_speed > 25 or mid_hour.temperature > 38 or mid_hour.temperature < 5:
+                    risk = "marginal"
+
+                weather = {
+                    "temp_c": round(mid_hour.temperature),
+                    "day": "Today",
+                    "rain_chance": round(mid_hour.rain_probability),
+                    "wind_kph": round(mid_hour.wind_speed),
+                    "risk": risk,
+                    "location": "Local",
+                }
+
+                if tomorrow_data:
+                    tmid = None
+                    for wd in tomorrow_data:
+                        if wd.datetime.hour == 12:
+                            tmid = wd
+                            break
+                    if not tmid:
+                        tmid = tomorrow_data[len(tomorrow_data) // 2] if tomorrow_data else None
+                    if tmid:
+                        weather["tomorrow"] = {
+                            "temp_c": round(tmid.temperature),
+                            "rain_chance": round(tmid.rain_probability),
+                            "is_no_go": tmid.rain_probability > 70 or tmid.wind_speed > 45,
+                        }
+    except Exception:
+        pass  # Weather is non-critical, fail silently
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "stats": stats,
@@ -301,6 +356,7 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
         "projection": projection,
         "payment_stats": payment_stats,
         "reminder_alerts": reminder_alerts,
+        "weather": weather,
     })
 
 

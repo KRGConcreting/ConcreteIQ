@@ -492,6 +492,26 @@ def generate_customer_line_items(
                 g["total_cents"] = round(g["total_cents"] * subtotal_cents / raw_sum)
                 remainder -= g["total_cents"]
 
+    # Add discount as visible line item if applicable
+    discount_percent = calculator_input.get("customer_discount_percent", 0)
+    if discount_percent and discount_percent > 0:
+        pre_discount_subtotal = sum(g["total_cents"] for g in groups)
+        discount_amount = int(round(pre_discount_subtotal * float(discount_percent) / 100))
+        sort_order = max((g.get("sort_order", 0) for g in groups), default=0) + 1
+        groups.append({
+            "id": str(uuid4()),
+            "category": f"Discount ({discount_percent}%)",
+            "sub_items": [
+                {
+                    "description": f"Customer discount — {discount_percent}% off",
+                    "price_cents": None,
+                }
+            ],
+            "total_cents": -discount_amount,
+            "show_sub_prices": False,
+            "sort_order": sort_order,
+        })
+
     return groups
 
 

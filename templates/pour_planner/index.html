@@ -351,7 +351,7 @@
                     </div>
                     <div>
                         <label class="field-label">Start Time</label>
-                        <select x-model="form.time" @change="calculate()" class="select-field">
+                        <select x-model="form.time" class="select-field">
                             <option value="05:00">5:00 AM</option>
                             <option value="05:30">5:30 AM</option>
                             <option value="06:00">6:00 AM</option>
@@ -395,19 +395,19 @@
                 <div x-show="showWeather" x-collapse class="px-4 pb-4 space-y-3 border-t border-slate-100">
                     <div class="pt-3">
                         <label class="field-label">Air Temp (\u00b0C)</label>
-                        <input type="number" x-model.number="form.air_temp" @change="calculate()" step="1" class="input-field">
+                        <input type="number" x-model.number="form.air_temp" step="1" class="input-field">
                     </div>
                     <div>
                         <label class="field-label">Humidity: <span class="text-slate-600" x-text="form.humidity + '%'"></span></label>
-                        <input type="range" x-model.number="form.humidity" @change="calculate()" min="10" max="100" step="5" class="w-full accent-blue-500">
+                        <input type="range" x-model.number="form.humidity" min="10" max="100" step="5" class="w-full accent-blue-500">
                     </div>
                     <div>
                         <label class="field-label">Wind (km/h)</label>
-                        <input type="number" x-model.number="form.wind_speed" @change="calculate()" step="5" min="0" class="input-field">
+                        <input type="number" x-model.number="form.wind_speed" step="5" min="0" class="input-field">
                     </div>
                     <div>
                         <label class="field-label">Sun</label>
-                        <select x-model="form.sun_exposure" @change="calculate()" class="select-field">
+                        <select x-model="form.sun_exposure" class="select-field">
                             <option value="shade">Shade</option>
                             <option value="half">Partial</option>
                             <option value="full">Full Sun</option>
@@ -433,7 +433,7 @@
                 <div x-show="showConcrete" x-collapse class="px-4 pb-4 space-y-3 border-t border-slate-100">
                     <div class="pt-3">
                         <label class="field-label">Grade</label>
-                        <select x-model="form.concrete_grade" @change="calculate()" class="select-field">
+                        <select x-model="form.concrete_grade" class="select-field">
                             <option value="N25">N25</option>
                             <option value="N32">N32</option>
                             <option value="Exposed N25">Exposed N25</option>
@@ -442,14 +442,22 @@
                     </div>
                     <div>
                         <label class="field-label">Volume (m³)</label>
-                        <input type="number" x-model.number="form.volume_m3" @change="calculate()" step="0.5" min="0.5" class="input-field">
+                        <input type="number" x-model.number="form.volume_m3" step="0.5" min="0.5" class="input-field">
                     </div>
-                    <div class="toggle-pill" :class="form.is_exposed ? 'active' : ''" @click="form.is_exposed = !form.is_exposed; calculate()">
+                    <div class="toggle-pill" :class="form.is_exposed ? 'active' : ''" @click="form.is_exposed = !form.is_exposed">
                         <div class="toggle-switch-sm" :class="form.is_exposed ? 'active' : ''"></div>
                         <span class="text-sm text-slate-700 font-medium">Exposed Aggregate</span>
                     </div>
                 </div>
             </div>
+
+            <!-- Calculate Button -->
+            <button @click="calculate()" class="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                Calculate
+            </button>
 
             <!-- Summary Card -->
             <div class="pp-summary-card">
@@ -960,7 +968,6 @@ function pourPlanner() {
                             evap_risk: this.getEvapRisk(this.calcEvapRate(d.temperature, d.humidity, d.wind_speed)),
                         }));
 
-                    this.calculate();
                 }
             } catch (error) {
                 console.error('Weather error:', error);

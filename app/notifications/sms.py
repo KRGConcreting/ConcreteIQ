@@ -134,6 +134,40 @@ async def send_test_sms(db: AsyncSession, to: str) -> dict:
 
 
 # =============================================================================
+# SHARED HELPERS — customer validation + settings loading
+# =============================================================================
+
+def _get_customer_info(customer: Customer) -> tuple:
+    """Decrypt PII and return (first_name, full_name). Returns None tuple if no phone."""
+    decrypt_customer_pii(customer)
+    first_name = customer.name.split()[0] if customer.name else "there"
+    return first_name, customer.name or "there"
+
+
+async def _load_sms_context(db: AsyncSession) -> tuple:
+    """Load business settings and SMS templates. Returns (trading_as, sms_templates dict)."""
+    business = await settings_service.get_settings_by_category(db, 'business')
+    sms_templates = await settings_service.get_settings_by_category(db, 'sms_templates')
+    trading_as = business.get('trading_as', 'KRG Concreting')
+    return trading_as, sms_templates
+
+
+def _get_template(sms_templates: dict, key: str, default: str) -> str:
+    """Get custom template or fall back to default."""
+    custom = (sms_templates.get(key) or '').strip()
+    return custom if custom else default
+
+
+def _check_sms_eligible(customer: Customer) -> Optional[dict]:
+    """Return error dict if customer can't receive SMS, else None."""
+    if not customer.phone:
+        return {"success": False, "error": "No phone number"}
+    if not customer.notify_sms:
+        return {"success": False, "error": "SMS notifications disabled"}
+    return None
+
+
+# =============================================================================
 # QUOTE SMS
 # =============================================================================
 
@@ -143,39 +177,28 @@ async def send_quote_sms(
     customer: Customer,
     portal_url: str,
 ) -> dict:
-    """
-    Send quote notification SMS.
-
-    Args:
-        db: Database session
-        quote: The quote being sent
-        customer: The customer receiving the SMS
-        portal_url: Short URL to the quote portal
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send quote notification SMS."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        logger.info(f"Customer {customer.id} has SMS notifications disabled")
-        return {"success": False, "error": "SMS notifications disabled"}
-
-    # Get business name from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    trading_as = business.get('trading_as', 'KRG Concreting')
-
-    # Build message (keep under 160 chars if possible)
-    first_name = customer.name.split()[0] if customer.name else "there"
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
     total = f"${quote.total_cents / 100:,.0f}"
 
-    message = f"Hi {first_name}, your quote {quote.quote_number} ({total}) from {trading_as} is ready. View it here: {portal_url}"
+    template = _get_template(sms_templates, 'quote_sent',
+        "Hi {first_name}, your quote {quote_number} ({total}) from {business_name} is ready. View it here: {portal_url}")
 
-    # Truncate if too long
-    if len(message) > 160:
-        message = f"Hi {first_name}, quote {quote.quote_number} from {trading_as} is ready: {portal_url}"
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "quote_number": quote.quote_number or str(quote.id),
+        "total": total,
+        "portal_url": portal_url,
+        "address": quote.job_address or "your property",
+        "job_date": quote.confirmed_start_date.strftime('%A, %d %B') if quote.confirmed_start_date else "TBC",
+    })
 
     return await send_sms(db, customer.phone, message, quote_id=quote.id, customer_id=customer.id)
 
@@ -191,40 +214,30 @@ async def send_amendment_sms(
     customer: Customer,
     portal_url: str,
 ) -> dict:
-    """
-    Send amendment/variation notification SMS.
-
-    Args:
-        db: Database session
-        amendment: The QuoteAmendment being sent
-        quote: The parent quote
-        customer: The customer receiving the SMS
-        portal_url: URL to the amendment portal page
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send amendment/variation notification SMS."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        logger.info(f"Customer {customer.id} has SMS notifications disabled")
-        return {"success": False, "error": "SMS notifications disabled"}
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
 
-    # Get business name from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    trading_as = business.get('trading_as', 'KRG Concreting')
-
-    first_name = customer.name.split()[0] if customer.name else "there"
     amount = amendment.amount_cents or 0
     sign = "+" if amount >= 0 else "-"
     amount_str = f"{sign}${abs(amount) / 100:,.0f}"
 
-    message = f"Hi {first_name}, a variation ({amount_str}) for your quote {quote.quote_number} needs your review. View here: {portal_url}"
+    template = _get_template(sms_templates, 'amendment_sent',
+        "Hi {first_name}, a variation ({variation_amount}) for your quote {quote_number} needs your review. View here: {portal_url}")
 
-    if len(message) > 160:
-        message = f"Hi {first_name}, variation on {quote.quote_number} needs review: {portal_url}"
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "quote_number": quote.quote_number or str(quote.id),
+        "variation_amount": amount_str,
+        "portal_url": portal_url,
+        "address": quote.job_address or "your property",
+    })
 
     return await send_sms(db, customer.phone, message, quote_id=quote.id, customer_id=customer.id)
 
@@ -239,34 +252,26 @@ async def send_invoice_sms(
     customer: Customer,
     portal_url: str,
 ) -> dict:
-    """
-    Send invoice notification SMS.
-
-    Args:
-        db: Database session
-        invoice: The invoice being sent
-        customer: The customer receiving the SMS
-        portal_url: Short URL to the invoice portal
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send invoice notification SMS."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        logger.info(f"Customer {customer.id} has SMS notifications disabled")
-        return {"success": False, "error": "SMS notifications disabled"}
-
-    # Get business name from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    trading_as = business.get('trading_as', 'KRG Concreting')
-
-    first_name = customer.name.split()[0] if customer.name else "there"
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
     total = f"${invoice.total_cents / 100:,.2f}"
 
-    message = f"Hi {first_name}, invoice {invoice.invoice_number} for {total} from {trading_as} is ready. Pay here: {portal_url}"
+    template = _get_template(sms_templates, 'invoice_sent',
+        "Hi {first_name}, invoice {invoice_number} for {total} from {business_name} is ready. View here: {portal_url}")
+
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "invoice_number": invoice.invoice_number or str(invoice.id),
+        "total": total,
+        "portal_url": portal_url,
+    })
 
     return await send_sms(db, customer.phone, message, invoice_id=invoice.id, customer_id=customer.id)
 
@@ -281,32 +286,31 @@ async def send_payment_reminder_sms(
     customer: Customer,
     days_overdue: int = 0,
 ) -> dict:
-    """
-    Send payment reminder SMS.
-
-    Args:
-        db: Database session
-        invoice: The invoice needing payment
-        customer: The customer to remind
-        days_overdue: Number of days past due (0 = upcoming reminder)
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send payment reminder SMS."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        return {"success": False, "error": "SMS notifications disabled"}
-
-    first_name = customer.name.split()[0] if customer.name else "there"
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
     total = f"${invoice.total_cents / 100:,.2f}"
 
     if days_overdue > 0:
-        message = f"Hi {first_name}, invoice {invoice.invoice_number} for {total} is {days_overdue} days overdue. Please pay ASAP to avoid late fees."
+        template = _get_template(sms_templates, 'payment_reminder_overdue',
+            "Hi {first_name}, invoice {invoice_number} for {total} is {days_overdue} days overdue. Please arrange payment at your earliest convenience.")
     else:
-        message = f"Hi {first_name}, friendly reminder: invoice {invoice.invoice_number} for {total} is due soon."
+        template = _get_template(sms_templates, 'payment_reminder',
+            "Hi {first_name}, friendly reminder: invoice {invoice_number} for {total} is due soon.")
+
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "invoice_number": invoice.invoice_number or str(invoice.id),
+        "total": total,
+        "days_overdue": str(days_overdue),
+        "portal_url": "",
+    })
 
     return await send_sms(db, customer.phone, message, invoice_id=invoice.id, customer_id=customer.id)
 
@@ -320,46 +324,30 @@ async def send_job_reminder_sms(
     quote: Quote,
     customer: Customer,
 ) -> dict:
-    """
-    Send job reminder SMS.
-
-    Args:
-        db: Database session
-        quote: The quote/job to remind about
-        customer: The customer to remind
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send job reminder SMS."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        return {"success": False, "error": "SMS notifications disabled"}
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
 
-    # Get business name from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    trading_as = business.get('trading_as', 'KRG Concreting')
-
-    first_name = customer.name.split()[0] if customer.name else "there"
-
-    # Format date
-    if quote.confirmed_start_date:
-        date_str = quote.confirmed_start_date.strftime('%A, %d %B')
-    else:
-        date_str = "soon"
-
-    # Build message
+    date_str = quote.confirmed_start_date.strftime('%A, %d %B') if quote.confirmed_start_date else "soon"
     address = quote.job_address or "your property"
     if len(address) > 30:
         address = "your property"
 
-    message = f"Hi {first_name}, reminder: your concrete job at {address} is scheduled for {date_str}. See you then! - {trading_as}"
+    template = _get_template(sms_templates, 'job_reminder',
+        "Hi {first_name}, reminder: your concrete job at {address} is scheduled for {job_date}. See you then! - {business_name}")
 
-    # Truncate if needed
-    if len(message) > 160:
-        message = f"Hi {first_name}, job reminder: {date_str}. See you then! - {trading_as}"
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "address": address,
+        "job_date": date_str,
+        "quote_number": quote.quote_number or str(quote.id),
+    })
 
     return await send_sms(db, customer.phone, message, quote_id=quote.id, customer_id=customer.id)
 
@@ -373,40 +361,27 @@ async def send_review_request_sms(
     quote: Quote,
     customer: Customer,
 ) -> dict:
-    """
-    Send review request SMS to customer.
-
-    Args:
-        db: Database session
-        quote: The completed quote/job
-        customer: The customer to request a review from
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send review request SMS to customer."""
     from app.config import settings as app_settings
 
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        return {"success": False, "error": "SMS notifications disabled"}
-
-    # Get business name from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    trading_as = business.get('trading_as', 'KRG Concreting')
-
-    first_name = customer.name.split()[0] if customer.name else "there"
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
     review_url = app_settings.google_review_url or ""
 
-    if review_url:
-        message = f"Hi {first_name}, thanks for choosing {trading_as}! We'd love a Google review: {review_url}"
-    else:
-        message = f"Hi {first_name}, thanks for choosing {trading_as}! If you have a moment, we'd appreciate a Google review."
+    template = _get_template(sms_templates, 'review_request',
+        "Hi {first_name}, thanks for choosing {business_name}! We'd love a Google review: {portal_url}")
 
-    if len(message) > 160:
-        message = f"Hi {first_name}, thanks for choosing {trading_as}! Leave a review: {review_url}"
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "portal_url": review_url,
+        "quote_number": quote.quote_number or str(quote.id),
+    })
 
     return await send_sms(db, customer.phone, message, quote_id=quote.id, customer_id=customer.id)
 
@@ -421,35 +396,24 @@ async def send_quote_followup_sms(
     customer: Customer,
     portal_url: str,
 ) -> dict:
-    """
-    Send quote followup SMS to customer.
-
-    Args:
-        db: Database session
-        quote: The quote to follow up on
-        customer: The customer who received the quote
-        portal_url: URL to the quote portal
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send quote followup SMS to customer."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        return {"success": False, "error": "SMS notifications disabled"}
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
 
-    # Get business name from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    trading_as = business.get('trading_as', 'KRG Concreting')
+    template = _get_template(sms_templates, 'quote_followup',
+        "Hi {first_name}, just following up on your quote {quote_number} from {business_name}. View it here: {portal_url}")
 
-    first_name = customer.name.split()[0] if customer.name else "there"
-
-    message = f"Hi {first_name}, just following up on your quote {quote.quote_number} from {trading_as}. View it here: {portal_url}"
-
-    if len(message) > 160:
-        message = f"Hi {first_name}, following up on quote {quote.quote_number}: {portal_url}"
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "quote_number": quote.quote_number or str(quote.id),
+        "portal_url": portal_url,
+    })
 
     return await send_sms(db, customer.phone, message, quote_id=quote.id, customer_id=customer.id)
 
@@ -463,34 +427,59 @@ async def send_progress_update_sms(
     quote: Quote,
     customer: Customer,
 ) -> dict:
-    """
-    Send progress update notification SMS. Photos are in the email.
-
-    Args:
-        db: Database session
-        quote: The active job quote
-        customer: The customer to notify
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send progress update notification SMS. Photos are in the email."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        return {"success": False, "error": "SMS notifications disabled"}
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
 
-    # Get business name from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    trading_as = business.get('trading_as', 'KRG Concreting')
+    template = _get_template(sms_templates, 'progress_update',
+        "Hi {first_name}, we've sent you a progress update on your job! Check your email for photos. - {business_name}")
 
-    first_name = customer.name.split()[0] if customer.name else "there"
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "quote_number": quote.quote_number or str(quote.id),
+        "address": quote.job_address or "your property",
+    })
 
-    message = f"Hi {first_name}, we've sent you a progress update on your job! Check your email for photos. - {trading_as}"
+    return await send_sms(db, customer.phone, message, quote_id=quote.id, customer_id=customer.id)
 
-    if len(message) > 160:
-        message = f"Hi {first_name}, progress update sent to your email with photos! - {trading_as}"
+
+# =============================================================================
+# JOB COMPLETE SMS
+# =============================================================================
+
+async def send_job_complete_sms(
+    db: AsyncSession,
+    quote: Quote,
+    customer: Customer,
+) -> dict:
+    """Send job complete notification SMS."""
+    decrypt_customer_pii(customer)
+    if err := _check_sms_eligible(customer):
+        return err
+
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
+
+    address = quote.job_address or "your property"
+    if len(address) > 30:
+        address = "your property"
+
+    template = _get_template(sms_templates, 'job_complete',
+        "Hi {first_name}, your concrete job at {address} is now complete! Thanks for choosing {business_name}.")
+
+    message = _render_sms_template(template, {
+        "first_name": first_name,
+        "customer_name": full_name,
+        "business_name": trading_as,
+        "address": address,
+        "quote_number": quote.quote_number or str(quote.id),
+    })
 
     return await send_sms(db, customer.phone, message, quote_id=quote.id, customer_id=customer.id)
 
@@ -505,49 +494,25 @@ async def send_on_my_way_sms(
     customer: Customer,
     eta_minutes: Optional[int] = None,
 ) -> dict:
-    """
-    Send 'On My Way' SMS to customer.
-
-    Uses configurable templates from settings (sms_templates category).
-    Falls back to hardcoded defaults if no custom template is set.
-
-    Args:
-        db: Database session
-        quote: The job quote
-        customer: The customer to notify
-        eta_minutes: Optional estimated arrival time in minutes
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send 'On My Way' SMS to customer."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        return {"success": False, "error": "SMS notifications disabled"}
-
-    # Get business name and SMS templates from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    sms_templates = await settings_service.get_settings_by_category(db, 'sms_templates')
-    trading_as = business.get('trading_as', 'KRG Concreting')
-
-    first_name = customer.name.split()[0] if customer.name else "there"
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
     address = quote.job_address or "your property"
 
-    # Build message from template or use default
     if eta_minutes:
-        template = (sms_templates.get('on_my_way_eta') or '').strip()
-        if not template:
-            template = "Hi {first_name}, we're heading to {address} now! ETA roughly {eta} minutes. See you soon! - {business_name}"
+        template = _get_template(sms_templates, 'on_my_way_eta',
+            "Hi {first_name}, we're heading to {address} now! ETA roughly {eta} minutes. See you soon! - {business_name}")
     else:
-        template = (sms_templates.get('on_my_way') or '').strip()
-        if not template:
-            template = "Hi {first_name}, we're heading to {address} now! See you soon! - {business_name}"
+        template = _get_template(sms_templates, 'on_my_way',
+            "Hi {first_name}, we're heading to {address} now! See you soon! - {business_name}")
 
     message = _render_sms_template(template, {
         "first_name": first_name,
-        "customer_name": customer.name or "there",
+        "customer_name": full_name,
         "address": address,
         "eta": str(eta_minutes) if eta_minutes else "",
         "business_name": trading_as,
@@ -567,44 +532,23 @@ async def send_day_before_sms(
     quote: Quote,
     customer: Customer,
 ) -> dict:
-    """
-    Send day-before reminder SMS to customer.
-
-    Uses configurable templates from settings (sms_templates category).
-    Falls back to hardcoded defaults if no custom template is set.
-
-    Args:
-        db: Database session
-        quote: The job quote scheduled for tomorrow
-        customer: The customer to remind
-
-    Returns:
-        dict with 'success' and error/message_id
-    """
+    """Send day-before reminder SMS to customer."""
     decrypt_customer_pii(customer)
-    if not customer.phone:
-        return {"success": False, "error": "No phone number"}
+    if err := _check_sms_eligible(customer):
+        return err
 
-    if not customer.notify_sms:
-        return {"success": False, "error": "SMS notifications disabled"}
-
-    # Get business name and SMS templates from settings
-    business = await settings_service.get_settings_by_category(db, 'business')
-    sms_templates = await settings_service.get_settings_by_category(db, 'sms_templates')
-    trading_as = business.get('trading_as', 'KRG Concreting')
-
-    first_name = customer.name.split()[0] if customer.name else "there"
+    trading_as, sms_templates = await _load_sms_context(db)
+    first_name, full_name = _get_customer_info(customer)
     address = quote.job_address or "your property"
     if len(address) > 30:
         address = "your property"
 
-    template = (sms_templates.get('day_before_reminder') or '').strip()
-    if not template:
-        template = "Hi {first_name}, quick reminder: we'll be at {address} tomorrow for your concrete job. If there's anything you need to prepare, please let us know! - {business_name}"
+    template = _get_template(sms_templates, 'day_before_reminder',
+        "Hi {first_name}, quick reminder: we'll be at {address} tomorrow for your concrete job. If there's anything you need to prepare, please let us know! - {business_name}")
 
     message = _render_sms_template(template, {
         "first_name": first_name,
-        "customer_name": customer.name or "there",
+        "customer_name": full_name,
         "address": address,
         "eta": "",
         "business_name": trading_as,

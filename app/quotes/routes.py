@@ -478,6 +478,15 @@ async def api_get_pdf(
 
     customer = await db.get(Customer, quote.customer_id) if quote.customer_id else None
 
+    # Build payment schedule for PDF
+    from app.invoices.service import get_payment_schedule
+    schedule = get_payment_schedule(quote)
+    total = quote.total_cents or 0
+    payments_for_pdf = [
+        {"name": f"{m['label']} ({m['percent']}%)", "amount_cents": int(total * m['percent'] / 100)}
+        for m in schedule
+    ]
+
     # Convert to dicts for PDF generator
     quote_dict = {
         "quote_number": quote.quote_number,
@@ -493,6 +502,7 @@ async def api_get_pdf(
         "total_cents": quote.total_cents,
         "notes": quote.notes,
         "calculator_result": quote.calculator_result,
+        "payments": payments_for_pdf,
     }
 
     customer_dict = None
@@ -514,15 +524,14 @@ async def api_get_pdf(
         "address": settings.business_address,
         "phone": settings.business_phone,
         "email": settings.business_email,
-        "license": settings.licence_number,
     }
 
     try:
         pdf_bytes = generate_quote_pdf(quote_dict, customer_dict, business_dict)
-    except (RuntimeError, OSError) as e:
+    except Exception as e:
         logger.error(f"PDF generation failed for quote {quote.quote_number}: {e}")
         return Response(
-            content=f"PDF generation is temporarily unavailable. WeasyPrint requires GTK/Pango libraries. Error: {e}",
+            content=f"PDF generation is temporarily unavailable. Error: {e}",
             media_type="text/plain",
             status_code=503,
         )
@@ -958,6 +967,89 @@ async def api_send_sealer_followup(
     await db.commit()
 
     return {"success": True, "email_sent": email_sent}
+
+
+@router.post("/api/{id}/send-sealer-recommendation")
+async def api_send_sealer_recommendation(
+    request: Request,
+    id: int,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    API: Send sealer recommendation email — upsell for new concrete.
+    """
+    quote = await service.get_quote(db, id)
+    if not quote:
+        raise HTTPException(404, "Quote not found")
+
+    customer = await db.get(Customer, quote.customer_id)
+    if not customer:
+        raise HTTPException(400, "No customer linked to this quote")
+
+    from app.notifications.email import send_sealer_recommendation_email
+    email_sent = await send_sealer_recommendation_email(db, quote, customer)
+
+    activity = ActivityLog(
+        action="sealer_recommendation_sent",
+        description=f"Sent sealer recommendation for {quote.quote_number}",
+        entity_type="quote",
+        entity_id=quote.id,
+        ip_address=request.client.host if request.client else None,
+    )
+    db.add(activity)
+    await db.commit()
+
+    return {"success": True, "email_sent": email_sent}
+
+
+class UpdateSpecsRequest(BaseModel):
+    """Update quote specifications (calculator_input fields)."""
+    concrete_grade: Optional[str] = None
+    concrete_finish: Optional[str] = None
+    reinforcement_type: Optional[str] = None
+
+
+@router.patch("/api/{id}/specifications")
+async def api_update_specifications(
+    request: Request,
+    id: int,
+    data: UpdateSpecsRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Update specifications on a quote's calculator_input."""
+    quote = await service.get_quote(db, id)
+    if not quote:
+        raise HTTPException(404, "Quote not found")
+
+    if not quote.calculator_input:
+        quote.calculator_input = {}
+
+    updated = {}
+    ci = dict(quote.calculator_input)
+    if data.concrete_grade is not None:
+        ci["concrete_grade"] = data.concrete_grade
+        updated["concrete_grade"] = data.concrete_grade
+    if data.concrete_finish is not None:
+        ci["concrete_finish"] = data.concrete_finish
+        updated["concrete_finish"] = data.concrete_finish
+    if data.reinforcement_type is not None:
+        ci["reinforcement_type"] = data.reinforcement_type
+        updated["reinforcement_type"] = data.reinforcement_type
+
+    quote.calculator_input = ci
+
+    activity = ActivityLog(
+        action="specs_updated",
+        description=f"Specifications updated for {quote.quote_number}: {', '.join(f'{k}={v}' for k, v in updated.items())}",
+        entity_type="quote",
+        entity_id=quote.id,
+        ip_address=request.client.host if request.client else None,
+        extra_data=updated,
+    )
+    db.add(activity)
+    await db.commit()
+
+    return {"success": True, "updated": updated}
 
 
 class ProgressUpdateRequest(BaseModel):

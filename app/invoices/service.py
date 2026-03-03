@@ -4,10 +4,13 @@ Invoice service - Business logic for invoice operations.
 Handles CRUD, invoice numbering, portal tokens, and status transitions.
 """
 
+import logging
 import secrets
 import hashlib
 from datetime import timedelta
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -467,13 +470,22 @@ async def record_payment(
     elif invoice.paid_cents > 0:
         invoice.status = "partial"
 
-    # Send receipt email
+    # Send receipt email + updated invoice
     email_sent = False
     if send_receipt:
         customer = await db.get(Customer, invoice.customer_id)
         if customer:
             from app.notifications.email import send_payment_receipt_email
             email_sent = await send_payment_receipt_email(db, payment, invoice, customer)
+
+            # Also send updated invoice showing payment progress
+            try:
+                if invoice.portal_token:
+                    portal_url = f"{settings.app_url}/p/invoice/{invoice.portal_token}"
+                    from app.notifications.email import send_invoice_email
+                    await send_invoice_email(db, invoice, customer, portal_url)
+            except Exception as e:
+                logger.warning(f"Failed to send updated invoice after payment: {e}")
 
     # Cancel payment reminders if fully paid
     reminders_cancelled = 0
@@ -635,12 +647,31 @@ async def create_job_invoice(
     line_items = []
     if quote.customer_line_items:
         for group in quote.customer_line_items:
+            category = group.get("category", "Item")
+            sub_items = group.get("sub_items", [])
+            total_cents_val = group.get("total_cents", 0)
+
+            # Build detailed description from sub-items
+            if sub_items:
+                sub_descriptions = "; ".join(
+                    item.get("description", "")
+                    for item in sub_items
+                    if item.get("description")
+                )
+                full_description = f"{category}: {sub_descriptions}" if sub_descriptions else category
+            else:
+                full_description = category
+
             line_items.append({
-                "description": group.get("category", "Item"),
+                "description": full_description,
                 "quantity": 1,
                 "unit": "lot",
-                "unit_price_cents": group.get("total_cents", 0),
-                "total_cents": group.get("total_cents", 0),
+                "unit_price_cents": total_cents_val,
+                "total_cents": total_cents_val,
+                "sub_items": [
+                    {"description": si.get("description", ""), "price_cents": si.get("price_cents")}
+                    for si in sub_items
+                ] if sub_items else [],
             })
     else:
         # Fallback: single line item for full amount
@@ -1020,6 +1051,27 @@ async def on_job_scheduled(
         extra_data={"invoice_id": invoice.id, "pour_date": str(pour_date), "new_status": quote.status},
     )
     db.add(activity)
+
+    # Send 60% progress payment request email
+    try:
+        customer = await db.get(Customer, quote.customer_id)
+        if customer and invoice.portal_token:
+            from app.core.security import decrypt_customer_pii
+            decrypt_customer_pii(customer)
+            # Recover raw token for portal URL
+            raw_token = invoice.portal_token  # Already hashed, need to use stored token
+            portal_url = f"{settings.app_url}/p/invoice/{invoice.portal_token}"
+            from app.notifications.email import send_progress_payment_email
+            await send_progress_payment_email(
+                db=db,
+                invoice=invoice,
+                quote=quote,
+                customer=customer,
+                portal_url=portal_url,
+                pour_date=pour_date,
+            )
+    except Exception as e:
+        logger.warning(f"Failed to send progress payment email for {quote.quote_number}: {e}")
 
     return invoice
 

@@ -329,10 +329,22 @@
                 </button>
                 <p class="text-sm text-slate-400 mt-3">Secure payment via Stripe. Visa, Mastercard, and American Express accepted.</p>
             </div>
+            {% else %}
+            <!-- Stripe Coming Soon -->
+            <div class="opacity-60">
+                <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Pay Online</h4>
+                <div class="w-full inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-200 text-slate-400 rounded-xl font-semibold text-base cursor-not-allowed">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    Coming Soon — Stripe Online Payments
+                </div>
+                <p class="text-sm text-slate-400 mt-3">Online payments via Stripe will be available soon. Please use bank transfer below for now.</p>
+            </div>
             {% endif %}
 
             <!-- Bank Transfer -->
-            <div class="{% if stripe_enabled %}border-t border-slate-100 pt-6{% endif %}">
+            <div class="border-t border-slate-100 pt-6">
                 <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Bank Transfer</h4>
                 <div class="bg-slate-50/80 rounded-xl p-5 space-y-3">
                     <div class="flex justify-between text-sm">

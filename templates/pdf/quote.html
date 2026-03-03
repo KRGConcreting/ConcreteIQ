@@ -443,11 +443,9 @@
             <img src="{{ logo_uri }}" alt="" class="header-logo">
             <div>
                 <h1 class="header-biz">{{ business.trading_as or business.name }}</h1>
-                {% if business.abn or business.license %}
+                {% if business.abn %}
                 <div class="header-meta">
-                    {% if business.abn %}ABN {{ business.abn }}{% endif %}
-                    {% if business.abn and business.license %} &bull; {% endif %}
-                    {% if business.license %}Licence {{ business.license }}{% endif %}
+                    ABN {{ business.abn }}
                 </div>
                 {% endif %}
             </div>
@@ -614,16 +612,16 @@
                 {% endfor %}
             {% else %}
             <div class="schedule-item">
-                <span class="name">Deposit</span>
-                <span class="value">{{ ((quote.total_cents or 0) * 0.1)|int|currency }}</span>
+                <span class="name">Deposit (30%)</span>
+                <span class="value">{{ ((quote.total_cents or 0) * 0.3)|int|currency }}</span>
             </div>
             <div class="schedule-item">
-                <span class="name">Progress Payment &mdash; before concrete pour</span>
+                <span class="name">Progress Payment &mdash; before concrete pour (60%)</span>
                 <span class="value">{{ ((quote.total_cents or 0) * 0.6)|int|currency }}</span>
             </div>
             <div class="schedule-item">
-                <span class="name">Final Payment &mdash; on completion</span>
-                <span class="value">{{ ((quote.total_cents or 0) * 0.3)|int|currency }}</span>
+                <span class="name">Final Payment &mdash; on completion (10%)</span>
+                <span class="value">{{ ((quote.total_cents or 0) * 0.1)|int|currency }}</span>
             </div>
             {% endif %}
         </div>
@@ -668,8 +666,6 @@
         <div class="footer-right">
             <div class="footer-info" style="margin-bottom: 6px;">
                 {% if business.abn %}ABN {{ business.abn }}{% endif %}
-                {% if business.abn and business.license %} &bull; {% endif %}
-                {% if business.license %}Licence {{ business.license }}{% endif %}
             </div>
             <div class="footer-powered">Powered by <img src="{{ ciq_logo_uri }}" alt="ConcreteIQ"></div>
         </div>

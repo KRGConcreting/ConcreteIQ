@@ -24,52 +24,86 @@
                 </div>
                 <div>
                     <h2>Available Variables</h2>
-                    <p>Use these placeholders in your templates</p>
+                    <p>Use these placeholders in your templates — not all variables apply to every template</p>
                 </div>
             </div>
             <div class="flex flex-wrap gap-2">
                 <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;first_name&#125;</code>
                 <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;customer_name&#125;</code>
                 <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;address&#125;</code>
-                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;eta&#125;</code>
                 <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;business_name&#125;</code>
-                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;job_date&#125;</code>
                 <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;quote_number&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;invoice_number&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;total&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;portal_url&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;job_date&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;eta&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;days_overdue&#125;</code>
+                <code class="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-xl text-xs font-medium border border-orange-100">&#123;variation_amount&#125;</code>
             </div>
         </div>
 
-        <!-- On My Way (no ETA) -->
-        <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-2">
+        <!-- ═══════════════════════════════════════
+             QUOTES & JOBS
+             ═══════════════════════════════════════ -->
+        <div class="pt-2">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Quotes & Jobs</h3>
+        </div>
+
+        <!-- Quote Sent -->
+        <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-2">
             <div class="flex items-center justify-between mb-3">
                 <div>
-                    <h3 class="font-semibold text-slate-900">On My Way (no ETA)</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Sent when you click "On My Way" without an ETA</p>
+                    <h3 class="font-semibold text-slate-900">Quote Sent</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when a new quote is sent to a customer</p>
                 </div>
-                <span class="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-semibold">Schedule</span>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Manual</span>
             </div>
-            <textarea name="on_my_way" rows="3"
+            <textarea name="quote_sent" rows="3"
                       class="input-field font-mono text-sm"
-                      placeholder="Hi {first_name}, we're heading to {address} now! See you soon! - {business_name}">{{ sms_templates.get('on_my_way', '') }}</textarea>
-            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+                      placeholder="Hi {first_name}, your quote {quote_number} ({total}) from {business_name} is ready. View it here: {portal_url}">{{ sms_templates.get('quote_sent', '') or 'Hi {first_name}, your quote {quote_number} ({total}) from {business_name} is ready. View it here: {portal_url}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;quote_number&#125;</code> <code>&#123;total&#125;</code> <code>&#123;business_name&#125;</code> <code>&#123;portal_url&#125;</code></p>
         </div>
 
-        <!-- On My Way (with ETA) -->
+        <!-- Quote Follow-up -->
         <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-3">
             <div class="flex items-center justify-between mb-3">
                 <div>
-                    <h3 class="font-semibold text-slate-900">On My Way (with ETA)</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Sent when you click "On My Way" with an ETA selected</p>
+                    <h3 class="font-semibold text-slate-900">Quote Follow-up</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent as a follow-up if the customer hasn't responded to a quote</p>
                 </div>
-                <span class="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-semibold">Schedule</span>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Auto</span>
             </div>
-            <textarea name="on_my_way_eta" rows="3"
+            <textarea name="quote_followup" rows="3"
                       class="input-field font-mono text-sm"
-                      placeholder="Hi {first_name}, we're heading to {address} now! ETA roughly {eta} minutes. See you soon! - {business_name}">{{ sms_templates.get('on_my_way_eta', '') }}</textarea>
-            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+                      placeholder="Hi {first_name}, just following up on your quote {quote_number} from {business_name}. View it here: {portal_url}">{{ sms_templates.get('quote_followup', '') or 'Hi {first_name}, just following up on your quote {quote_number} from {business_name}. View it here: {portal_url}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;quote_number&#125;</code> <code>&#123;business_name&#125;</code> <code>&#123;portal_url&#125;</code></p>
+        </div>
+
+        <!-- Amendment / Variation Sent -->
+        <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Variation Sent</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when a variation/amendment is sent for review</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Manual</span>
+            </div>
+            <textarea name="amendment_sent" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, a variation ({variation_amount}) for your quote {quote_number} needs your review. View here: {portal_url}">{{ sms_templates.get('amendment_sent', '') or 'Hi {first_name}, a variation ({variation_amount}) for your quote {quote_number} needs your review. View here: {portal_url}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;quote_number&#125;</code> <code>&#123;variation_amount&#125;</code> <code>&#123;business_name&#125;</code> <code>&#123;portal_url&#125;</code></p>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             SCHEDULING
+             ═══════════════════════════════════════ -->
+        <div class="pt-2">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Scheduling</h3>
         </div>
 
         <!-- Day Before Reminder -->
-        <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-4">
+        <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-5">
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <h3 class="font-semibold text-slate-900">Day Before Reminder</h3>
@@ -79,12 +113,116 @@
             </div>
             <textarea name="day_before_reminder" rows="3"
                       class="input-field font-mono text-sm"
-                      placeholder="Hi {first_name}, quick reminder: we'll be at {address} tomorrow for your concrete job. If there's anything you need to prepare, please let us know! - {business_name}">{{ sms_templates.get('day_before_reminder', '') }}</textarea>
-            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+                      placeholder="Hi {first_name}, quick reminder: we'll be at {address} tomorrow for your concrete job. If there's anything you need to prepare, please let us know! - {business_name}">{{ sms_templates.get('day_before_reminder', '') or 'Hi {first_name}, quick reminder: we\'ll be at {address} tomorrow for your concrete job. If there\'s anything you need to prepare, please let us know! - {business_name}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;address&#125;</code> <code>&#123;business_name&#125;</code> <code>&#123;job_date&#125;</code> <code>&#123;quote_number&#125;</code></p>
+        </div>
+
+        <!-- Job Reminder -->
+        <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-6">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Job Reminder</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">General reminder about an upcoming scheduled job</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Auto</span>
+            </div>
+            <textarea name="job_reminder" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, reminder: your concrete job at {address} is scheduled for {job_date}. See you then! - {business_name}">{{ sms_templates.get('job_reminder', '') or 'Hi {first_name}, reminder: your concrete job at {address} is scheduled for {job_date}. See you then! - {business_name}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;address&#125;</code> <code>&#123;job_date&#125;</code> <code>&#123;business_name&#125;</code> <code>&#123;quote_number&#125;</code></p>
+        </div>
+
+        <!-- On My Way (no ETA) -->
+        <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-7">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">On My Way (no ETA)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when you click "On My Way" without an ETA</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-semibold">Schedule</span>
+            </div>
+            <textarea name="on_my_way" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, we're heading to {address} now! See you soon! - {business_name}">{{ sms_templates.get('on_my_way', '') or 'Hi {first_name}, we\'re heading to {address} now! See you soon! - {business_name}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;address&#125;</code> <code>&#123;business_name&#125;</code></p>
+        </div>
+
+        <!-- On My Way (with ETA) -->
+        <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-8">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">On My Way (with ETA)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when you click "On My Way" with an ETA selected</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-semibold">Schedule</span>
+            </div>
+            <textarea name="on_my_way_eta" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, we're heading to {address} now! ETA roughly {eta} minutes. See you soon! - {business_name}">{{ sms_templates.get('on_my_way_eta', '') or 'Hi {first_name}, we\'re heading to {address} now! ETA roughly {eta} minutes. See you soon! - {business_name}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;address&#125;</code> <code>&#123;eta&#125;</code> <code>&#123;business_name&#125;</code></p>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             INVOICING & PAYMENTS
+             ═══════════════════════════════════════ -->
+        <div class="pt-2">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Invoicing & Payments</h3>
+        </div>
+
+        <!-- Invoice Sent -->
+        <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-9">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Invoice Sent</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when an invoice is sent to a customer</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Manual</span>
+            </div>
+            <textarea name="invoice_sent" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, invoice {invoice_number} for {total} from {business_name} is ready. View here: {portal_url}">{{ sms_templates.get('invoice_sent', '') or 'Hi {first_name}, invoice {invoice_number} for {total} from {business_name} is ready. View here: {portal_url}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;invoice_number&#125;</code> <code>&#123;total&#125;</code> <code>&#123;business_name&#125;</code> <code>&#123;portal_url&#125;</code></p>
+        </div>
+
+        <!-- Payment Reminder -->
+        <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-10">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Payment Reminder</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent as a reminder when an invoice is due or overdue</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Auto</span>
+            </div>
+            <textarea name="payment_reminder" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, friendly reminder: invoice {invoice_number} for {total} is due soon. View here: {portal_url}">{{ sms_templates.get('payment_reminder', '') or 'Hi {first_name}, friendly reminder: invoice {invoice_number} for {total} is due soon. View here: {portal_url}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;invoice_number&#125;</code> <code>&#123;total&#125;</code> <code>&#123;days_overdue&#125;</code> <code>&#123;portal_url&#125;</code></p>
+        </div>
+
+        <!-- Payment Reminder (Overdue) -->
+        <div class="form-section-card form-section-accent-orange p-6 card-enter card-enter-11">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Payment Reminder (Overdue)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when an invoice is past due</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Auto</span>
+            </div>
+            <textarea name="payment_reminder_overdue" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, invoice {invoice_number} for {total} is {days_overdue} days overdue. Please arrange payment at your earliest convenience.">{{ sms_templates.get('payment_reminder_overdue', '') or 'Hi {first_name}, invoice {invoice_number} for {total} is {days_overdue} days overdue. Please arrange payment at your earliest convenience.' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;invoice_number&#125;</code> <code>&#123;total&#125;</code> <code>&#123;days_overdue&#125;</code> <code>&#123;portal_url&#125;</code></p>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             POST-JOB
+             ═══════════════════════════════════════ -->
+        <div class="pt-2">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Post-Job</h3>
         </div>
 
         <!-- Job Complete -->
-        <div class="form-section-card form-section-accent-yellow p-6 card-enter card-enter-5">
+        <div class="form-section-card form-section-accent-green p-6 card-enter card-enter-12">
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <h3 class="font-semibold text-slate-900">Job Complete</h3>
@@ -94,8 +232,38 @@
             </div>
             <textarea name="job_complete" rows="3"
                       class="input-field font-mono text-sm"
-                      placeholder="Hi {first_name}, your concrete job at {address} is now complete! Thanks for choosing {business_name}.">{{ sms_templates.get('job_complete', '') }}</textarea>
-            <p class="text-xs text-slate-400 mt-1">Leave blank to use the default template</p>
+                      placeholder="Hi {first_name}, your concrete job at {address} is now complete! Thanks for choosing {business_name}.">{{ sms_templates.get('job_complete', '') or 'Hi {first_name}, your concrete job at {address} is now complete! Thanks for choosing {business_name}.' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;address&#125;</code> <code>&#123;business_name&#125;</code></p>
+        </div>
+
+        <!-- Progress Update -->
+        <div class="form-section-card form-section-accent-blue p-6 card-enter card-enter-13">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Progress Update</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent when a progress update with photos is sent</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Manual</span>
+            </div>
+            <textarea name="progress_update" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, we've sent you a progress update on your job! Check your email for photos. - {business_name}">{{ sms_templates.get('progress_update', '') or 'Hi {first_name}, we\'ve sent you a progress update on your job! Check your email for photos. - {business_name}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;business_name&#125;</code></p>
+        </div>
+
+        <!-- Review Request -->
+        <div class="form-section-card form-section-accent-purple p-6 card-enter card-enter-14">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="font-semibold text-slate-900">Review Request</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Sent to request a Google review after job completion</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold">Auto</span>
+            </div>
+            <textarea name="review_request" rows="3"
+                      class="input-field font-mono text-sm"
+                      placeholder="Hi {first_name}, thanks for choosing {business_name}! We'd love a Google review: {portal_url}">{{ sms_templates.get('review_request', '') or 'Hi {first_name}, thanks for choosing {business_name}! We\'d love a Google review: {portal_url}' }}</textarea>
+            <p class="text-xs text-slate-400 mt-1">Variables: <code>&#123;first_name&#125;</code> <code>&#123;business_name&#125;</code> <code>&#123;portal_url&#125;</code> (review URL)</p>
         </div>
 
         <!-- Character Count Helper -->

@@ -38,7 +38,7 @@
                             </p>
                             <!-- Greeting -->
                             <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151;">Hi {{ customer.name }},</p>
-                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151;">Here's an update on your concreting project:</p>
+                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151;">{{ custom_intro }}</p>
                             {% if quote.job_name or quote.job_address %}
                             <!-- Project Info Box -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 28px;">
@@ -125,7 +125,7 @@
                                 {% if business_phone and business_email %}<span style="color: rgba(255,255,255,0.3); padding: 0 8px;">|</span>{% endif %}
                                 {% if business_email %}<a href="mailto:{{ business_email }}" style="color: #E87A2E; text-decoration: none;">{{ business_email }}</a>{% endif %}
                             </p>
-                            {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
+                            {% if business_abn %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">ABN: {{ business_abn }}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
                             {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="20" style="height: 20px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
                             <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>

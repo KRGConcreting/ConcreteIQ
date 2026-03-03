@@ -45,7 +45,7 @@
 
                             <!-- Greeting -->
                             <p style="margin: 0 0 8px 0; font-size: 15px; color: #374151; line-height: 1.6;">Hi {{ customer.name }},</p>
-                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151; line-height: 1.6;">Your start date is locked in. Here are the details for your upcoming job.</p>
+                            <p style="margin: 0 0 28px 0; font-size: 15px; color: #374151; line-height: 1.6;">{{ custom_intro }}</p>
 
                             <!-- Booking Details Card -->
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
@@ -123,7 +123,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
                                 <tr>
                                     <td>
-                                        <a href="{{ invoice_url }}" target="_blank" style="display: block; width: 100%; text-align: center; background-color: #E87A2E; background: linear-gradient(135deg, #E87A2E, #d4691f); color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">View Deposit Invoice</a>
+                                        <a href="{{ invoice_url }}" target="_blank" style="display: block; width: 100%; text-align: center; background-color: #E87A2E; background: linear-gradient(135deg, #E87A2E, #d4691f); color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">{{ custom_cta }}</a>
                                     </td>
                                 </tr>
                             </table>
@@ -141,7 +141,7 @@
                                                     <span style="font-size: 14px;">&#9989;</span>
                                                 </td>
                                                 <td style="padding: 6px 0;">
-                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Ensure clear truck and equipment access to the work area (concrete trucks are large!)</p>
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Make sure there's clear access for the concrete truck and our equipment &mdash; concrete trucks are large and need a straight run to the pour area</p>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -149,7 +149,7 @@
                                                     <span style="font-size: 14px;">&#9989;</span>
                                                 </td>
                                                 <td style="padding: 6px 0;">
-                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Move vehicles, bins, and any items from the driveway and work zone</p>
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Move any vehicles, bins, or belongings out of the driveway and anywhere along the path to the work area</p>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -157,7 +157,7 @@
                                                     <span style="font-size: 14px;">&#9989;</span>
                                                 </td>
                                                 <td style="padding: 6px 0;">
-                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Be home for the first 10-15 minutes on the day so we can confirm scope and access</p>
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Please be home when we arrive so we can walk through the job and confirm everything before we start</p>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -165,7 +165,7 @@
                                                     <span style="font-size: 14px;">&#9989;</span>
                                                 </td>
                                                 <td style="padding: 6px 0;">
-                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Keep pets and children clear of the work area</p>
+                                                    <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.5;">Keep pets and kids well away from the work area for the duration of the pour</p>
                                                 </td>
                                             </tr>
                                         </table>
@@ -187,7 +187,7 @@
                                 {% if business_phone and business_email %}<span style="color: rgba(255,255,255,0.3); padding: 0 8px;">|</span>{% endif %}
                                 {% if business_email %}<a href="mailto:{{ business_email }}" style="color: #E87A2E; text-decoration: none;">{{ business_email }}</a>{% endif %}
                             </p>
-                            {% if business_abn or business_licence %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">{% if business_abn %}ABN: {{ business_abn }}{% endif %}{% if business_abn and business_licence %} | {% endif %}{% if business_licence %}Licence: {{ business_licence }}{% endif %}</p>{% endif %}
+                            {% if business_abn %}<p style="margin: 8px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.45);">ABN: {{ business_abn }}</p>{% endif %}
                             <p style="margin: 2px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.35);">{{ business_address }}</p>
                             {% if ciq_logo_url %}<p style="margin: 10px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.25);">Powered by <img src="{{ ciq_logo_url }}" alt="ConcreteIQ" height="20" style="height: 20px; vertical-align: middle; opacity: 0.5; margin-left: 3px;"></p>{% else %}<p style="margin: 10px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.25);">Powered by ConcreteIQ</p>{% endif %}
                             <p style="margin: 4px 0 0 0; font-size: 9px; color: rgba(255,255,255,0.15);">&copy; Kyle R Gyoles | ConcreteIQ</p>

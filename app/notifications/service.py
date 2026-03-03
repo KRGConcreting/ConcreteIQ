@@ -118,6 +118,43 @@ async def delete_notification(db: AsyncSession, notification_id: int) -> bool:
     return False
 
 
+async def cleanup_old_notifications(db: AsyncSession, max_keep: int = 100) -> int:
+    """Delete old read notifications beyond the max_keep limit.
+
+    Keeps the most recent `max_keep` notifications total.
+    Deletes read notifications that exceed the limit (oldest first).
+    Returns the count of deleted notifications.
+    """
+    from sqlalchemy import delete as sa_delete
+
+    # Count total notifications
+    total_result = await db.execute(select(func.count(Notification.id)))
+    total = total_result.scalar() or 0
+
+    if total <= max_keep:
+        return 0
+
+    # Get the ID threshold: keep top max_keep by created_at
+    threshold_result = await db.execute(
+        select(Notification.id)
+        .order_by(Notification.created_at.desc())
+        .offset(max_keep)
+        .limit(1)
+    )
+    threshold_id = threshold_result.scalar()
+
+    if not threshold_id:
+        return 0
+
+    # Delete old read notifications beyond threshold
+    result = await db.execute(
+        sa_delete(Notification)
+        .where(Notification.is_read == True)
+        .where(Notification.id <= threshold_id)
+    )
+    return result.rowcount
+
+
 async def get_unread_count(db: AsyncSession) -> int:
     """Get count of unread notifications."""
     result = await db.execute(

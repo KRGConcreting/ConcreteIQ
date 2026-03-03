@@ -45,6 +45,12 @@ async def notifications_page(
     db: AsyncSession = Depends(get_db),
 ):
     """Display all notifications."""
+    # Auto-cleanup old read notifications to prevent accumulation
+    from app.notifications.service import cleanup_old_notifications
+    cleaned = await cleanup_old_notifications(db, max_keep=100)
+    if cleaned > 0:
+        await db.commit()
+
     page_size = 20
     offset = (page - 1) * page_size
 

@@ -33,7 +33,6 @@ class Settings(BaseSettings):
     business_name: str = "Kyle R Gyoles"
     trading_as: str = "KRG Concreting"
     abn: str = "76 993 685 401"
-    licence_number: str = "374931C"
     business_phone: str = "0423 005 129"
     business_email: str = "kyle@krgconcreting.au"
     business_address: str = "1/32 Whitton Drive, Thurgoona NSW 2640"

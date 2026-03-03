@@ -16,7 +16,7 @@ from app.config import settings
 from app.core.dates import sydney_now, sydney_today, SYDNEY_TZ
 from app.core.templates import templates
 from app.models import Reminder, Invoice, Quote, Customer, EmailLog, Notification
-from app.notifications.email import send_email
+from app.notifications.email import send_email, _load_email_customizations, _render_subject
 from app.core.security import decrypt_customer_pii
 from app.settings import service as settings_service
 
@@ -470,6 +470,9 @@ async def _send_payment_reminder(
         if delta > 0:
             days_overdue = delta
 
+    # Load email template customizations
+    customs = await _load_email_customizations(db)
+
     # Common template context
     template_ctx = dict(
         invoice=invoice,
@@ -485,7 +488,6 @@ async def _send_payment_reminder(
         business_phone=settings.business_phone,
         business_email=settings.business_email,
         business_abn=settings.abn,
-        business_licence=settings.licence_number,
         business_address=settings.business_address,
         bank_name=settings.bank_name,
         bank_bsb=settings.bank_bsb,
@@ -494,10 +496,19 @@ async def _send_payment_reminder(
 
     # Select template, subject, and tone based on reminder type
     rtype = reminder.reminder_type
+    inv_vars = {"invoice_number": invoice.invoice_number, "days_overdue": str(days_overdue)}
 
     if rtype == "payment_friendly":
         template_name = "emails/payment_reminder_friendly.html"
-        subject = f"Friendly Reminder — Invoice {invoice.invoice_number}"
+        subject = _render_subject(
+            customs.get('payment_reminder_friendly_subject', '').strip() or "Friendly Reminder — Invoice {invoice_number}",
+            inv_vars
+        )
+        template_ctx["custom_intro"] = _render_subject(
+            customs.get('payment_reminder_friendly_intro', '').strip() or "Just a heads up — your payment for invoice {invoice_number} is coming up soon. We're sure it's just slipped through!",
+            inv_vars
+        )
+        template_ctx["custom_cta"] = customs.get('payment_reminder_friendly_cta', '').strip() or "View Invoice & Payment Details"
         text_content = f"""
 Hi {customer.name},
 
@@ -523,7 +534,15 @@ Thanks,
 
     elif rtype == "payment_firm":
         template_name = "emails/payment_reminder_firm.html"
-        subject = f"Payment Overdue — Invoice {invoice.invoice_number}"
+        subject = _render_subject(
+            customs.get('payment_reminder_firm_subject', '').strip() or "Overdue Invoice — {invoice_number}",
+            inv_vars
+        )
+        template_ctx["custom_intro"] = _render_subject(
+            customs.get('payment_reminder_firm_intro', '').strip() or "Your payment for invoice {invoice_number} is now {days_overdue} days overdue. Please arrange payment as soon as possible.",
+            inv_vars
+        )
+        template_ctx["custom_cta"] = customs.get('payment_reminder_firm_cta', '').strip() or "View Invoice & Arrange Payment"
         text_content = f"""
 Hi {customer.name},
 
@@ -551,7 +570,15 @@ If you are experiencing difficulties, please contact us immediately to discuss p
 
     elif rtype == "payment_final":
         template_name = "emails/payment_reminder_final.html"
-        subject = f"FINAL NOTICE — Invoice {invoice.invoice_number}"
+        subject = _render_subject(
+            customs.get('payment_reminder_final_subject', '').strip() or "URGENT: Overdue Invoice — {invoice_number}",
+            inv_vars
+        )
+        template_ctx["custom_intro"] = _render_subject(
+            customs.get('payment_reminder_final_intro', '').strip() or "Despite previous reminders, invoice {invoice_number} remains unpaid and is now {days_overdue} days overdue. Immediate payment is required.",
+            inv_vars
+        )
+        template_ctx["custom_cta"] = customs.get('payment_reminder_final_cta', '').strip() or "View Invoice & Arrange Payment"
         text_content = f"""
 Hi {customer.name},
 
@@ -582,7 +609,15 @@ If you are experiencing financial difficulty, please contact us IMMEDIATELY on {
         template_name = "emails/payment_reminder.html"
         is_overdue = rtype == "payment_overdue"
         template_ctx["is_overdue"] = is_overdue
-        subject = f"{'Overdue Invoice' if is_overdue else 'Payment Reminder'} - {invoice.invoice_number}"
+        subject = _render_subject(
+            customs.get('payment_reminder_subject', '').strip() or "Payment Reminder — Invoice {invoice_number}",
+            inv_vars
+        )
+        template_ctx["custom_intro"] = _render_subject(
+            customs.get('payment_reminder_intro', '').strip() or "This is a friendly reminder that your payment for invoice {invoice_number} is coming up soon.",
+            inv_vars
+        )
+        template_ctx["custom_cta"] = customs.get('payment_reminder_cta', '').strip() or "View Invoice & Payment Details"
         status_text = "overdue" if is_overdue else "due"
         text_content = f"""
 Hi {customer.name},
@@ -692,7 +727,6 @@ async def _send_job_reminder(
             business_phone=settings.business_phone,
             business_email=settings.business_email,
             business_abn=settings.abn,
-            business_licence=settings.licence_number,
             business_address=settings.business_address,
         )
     except Exception as e:

@@ -605,7 +605,6 @@ async def preview_email_template(template_name: str, request: Request):
         "business_phone": "0423 005 129",
         "business_email": "admin@krgconcreting.com.au",
         "business_abn": "76 993 685 401",
-        "business_licence": "374931C",
         "business_address": "1/32 Whitton Drive, Thurgoona NSW 2640",
         # Logos
         "logo_url": "/static/images/KyleRGyoles_Concreting_Logo.png",
@@ -666,6 +665,28 @@ async def preview_email_template(template_name: str, request: Request):
         "years_since": 3,
         "completed_date_formatted": "March 2023",
     }
+
+    # Add custom_intro and custom_cta defaults for preview
+    preview_defaults = {
+        "quote_sent": {"custom_intro": "Here is your quote for review. You can view the full details and accept online using the button below.", "custom_cta": "View Quote & Accept Online"},
+        "amendment_sent": {"custom_intro": "There's been a change to the scope of your project. Please review the details below and let us know if you'd like to proceed.", "custom_cta": "Review & Respond"},
+        "booking_confirmed": {"custom_intro": "Your start date is locked in. Here are the details for your upcoming job.", "custom_cta": "View Invoice & Payment Details"},
+        "invoice_sent": {"custom_intro": "Please find your invoice below. Payment can be made by bank transfer using the details provided.", "custom_cta": "View Invoice & Payment Details"},
+        "payment_receipt": {"custom_intro": "Thank you for your payment! This email confirms we have received your payment."},
+        "payment_reminder": {"custom_intro": "This is a friendly reminder that your payment for invoice INV-2026-00018 is coming up soon.", "custom_cta": "View Invoice & Payment Details"},
+        "payment_reminder_friendly": {"custom_intro": "Just a heads up \u2014 your payment for invoice INV-2026-00018 is coming up soon. We're sure it's just slipped through!", "custom_cta": "View Invoice & Payment Details"},
+        "payment_reminder_firm": {"custom_intro": "Your payment for invoice INV-2026-00018 is now 7 days overdue. Please arrange payment as soon as possible.", "custom_cta": "View Invoice & Arrange Payment"},
+        "payment_reminder_final": {"custom_intro": "Despite previous reminders, invoice INV-2026-00018 remains unpaid and is now 7 days overdue. Immediate payment is required.", "custom_cta": "View Invoice & Arrange Payment"},
+        "job_reminder": {"custom_intro": "Just a friendly reminder that your concreting job is scheduled for tomorrow."},
+        "job_complete": {"custom_intro": "Great news \u2014 your concreting project is now complete! We hope you're happy with the result.", "custom_cta": "View Invoice & Pay Balance"},
+        "job_rescheduled": {"custom_intro": "Your job has been rescheduled to a new date. Here are the updated details."},
+        "progress_update": {"custom_intro": "Here's an update on your concreting project:"},
+        "quote_followup": {"custom_intro": "We sent you a quote recently and wanted to follow up. Your quote is still available to view and accept online.", "custom_cta": "View Your Quote"},
+        "quote_expiry_warning": {"custom_intro": "Your quote from KRG Concreting expires on 15 March 2026. Lock in your current price by accepting online before this date.", "custom_cta": "View & Accept Your Quote"},
+        "review_request": {"custom_intro": "Thank you for choosing KRG Concreting for your recent concreting project! We hope you're happy with the finished result.", "custom_cta": "Leave a Google Review"},
+        "sealer_followup": {"custom_intro": "It's been about 3 years since we completed your concreting job. The sealer on your concrete is approaching the end of its lifespan.", "custom_cta": "Call 0423 005 129"},
+    }
+    sample.update(preview_defaults.get(template_name, {}))
 
     try:
         response = templates.TemplateResponse(template_map[template_name], sample)
@@ -1150,7 +1171,6 @@ async def preview_pdf_template(
         email=business_email,
         address=business_address,
         abn=business_abn,
-        license=business.get("license") or "374931C",
         bank_name=business.get("bank_name") or "Great Southern Bank",
         bank_account_name=business.get("bank_account_name") or "",
         bank_bsb=business.get("bank_bsb") or "",
@@ -1870,16 +1890,127 @@ async def save_sms_templates(
     """Save SMS template settings."""
     form = await request.form()
 
+    # Quotes & Jobs
+    await settings_service.save_setting(db, 'sms_templates', 'quote_sent', form.get('quote_sent', ''), 'string')
+    await settings_service.save_setting(db, 'sms_templates', 'quote_followup', form.get('quote_followup', ''), 'string')
+    await settings_service.save_setting(db, 'sms_templates', 'amendment_sent', form.get('amendment_sent', ''), 'string')
+    # Scheduling
+    await settings_service.save_setting(db, 'sms_templates', 'day_before_reminder', form.get('day_before_reminder', ''), 'string')
+    await settings_service.save_setting(db, 'sms_templates', 'job_reminder', form.get('job_reminder', ''), 'string')
     await settings_service.save_setting(db, 'sms_templates', 'on_my_way', form.get('on_my_way', ''), 'string')
     await settings_service.save_setting(db, 'sms_templates', 'on_my_way_eta', form.get('on_my_way_eta', ''), 'string')
-    await settings_service.save_setting(db, 'sms_templates', 'day_before_reminder', form.get('day_before_reminder', ''), 'string')
+    # Invoicing & Payments
+    await settings_service.save_setting(db, 'sms_templates', 'invoice_sent', form.get('invoice_sent', ''), 'string')
+    await settings_service.save_setting(db, 'sms_templates', 'payment_reminder', form.get('payment_reminder', ''), 'string')
+    await settings_service.save_setting(db, 'sms_templates', 'payment_reminder_overdue', form.get('payment_reminder_overdue', ''), 'string')
+    # Post-Job
     await settings_service.save_setting(db, 'sms_templates', 'job_complete', form.get('job_complete', ''), 'string')
+    await settings_service.save_setting(db, 'sms_templates', 'progress_update', form.get('progress_update', ''), 'string')
+    await settings_service.save_setting(db, 'sms_templates', 'review_request', form.get('review_request', ''), 'string')
 
     await db.commit()
 
     from app.core.templates import flash
     flash(request, "SMS templates saved", "success")
     return RedirectResponse(url="/settings/sms-templates", status_code=303)
+
+
+# =============================================================================
+# EMAIL & PDF TEMPLATES GALLERY
+# =============================================================================
+
+@router.get("/email-templates", name="settings:email_templates")
+async def settings_email_templates(request: Request, db: AsyncSession = Depends(get_db)):
+    """Email & PDF template customisation page."""
+    # Load saved email template customisations
+    email_customizations = await settings_service.get_settings_by_category(db, 'email_templates')
+
+    email_templates_quotes = [
+        {"key": "quote_sent", "name": "Quote Sent", "description": "New quote notification"},
+        {"key": "amendment_sent", "name": "Variation Sent", "description": "Amendment/variation for review"},
+        {"key": "booking_confirmed", "name": "Booking Confirmed", "description": "Job booked & deposit received"},
+        {"key": "quote_followup", "name": "Quote Follow-up", "description": "Reminder about unanswered quote"},
+        {"key": "quote_expiry_warning", "name": "Quote Expiry Warning", "description": "Quote about to expire"},
+    ]
+    email_templates_payments = [
+        {"key": "invoice_sent", "name": "Invoice Sent", "description": "New invoice notification"},
+        {"key": "payment_receipt", "name": "Payment Receipt", "description": "Confirmation of payment received"},
+        {"key": "payment_reminder", "name": "Payment Reminder", "description": "Standard payment reminder"},
+        {"key": "payment_reminder_friendly", "name": "Friendly Reminder", "description": "Gentle payment nudge"},
+        {"key": "payment_reminder_firm", "name": "Firm Reminder", "description": "Firmer overdue notice"},
+        {"key": "payment_reminder_final", "name": "Final Notice", "description": "Last payment reminder"},
+    ]
+    email_templates_jobs = [
+        {"key": "job_reminder", "name": "Job Reminder", "description": "Upcoming job reminder with checklist"},
+        {"key": "job_complete", "name": "Job Complete", "description": "Job finished notification"},
+        {"key": "job_rescheduled", "name": "Job Rescheduled", "description": "Date change notification"},
+        {"key": "progress_update", "name": "Progress Update", "description": "Job progress with photos"},
+        {"key": "review_request", "name": "Review Request", "description": "Google review request"},
+        {"key": "sealer_followup", "name": "Sealer Follow-up", "description": "Maintenance reminder after years"},
+    ]
+    pdf_templates = [
+        {"key": "quote", "name": "Quote PDF", "description": "Detailed quote document"},
+        {"key": "invoice", "name": "Invoice PDF", "description": "Tax invoice document"},
+        {"key": "receipt", "name": "Receipt PDF", "description": "Payment receipt document"},
+    ]
+
+    return templates.TemplateResponse("settings/email_templates.html", {
+        "request": request,
+        "email_templates_quotes": email_templates_quotes,
+        "email_templates_payments": email_templates_payments,
+        "email_templates_jobs": email_templates_jobs,
+        "pdf_templates": pdf_templates,
+        "email_customizations": email_customizations,
+        "active_section": "email_templates",
+    })
+
+
+@router.post("/email-templates", name="settings:save_email_templates")
+async def save_email_templates(request: Request, db: AsyncSession = Depends(get_db)):
+    """Save email template customisations."""
+    form = await request.form()
+
+    # All template keys
+    template_keys = [
+        'quote_sent', 'amendment_sent', 'booking_confirmed', 'quote_followup',
+        'quote_expiry_warning', 'invoice_sent', 'payment_receipt', 'payment_reminder',
+        'payment_reminder_friendly', 'payment_reminder_firm', 'payment_reminder_final',
+        'job_reminder', 'job_complete', 'job_rescheduled', 'progress_update',
+        'review_request', 'sealer_followup',
+    ]
+
+    # Templates that have CTA buttons
+    templates_with_cta = {
+        'quote_sent', 'amendment_sent', 'booking_confirmed', 'quote_followup',
+        'quote_expiry_warning', 'invoice_sent', 'payment_reminder',
+        'payment_reminder_friendly', 'payment_reminder_firm', 'payment_reminder_final',
+        'job_complete', 'review_request', 'sealer_followup',
+    }
+
+    for key in template_keys:
+        # Save subject
+        await settings_service.set_setting(
+            db, 'email_templates', f'{key}_subject',
+            form.get(f'{key}_subject', '')
+        )
+        # Save intro
+        await settings_service.set_setting(
+            db, 'email_templates', f'{key}_intro',
+            form.get(f'{key}_intro', '')
+        )
+        # Save CTA (only for templates that have one)
+        if key in templates_with_cta:
+            await settings_service.set_setting(
+                db, 'email_templates', f'{key}_cta',
+                form.get(f'{key}_cta', '')
+            )
+
+    await db.commit()
+
+    return RedirectResponse(
+        url="/settings/email-templates?saved=1",
+        status_code=303,
+    )
 
 
 # =============================================================================

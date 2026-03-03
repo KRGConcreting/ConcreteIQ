@@ -165,6 +165,16 @@
             Send Sealer Follow-up
         </button>
         {% endif %}
+        {% if quote.status in ['completed', 'pending_completion', 'pour_stage', 'confirmed'] %}
+        <button @click="sendSealerRecommendation()"
+                id="sealerRecBtn"
+                class="inline-flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            Send Sealer Recommendations
+        </button>
+        {% endif %}
         {% if quote.status in ['completed', 'pending_completion', 'pour_stage'] %}
         <a href="/costing/{{ quote.id }}"
            class="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
@@ -566,6 +576,13 @@
                         </svg>
                     </div>
                     <h2 class="card-section-title">Specifications</h2>
+                    <button onclick="document.getElementById('editSpecsModal').classList.remove('hidden'); document.getElementById('editSpecsModal').classList.add('flex');"
+                            class="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                        Edit
+                    </button>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div class="p-3 rounded-lg bg-slate-50/80 border border-slate-100 text-center">
@@ -592,6 +609,43 @@
                         <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Complexity</p>
                         <p class="font-bold text-slate-900 font-display">{{ quote.calculator_input.complexity or 'Standard' }}</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- Edit Specifications Modal -->
+            <div id="editSpecsModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4" onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex')}">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">Edit Specifications</h3>
+                    <form id="editSpecsForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Concrete Grade</label>
+                            <select name="concrete_grade" class="input-field">
+                                {% for grade in ['N20', 'N25', 'N32', 'N40', 'N50'] %}
+                                <option value="{{ grade }}" {{ 'selected' if (quote.calculator_input.concrete_grade or 'N25') == grade }}>{{ grade }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Finish</label>
+                            <select name="concrete_finish" class="input-field">
+                                {% for finish in ['Broom', 'Exposed Aggregate', 'Honed/Polished', 'Coloured', 'Stamped', 'Plain'] %}
+                                <option value="{{ finish }}" {{ 'selected' if (quote.calculator_input.concrete_finish or 'Broom') == finish }}>{{ finish }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Reinforcement</label>
+                            <select name="reinforcement_type" class="input-field">
+                                {% for reo in ['SL82', 'SL72', 'SL62', 'F62', 'F72', 'F82', 'Rebar 12mm', 'Rebar 16mm', 'Fibre Mesh', 'None'] %}
+                                <option value="{{ reo }}" {{ 'selected' if (quote.calculator_input.reinforcement_type or 'SL82') == reo }}>{{ reo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="button" onclick="document.getElementById('editSpecsModal').classList.add('hidden');document.getElementById('editSpecsModal').classList.remove('flex')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors">Save</button>
+                        </div>
+                    </form>
                 </div>
             </div>
             {% endif %}
@@ -1786,6 +1840,66 @@ function sendSealerFollowup() {
             alert('Error: ' + err.message);
             btn.disabled = false;
             btn.textContent = 'Send Sealer Follow-up';
+        });
+}
+
+// ========================
+// Edit Specifications
+// ========================
+document.getElementById('editSpecsForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = new FormData(this);
+    const data = {
+        concrete_grade: form.get('concrete_grade'),
+        concrete_finish: form.get('concrete_finish'),
+        reinforcement_type: form.get('reinforcement_type'),
+    };
+
+    try {
+        const response = await fetch('/quotes/api/{{ quote.id }}/specifications', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+            body: JSON.stringify(data),
+        });
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('editSpecsModal').classList.add('hidden');
+            document.getElementById('editSpecsModal').classList.remove('flex');
+            window.location.reload();
+        } else {
+            alert('Failed: ' + (result.detail || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// ========================
+// Sealer Recommendation
+// ========================
+function sendSealerRecommendation() {
+    if (!confirm('Send sealer recommendation email to the customer?')) return;
+
+    const btn = document.getElementById('sealerRecBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    fetch('/quotes/api/{{ quote.id }}/send-sealer-recommendation', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Sealer recommendation email sent!');
+                btn.textContent = 'Recommendation Sent ✓';
+            } else {
+                alert('Failed: ' + formatErrorDetail(data.detail, 'Unknown error'));
+                btn.disabled = false;
+                btn.textContent = 'Send Sealer Recommendations';
+            }
+        })
+        .catch(err => {
+            alert('Error: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Send Sealer Recommendations';
         });
 }
 
