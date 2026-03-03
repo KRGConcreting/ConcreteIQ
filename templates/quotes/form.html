@@ -2231,6 +2231,9 @@ function addressAutocomplete() {
                         if (data.distance_from_yard_km !== null) {
                             calc.form.concrete_distance_km = data.distance_from_yard_km;
                         }
+                        if (data.distance_from_supplier_km !== null) {
+                            calc.form.delivery_distance_km = data.distance_from_supplier_km;
+                        }
                         calc.recalculate();
                     }
                     this.resolved = true;

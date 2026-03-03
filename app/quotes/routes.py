@@ -141,20 +141,22 @@ async def api_places_details(
     if not lat or not lng:
         raise HTTPException(400, "Could not resolve place location")
 
-    # 2. Calculate driving distances (base → job, concrete yard → job)
+    # 2. Calculate driving distances (base → job, concrete yard → job, sand supplier → job)
     from app.settings.service import get_setting
     base_address = settings.business_address  # "Thurgoona NSW 2640"
     yard_address = await get_setting(db, "pricing", "concrete_yard", default="225 Jude Road, Howlong NSW")
+    supplier_address = await get_setting(db, "pricing", "sand_supplier", default="119 Borella Road, Albury NSW")
 
     distance_url = "https://maps.googleapis.com/maps/api/distancematrix/json"
     distance_params = {
-        "origins": f"{base_address}|{yard_address}",
+        "origins": f"{base_address}|{yard_address}|{supplier_address}",
         "destinations": f"{lat},{lng}",
         "units": "metric",
         "key": api_key,
     }
     distance_from_base = None
     distance_from_yard = None
+    distance_from_supplier = None
 
     try:
         async with httpx.AsyncClient() as client:
@@ -173,6 +175,10 @@ async def api_places_details(
         elements = rows[1].get("elements", [])
         if elements and elements[0].get("status") == "OK":
             distance_from_yard = round(elements[0]["distance"]["value"] / 1000)  # km
+    if len(rows) >= 3:
+        elements = rows[2].get("elements", [])
+        if elements and elements[0].get("status") == "OK":
+            distance_from_supplier = round(elements[0]["distance"]["value"] / 1000)  # km
 
     return {
         "formatted_address": formatted_address,
@@ -180,6 +186,7 @@ async def api_places_details(
         "lng": lng,
         "distance_from_base_km": distance_from_base,
         "distance_from_yard_km": distance_from_yard,
+        "distance_from_supplier_km": distance_from_supplier,
     }
 
 
