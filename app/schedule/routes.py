@@ -204,7 +204,7 @@ async def reschedule_job(
     # Sync to Google Calendar if connected
     try:
         from app.integrations.google_calendar import update_job_event
-        await update_job_event(db, quote)
+        await update_job_event(quote)
     except Exception:
         pass  # Don't fail if gcal sync fails
 
