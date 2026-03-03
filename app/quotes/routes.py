@@ -1031,7 +1031,7 @@ class UpdateSpecsRequest(BaseModel):
     """Update quote specifications (calculator_input fields)."""
     concrete_grade: Optional[str] = None
     concrete_finish: Optional[str] = None
-    reinforcement_type: Optional[str] = None
+    reinforcement: Optional[str] = None
 
 
 @router.patch("/api/{id}/specifications")
@@ -1057,9 +1057,9 @@ async def api_update_specifications(
     if data.concrete_finish is not None:
         ci["concrete_finish"] = data.concrete_finish
         updated["concrete_finish"] = data.concrete_finish
-    if data.reinforcement_type is not None:
-        ci["reinforcement_type"] = data.reinforcement_type
-        updated["reinforcement_type"] = data.reinforcement_type
+    if data.reinforcement is not None:
+        ci["reinforcement"] = data.reinforcement
+        updated["reinforcement"] = data.reinforcement
 
     quote.calculator_input = ci
 
