@@ -163,6 +163,37 @@ async def create_quote(
     # Generate customer-facing line item groups
     customer_line_items = generate_customer_line_items(calculator_result, calculator_input)
 
+    # Start with calculator totals
+    subtotal_cents = calculator_result["subtotal_cents"]
+    discount_cents = calculator_result.get("discount_cents", 0)
+    gst_cents = calculator_result["gst_cents"]
+    total_cents = calculator_result["total_cents"]
+
+    # ── Apply manual discount / price override from form ──
+    ci = calculator_input
+    price_override = ci.get("price_override_enabled") and ci.get("price_override_value", 0) > 0
+    discount_value = ci.get("discount_value", 0)
+    discount_type = ci.get("discount_type", "percent")
+
+    if price_override:
+        override_total = int(round(ci["price_override_value"] * 100))
+        extra_discount = max(0, total_cents - override_total)
+        extra_discount_ex = int(round(extra_discount / 1.1))
+        discount_cents += extra_discount_ex
+        subtotal_cents -= extra_discount_ex
+        gst_cents = int(round(subtotal_cents * 0.1))
+        total_cents = subtotal_cents + gst_cents
+    elif discount_value > 0:
+        if discount_type == "percent":
+            extra_discount_inc = int(round(total_cents * discount_value / 100))
+        else:
+            extra_discount_inc = int(round(discount_value * 100))
+        extra_discount_ex = int(round(extra_discount_inc / 1.1))
+        discount_cents += extra_discount_ex
+        subtotal_cents -= extra_discount_ex
+        gst_cents = int(round(subtotal_cents * 0.1))
+        total_cents = subtotal_cents + gst_cents
+
     # Create quote
     quote = Quote(
         quote_type="calculator",
@@ -174,10 +205,10 @@ async def create_quote(
         calculator_result=calculator_result,
         line_items=calculator_result.get("line_items", []),
         customer_line_items=customer_line_items,
-        subtotal_cents=calculator_result["subtotal_cents"],
-        discount_cents=calculator_result.get("discount_cents", 0),
-        gst_cents=calculator_result["gst_cents"],
-        total_cents=calculator_result["total_cents"],
+        subtotal_cents=subtotal_cents,
+        discount_cents=discount_cents,
+        gst_cents=gst_cents,
+        total_cents=total_cents,
         status="draft",
         quote_date=sydney_today(),
         expiry_date=sydney_today() + timedelta(days=await _get_expiry_days(db)),
@@ -528,6 +559,40 @@ async def update_quote(
         quote.discount_cents = calculator_result.get("discount_cents", 0)
         quote.gst_cents = calculator_result["gst_cents"]
         quote.total_cents = calculator_result["total_cents"]
+
+        # ── Apply manual discount / price override from form ──
+        # The calculator handles customer_discount_percent, but the user
+        # can also set a manual discount_value or price_override on the
+        # Review step.  These must adjust the saved totals so the PDF,
+        # portal, and invoices reflect the real price.
+        ci = quote.calculator_input or {}
+        price_override = ci.get("price_override_enabled") and ci.get("price_override_value", 0) > 0
+        discount_value = ci.get("discount_value", 0)
+        discount_type = ci.get("discount_type", "percent")
+
+        if price_override:
+            # Price override: user specifies the final inc-GST total
+            override_total = int(round(ci["price_override_value"] * 100))
+            raw_total = quote.total_cents
+            extra_discount = max(0, raw_total - override_total)
+            # Convert inc-GST discount to ex-GST
+            extra_discount_ex = int(round(extra_discount / 1.1))
+            quote.discount_cents += extra_discount_ex
+            quote.subtotal_cents -= extra_discount_ex
+            quote.gst_cents = int(round(quote.subtotal_cents * 0.1))
+            quote.total_cents = quote.subtotal_cents + quote.gst_cents
+        elif discount_value > 0:
+            # Manual discount on top of calculator result
+            if discount_type == "percent":
+                extra_discount_inc = int(round(quote.total_cents * discount_value / 100))
+            else:
+                extra_discount_inc = int(round(discount_value * 100))
+            # Convert inc-GST discount to ex-GST
+            extra_discount_ex = int(round(extra_discount_inc / 1.1))
+            quote.discount_cents += extra_discount_ex
+            quote.subtotal_cents -= extra_discount_ex
+            quote.gst_cents = int(round(quote.subtotal_cents * 0.1))
+            quote.total_cents = quote.subtotal_cents + quote.gst_cents
 
     # Log activity
     activity = ActivityLog(
